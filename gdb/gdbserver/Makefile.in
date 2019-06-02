@@ -397,8 +397,9 @@ clean-info: force
 
 gdbserver$(EXEEXT): $(sort $(OBS)) ${CDEPS} $(LIBGNU) $(LIBIBERTY)
 	$(SILENCE) rm -f gdbserver$(EXEEXT)
-	$(ECHO_CXXLD) $(CC_LD) $(INTERNAL_CFLAGS) $(INTERNAL_LDFLAGS) \
+	$(ECHO_CXXLD) $(CC_LD) $(INTERNAL_CFLAGS) \
 		-o gdbserver$(EXEEXT) $(OBS) $(LIBGNU) $(LIBIBERTY) \
+		$(INTERNAL_LDFLAGS) \
 		$(GDBSERVER_LIBS) $(XM_CLIBS)
 
 $(LIBGNU) $(LIBIBERTY) $(GNULIB_H): all-lib
