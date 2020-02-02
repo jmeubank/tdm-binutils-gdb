@@ -23,7 +23,11 @@
 #include "common/gdb_string_view.h"
 
 #if defined(__MINGW32__) && !defined(PRINTF_HAS_LONG_LONG)
-# define USE_PRINTF_I64 1
+# if !defined(__USE_MINGW_ANSI_STDIO)
+#  define USE_PRINTF_I64 1
+# else
+#  define USE_PRINTF_I64 0
+# endif
 # define PRINTF_HAS_LONG_LONG
 #else
 # define USE_PRINTF_I64 0

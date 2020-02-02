@@ -165,7 +165,7 @@ typedef BFD_HOST_U_64_BIT symvalue;
 
 #if BFD_HOST_64BIT_LONG
 #define BFD_VMA_FMT "l"
-#elif defined (__MSVCRT__)
+#elif defined (__MSVCRT__) && !defined(__USE_MINGW_ANSI_STDIO)
 #define BFD_VMA_FMT "I64"
 #else
 #define BFD_VMA_FMT "ll"
