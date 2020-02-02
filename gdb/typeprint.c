@@ -53,7 +53,7 @@ const struct type_print_options type_print_raw_options =
 
 static struct type_print_options default_ptype_flags =
 {
-  0,				/* raw */
+  1,				/* raw */
   1,				/* print_methods */
   1,				/* print_typedefs */
   0,				/* print_offsets */
