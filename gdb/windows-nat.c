@@ -3439,6 +3439,17 @@ _initialize_check_for_gdb_ini ()
     return;
 
   homedir = getenv ("HOME");
+#ifdef _WIN32
+  if (!homedir || !homedir[0])
+    {
+      const char *hdrive = getenv ("HOMEDRIVE");
+      const char *hpath = getenv ("HOMEPATH");
+      homedir = (char *) alloca (strlen(hdrive + strlen(hpath) + 1));
+      xsnprintf (homedir, strlen(hdrive) + strlen(hpath) + 1, "%s%s", hdrive, hpath);
+    }
+  if (!homedir || !homedir[0])
+      homedir = getenv ("USERPROFILE");
+#endif
   if (homedir)
     {
       char *p;

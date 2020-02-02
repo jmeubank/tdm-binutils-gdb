@@ -302,6 +302,13 @@ get_init_files (std::vector<std::string> *system_gdbinit,
 	}
 
       const char *homedir = getenv ("HOME");
+#ifdef _WIN32
+      std::string win_homedir = std::string(getenv ("HOMEDRIVE")) + getenv ("HOMEPATH");
+      if (!homedir || !homedir[0])
+          homedir = win_homedir.c_str();
+      if (!homedir || !homedir[0])
+          homedir = getenv ("USERPROFILE");
+#endif
 
       /* If the .gdbinit file in the current directory is the same as
 	 the $HOME/.gdbinit file, it should not be sourced.  homebuf

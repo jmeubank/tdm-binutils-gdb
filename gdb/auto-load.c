@@ -498,11 +498,24 @@ file_is_auto_load_safe (const char *filename, const char *debug_fmt, ...)
 
   if (!advice_printed)
     {
+      std::string homeinit;
       const char *homedir = getenv ("HOME");
+#ifdef _WIN32
+      if (!homedir || !homedir[0])
+        {
+          const char *hdrive = getenv ("HOMEDRIVE");
+          const char *hpath = getenv ("HOMEPATH");
+          if (hdrive && hpath && hdrive[0] && hpath[0])
+              homeinit = string_printf ("%s%s/%s", hdrive, hpath, GDBINIT);
+          if (homeinit.empty())
+              homedir = getenv ("USERPROFILE");
+        }
+#endif
 
-      if (homedir == NULL)
+      if (!homedir || !homedir[0])
 	homedir = "$HOME";
-      std::string homeinit = string_printf ("%s/%s", homedir, GDBINIT);
+      if (homeinit.empty())
+          homeinit = string_printf ("%s/%s", homedir, GDBINIT);
 
       printf_filtered (_("\
 To enable execution of this file add\n\

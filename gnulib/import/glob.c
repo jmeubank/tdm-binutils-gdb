@@ -642,6 +642,8 @@ __glob (const char *pattern, int flags, int (*errfunc) (const char *, int),
                   home_dir = mem;
                 }
               else
+                home_dir = getenv ("USERPROFILE");
+              if (!home_dir || !home_dir[0])
                 home_dir = "c:/users/default"; /* poor default */
 #else
               int err;
