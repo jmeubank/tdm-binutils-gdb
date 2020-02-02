@@ -238,6 +238,20 @@ get_standard_cache_dir ()
       return string_printf ("%s/" HOME_CACHE_DIR "/gdb", abs.get ());
     }
 
+#ifdef _WIN32
+  const char *hdrive = getenv ("HOMEDRIVE");
+  const char *hpath = getenv ("HOMEPATH");
+  if (hdrive && hpath && hdrive[0] && hpath[0])
+    {
+      return string_printf ("%s%s/" HOME_CACHE_DIR "/gdb", hdrive, hpath);
+    }
+  const char *userprofile = getenv ("USERPROFILE");
+  if (userprofile && userprofile[0])
+    {
+      return string_printf ("%s/" HOME_CACHE_DIR "/gdb", userprofile);
+    }
+#endif
+
   return {};
 }
 
