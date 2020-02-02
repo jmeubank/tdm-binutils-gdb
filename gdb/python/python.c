@@ -338,6 +338,9 @@ python_run_simple_file (FILE *file, const char *filename)
 
   /* Because we have a string for a filename, and are using Python to
      open the file, we need to expand any tilde in the path first.  */
+
+#ifndef IS_PY3K
+
   gdb::unique_xmalloc_ptr<char> full_path (tilde_expand (filename));
   gdbpy_ref<> python_file (PyFile_FromString (full_path.get (), (char *) "r"));
   if (python_file == NULL)
@@ -347,6 +350,14 @@ python_run_simple_file (FILE *file, const char *filename)
     }
 
   PyRun_SimpleFile (PyFile_AsFile (python_file.get ()), filename);
+
+#else
+
+  /* Python 3 no loner exposes FILE structs, so we are out of luck */
+  gdb::unique_xmalloc_ptr<char> full_path (tilde_expand (filename));
+  PyRun_SimpleFile (fopen (full_path.get(), "r"), filename);
+
+#endif
 
 #endif /* _WIN32 */
 }
