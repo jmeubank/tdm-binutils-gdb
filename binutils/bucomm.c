@@ -608,6 +608,15 @@ get_file_size (const char * file_name)
   if (file_name == NULL)
     return (off_t) -1;
 
+  int f, t;
+  t = -1;
+  f = open (file_name, O_RDONLY | O_BINARY);
+  if (f != 0)
+    {
+      t = isatty (f);
+      close (f);
+    }
+
   if (stat (file_name, &statbuf) < 0)
     {
       if (errno == ENOENT)
@@ -618,8 +627,15 @@ get_file_size (const char * file_name)
     }
   else if (S_ISDIR (statbuf.st_mode))
     non_fatal (_("Warning: '%s' is a directory"), file_name);
-  else if (! S_ISREG (statbuf.st_mode))
-    non_fatal (_("Warning: '%s' is not an ordinary file"), file_name);
+  else if (! S_ISREG (statbuf.st_mode) || t > 0)
+    {
+#ifdef _WIN32
+      /* libtool passes /dev/null and checks for /dev/null in the output */
+      if (stricmp (file_name, "nul") == 0)
+        file_name = "/dev/null";
+#endif
+      non_fatal (_("Warning: '%s' is not an ordinary file"), file_name);
+    }
   else if (statbuf.st_size < 0)
     non_fatal (_("Warning: '%s' has negative size, probably it is too large"),
                file_name);

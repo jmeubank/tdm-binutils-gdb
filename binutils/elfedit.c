@@ -691,6 +691,14 @@ static int
 check_file (const char *file_name, struct stat *statbuf_p)
 {
   struct stat statbuf;
+  int f, t;
+  t = -1;
+  f = open (file_name, O_RDONLY | O_BINARY);
+  if (f != 0)
+    {
+      t = isatty (f);
+      close (f);
+    }
 
   if (statbuf_p == NULL)
     statbuf_p = &statbuf;
@@ -705,8 +713,13 @@ check_file (const char *file_name, struct stat *statbuf_p)
       return 1;
     }
 
-  if (! S_ISREG (statbuf_p->st_mode))
+  if (! S_ISREG (statbuf_p->st_mode) || t > 0)
     {
+#ifdef _WIN32
+      /* libtool passes /dev/null and checks for /dev/null in the output */
+      if (stricmp (file_name, "nul") == 0)
+        file_name = "/dev/null";
+#endif
       error (_("'%s' is not an ordinary file\n"), file_name);
       return 1;
     }
