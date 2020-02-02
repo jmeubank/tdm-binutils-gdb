@@ -3051,6 +3051,7 @@ case "${ENABLE_GOLD}" in
   yes|default)
     # Check for ELF target.
     is_elf=no
+    is_pe=no
     case "${target}" in
       *-*-elf* | *-*-sysv4* | *-*-unixware* | *-*-eabi* | hppa*64*-*-hpux* \
       | *-*-linux* | *-*-gnu* | frv-*-uclinux* | *-*-irix5* | *-*-irix6* \
@@ -3062,10 +3063,12 @@ case "${ENABLE_GOLD}" in
           *)
             is_elf=yes
             ;;
-        esac
+        esac;;
+      *-*-mingw*)
+        is_pe=yes;;
     esac
 
-    if test "$is_elf" = "yes"; then
+    if test "$is_elf" = "yes" -o "$is_pe" = "yes"; then
       # Check for target supported by gold.
       case "${target}" in
         i?86-*-* | x86_64-*-* | sparc*-*-* | powerpc*-*-* | arm*-*-* \
