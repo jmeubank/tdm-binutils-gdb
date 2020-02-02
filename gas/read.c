@@ -4414,7 +4414,7 @@ emit_expr_with_reloc (expressionS *exp,
 	{
 	  /* Leading bits contain both 0s & 1s.  */
 #if defined (BFD64) && BFD_HOST_64BIT_LONG_LONG
-#ifndef __MSVCRT__
+#if !defined(__MSVCRT__) || defined(__USE_MINGW_ANSI_STDIO)
 	  as_warn (_("value 0x%llx truncated to 0x%llx"),
 		   (unsigned long long) get, (unsigned long long) use);
 #else

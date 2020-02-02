@@ -504,7 +504,7 @@ print_vma (bfd_vma vma, char *buf, bfd_boolean unsignedp, bfd_boolean hexp)
 #if BFD_HOST_64BIT_LONG_LONG
   else if (sizeof (vma) <= sizeof (unsigned long long))
     {
-#ifndef __MSVCRT__
+#if !defined(__MSVCRT__) || defined(__USE_MINGW_ANSI_STDIO)
       if (hexp)
 	sprintf (buf, "0x%llx", (unsigned long long) vma);
       else if (unsignedp)

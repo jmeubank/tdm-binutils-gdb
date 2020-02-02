@@ -448,10 +448,10 @@ typedef struct _pseudo_type pseudo_typeS;
 
 #define PRINTF_LIKE(FCN) \
   void FCN (const char *format, ...) \
-    __attribute__ ((__format__ (__printf__, 1, 2)))
+    __attribute__ ((__format__ (gnu_printf, 1, 2)))
 #define PRINTF_WHERE_LIKE(FCN) \
   void FCN (const char *file, unsigned int line, const char *format, ...) \
-    __attribute__ ((__format__ (__printf__, 3, 4)))
+    __attribute__ ((__format__ (gnu_printf, 3, 4)))
 
 #else /* __GNUC__ < 2 || defined(VMS) */
 

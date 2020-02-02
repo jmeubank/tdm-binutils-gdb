@@ -1233,7 +1233,7 @@ dump_relocations (Filedata *          filedata,
 		  : "%12.12lx  %12.12lx ",
 		  offset, inf);
 #elif BFD_HOST_64BIT_LONG_LONG
-#ifndef __MSVCRT__
+#if !defined(__MSVCRT__) || defined(__USE_MINGW_ANSI_STDIO)
 	  printf (do_wide
 		  ? "%16.16llx  %16.16llx "
 		  : "%12.12llx  %12.12llx ",
@@ -13735,7 +13735,7 @@ dump_section_as_strings (Elf_Internal_Shdr * section, Filedata * filedata)
 	{
 	  size_t maxlen = end - data;
 
-#ifndef __MSVCRT__
+#if !defined(__MSVCRT__) || defined(__USE_MINGW_ANSI_STDIO)
 	  /* PR 11128: Use two separate invocations in order to work
              around bugs in the Solaris 8 implementation of printf.  */
 	  printf ("  [%6tx]  ", data - start);

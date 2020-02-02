@@ -613,7 +613,7 @@ print_strings (const char *filename, FILE *stream, file_ptr address,
 #ifdef HAVE_LONG_LONG
 	    if (sizeof (start) > sizeof (long))
 	      {
-# ifndef __MSVCRT__
+#if !defined(__MSVCRT__) || defined(__USE_MINGW_ANSI_STDIO)
 		printf ("%7llo ", (unsigned long long) start);
 # else
 		printf ("%7I64o ", (unsigned long long) start);
@@ -632,7 +632,7 @@ print_strings (const char *filename, FILE *stream, file_ptr address,
 #ifdef HAVE_LONG_LONG
 	    if (sizeof (start) > sizeof (long))
 	      {
-# ifndef __MSVCRT__
+#if !defined(__MSVCRT__) || defined(__USE_MINGW_ANSI_STDIO)
 		printf ("%7llu ", (unsigned long long) start);
 # else
 		printf ("%7I64d ", (unsigned long long) start);
@@ -651,7 +651,7 @@ print_strings (const char *filename, FILE *stream, file_ptr address,
 #ifdef HAVE_LONG_LONG
 	    if (sizeof (start) > sizeof (long))
 	      {
-# ifndef __MSVCRT__
+#if !defined(__MSVCRT__) || defined(__USE_MINGW_ANSI_STDIO)
 		printf ("%7llx ", (unsigned long long) start);
 # else
 		printf ("%7I64x ", (unsigned long long) start);
