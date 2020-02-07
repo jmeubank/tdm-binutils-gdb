@@ -1,0 +1,29 @@
+Create a Github README.md file for tdm-binutils-gdb
+
+From: J.M. Eubank <john@thesnappy.net>
+
+
+---
+ README.md |   13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+ create mode 100644 README.md
+
+diff --git a/README.md b/README.md
+new file mode 100644
+index 00000000..02a4884a
+--- /dev/null
++++ b/README.md
+@@ -0,0 +1,13 @@
++# tdm-binutils-gdb #
++
++This is the source repository for the TDM-GCC binutils and GDB binaries,
++including patches.
++
++Upstream sources are copied here and squashed into a single commit based on
++release tag.
++
++Check the commits on the `tdm-patches-binutils` branch for binutils patches.
++
++Check the commits on the `tdm-patches-gdb` branch for GDB patches.
++
++All patches are maintained via the [StGit](http://www.procode.org/stgit/) plugin.
