@@ -1,0 +1,39 @@
+Consider Windows alternate locations for cache dir
+
+From: J.M. Eubank <john@thesnappy.net>
+
+Since `%HOME%` is often not set on Windows
+   command-line, fix location of the cache dir to also consider
+   `%HOMEDRIVE%%HOMEPATH%` and `%USERPROFILE%`
+
+# HG changeset patch
+# Parent  aecb8a0cd430cf05f39752e016bd9cdc4de21ed7
+---
+ gdb/common/pathstuff.c |   14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/gdb/common/pathstuff.c b/gdb/common/pathstuff.c
+index 2b1669a5..706f07b3 100644
+--- a/gdb/common/pathstuff.c
++++ b/gdb/common/pathstuff.c
+@@ -238,6 +238,20 @@ get_standard_cache_dir ()
+       return string_printf ("%s/" HOME_CACHE_DIR "/gdb", abs.get ());
+     }
+ 
++#ifdef _WIN32
++  const char *hdrive = getenv ("HOMEDRIVE");
++  const char *hpath = getenv ("HOMEPATH");
++  if (hdrive && hpath && hdrive[0] && hpath[0])
++    {
++      return string_printf ("%s%s/" HOME_CACHE_DIR "/gdb", hdrive, hpath);
++    }
++  const char *userprofile = getenv ("USERPROFILE");
++  if (userprofile && userprofile[0])
++    {
++      return string_printf ("%s/" HOME_CACHE_DIR "/gdb", userprofile);
++    }
++#endif
++
+   return {};
+ }
+ 

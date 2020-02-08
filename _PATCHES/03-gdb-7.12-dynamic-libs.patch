@@ -1,0 +1,39 @@
+Don't ask for libgcc and libstdc++ static linkage by default when building GDB
+
+From: Orgad Shaneh <orgads@gmail.com>
+
+(but TDM-GCC will perform static linkage for these libraries anyway)
+From
+   <https://github.com/msys2/MINGW-packages/blob/master/mingw-w64-gdb/gdb-7.12-dynamic-libs.patch>
+
+From 04a27a15b268e07c76578c074c3822477ceabc50 Mon Sep 17 00:00:00 2001
+Subject: [PATCH] configure: Disable static linking with standard libs
+
+Linking statically causes spurious crashes on exception handling
+with mingw32.
+---
+ configure |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/configure b/configure
+index 0a500810..a6c188c9 100755
+--- a/configure
++++ b/configure
+@@ -5861,7 +5861,7 @@ else
+  # trust that they are doing what they want.
+  if test "$with_static_standard_libraries" = yes -a "$stage1_libs" = "" \
+      -a "$have_static_libs" = yes; then
+-   stage1_ldflags="-static-libstdc++ -static-libgcc"
++   stage1_ldflags=""
+  fi
+ fi
+ 
+@@ -5897,7 +5897,7 @@ else
+  # statically.  But if the user explicitly specified the libraries to
+  # use, trust that they are doing what they want.
+  if test "$poststage1_libs" = ""; then
+-   poststage1_ldflags="-static-libstdc++ -static-libgcc"
++   poststage1_ldflags=""
+  fi
+ fi
+ 

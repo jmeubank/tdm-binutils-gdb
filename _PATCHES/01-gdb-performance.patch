@@ -1,0 +1,29 @@
+Improve print performance on large codebases
+
+From: J.M. Eubank <john@thesnappy.net>
+
+with a hack to use raw printing when `info {func,var,type}` is invoked; from
+   <https://sourceware.org/bugzilla/show_bug.cgi?id=15412>
+
+# HG changeset patch
+# Parent  bb0cf755760039ed58778ecf3d0c8980825bde24
+ As DJE said, the workaround looks like below:
+ gdb/typeprint.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+---
+ gdb/typeprint.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/gdb/typeprint.c b/gdb/typeprint.c
+index 6c499b64..2c1b99f5 100644
+--- a/gdb/typeprint.c
++++ b/gdb/typeprint.c
+@@ -53,7 +53,7 @@ const struct type_print_options type_print_raw_options =
+ 
+ static struct type_print_options default_ptype_flags =
+ {
+-  0,				/* raw */
++  1,				/* raw */
+   1,				/* print_methods */
+   1,				/* print_typedefs */
+   0,				/* print_offsets */

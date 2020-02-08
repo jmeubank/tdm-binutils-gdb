@@ -1,0 +1,8 @@
+# This series applies on GIT commit 8afb0c8505de16784b6f7e5fe15ec61fe4f5d65a
+01-gdb-performance.patch
+02-gdb-fix-using-gnu-print.patch
+03-gdb-7.12-dynamic-libs.patch
+04-gdb-py3-fixes.patch
+05-gdb-fix-tui-with-pdcurses.patch
+06-gdb-8.3-lib-order.patch
+07-windows-home.patch
