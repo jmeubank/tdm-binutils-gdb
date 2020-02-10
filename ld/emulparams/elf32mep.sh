@@ -6,7 +6,7 @@ ARCH=mep
 MAXPAGESIZE=256
 ENTRY=_start
 EMBEDDED=yes
-TEMPLATE_NAME=elf
+TEMPLATE_NAME=elf32
 
 if test -n "${RELOCATING}"; then
 DATA_START_SYMBOLS='__data_start = . ;'

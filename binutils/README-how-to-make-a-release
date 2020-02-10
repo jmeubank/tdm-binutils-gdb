@@ -27,8 +27,7 @@ How to perform a release.
      directories and the top level configure files.
 
   3. When branch day arrives add markers for the upcoming release to
-     the NEWS files in gas, ld, and binutils.  No need to update NEWS
-     in the gold directory - it has its own release numbering.
+     the NEWS files in gas, ld, gold and binutils.
 
      Likewise for the ChangeLog files in: bfd, binutils, config, cpu,
      elfcpp, gas, gold, gprof, include, ld, libctf, opcodes and toplevel.
@@ -39,8 +38,8 @@ How to perform a release.
 
   4. Create the release branch using:
 
-	git branch binutils-2_34-branch
-        git push origin binutils-2_34-branch
+	git branch binutils-2_33-branch
+        git push origin binutils-2_33-branch
 
      If you get a message like:
      
@@ -50,7 +49,7 @@ How to perform a release.
 
   5. Make sure that the branch is there.  IE check out the branch sources:
   
-        git clone ssh://sourceware.org/git/binutils-gdb.git -b binutils-2_34-branch 2.34
+        git clone ssh://sourceware.org/git/binutils-gdb.git -b binutils-2_33-branch 2.33
 
      If you get a message about being in a "detached head" state, something
      has gone wrong...
@@ -72,7 +71,7 @@ How to perform a release.
      ask Joel Brobecker <brobecker AT adacore DOT com>.
 
   7. Rename the current HEAD version entry in Bugzilla, and create a
-     new one.  E.g. rename "2.34 (HEAD)" to 2.34, and create "2.34
+     new one.  E.g. rename "2.33 (HEAD)" to 2.33, and create "2.34
      (HEAD)":
      
         https://sourceware.org/bugzilla/editversions.cgi?product=binutils
@@ -80,13 +79,13 @@ How to perform a release.
   8. Update bfd/version.m4 on HEAD to indicate that is now a snapshot
      of the next release:
      
-       m4_define([BFD_VERSION], [2.34.51])
+       m4_define([BFD_VERSION], [2.33.51])
        
      Update the release number in bfd/version.m4 for the branch.
      The branch only needs the point value set to 90 as the release
      has not actually happened yet.
 
-       m4_define([BFD_VERSION], [2.33.90])
+       m4_define([BFD_VERSION], [2.32.90])
 
      Regenerate various files on both branch and HEAD by configuring
      with "--enable-maintainer-mode --enable-gold" and then building
@@ -280,7 +279,7 @@ When the time comes to actually make the release....
       Make the html documentation locally with the "make html" command
       and then upload and rename the directories as needed.  (sftp
       does not appear to support recursive uploads however, so the
-      directories had to be made by hand, as shown above).
+      directories will have to be made by hand).
 
          cd as
 	 lcd <build-dir>/gas/doc/as.html
@@ -316,10 +315,7 @@ When the time comes to actually make the release....
 
   30. Send emails to binutils@sourceware.org, info-gnu@gnu.org and
       David Edelsohn <dje.gcc@gmail.com> announcing the new release.
-      Sign the email and include the checksum:
-
-          md5sum binutils-2.3x.tar.*
-
+      Sign the email and include the checksum.
       (The email to Davis is so that he can update the GNU Toolchain
       social media).  Something like this:
       -----------------------------------------------------------------------
@@ -419,6 +415,9 @@ looks like this:
 
        i. Edit bfd/development.sh and set "development=true".
        j. Commit this change into the git repository.
+       k. Clean up the source tree.
+       
+            git clean -dfx .
 
   4. [If paranoid - upload the tarballs to one of the FTP servers and
       ask people to test it before going on to step 5].
@@ -452,7 +451,6 @@ looks like this:
      David Edelsohn <dje.gcc@gmail.com> announcing the new release.
      (The email to Davis is so that he can update the GNU Toolchain
      social media).  Something like this:
-
 ------------------------------------------------------------------------
 Hi Everyone,
 
@@ -474,15 +472,9 @@ Hi Everyone,
     xx
     xx
 --------------------------------------------------------------------------
-  9. Clean up the source tree.
-       
-            git clean -dfx .
-
- 10. Edit bfd/development.sh on the branch and set the development flag
-     to "true".  Commit this change.
 
 
-Copyright (C) 2017-2020 Free Software Foundation, Inc.
+Copyright (C) 2017-2019 Free Software Foundation, Inc.
 
 Copying and distribution of this file, with or without modification,
 are permitted in any medium without royalty provided the copyright

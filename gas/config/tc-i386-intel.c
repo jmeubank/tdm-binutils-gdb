@@ -1,5 +1,5 @@
 /* tc-i386.c -- Assemble Intel syntax code for ix86/x86-64
-   Copyright (C) 2009-2020 Free Software Foundation, Inc.
+   Copyright (C) 2009-2019 Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
@@ -52,20 +52,18 @@ intel_state;
 #define O_dword_ptr O_md26
 /* qword ptr X_add_symbol */
 #define O_qword_ptr O_md25
-/* mmword ptr X_add_symbol */
-#define O_mmword_ptr O_qword_ptr
-/* fword ptr X_add_symbol */
-#define O_fword_ptr O_md24
-/* tbyte ptr X_add_symbol */
-#define O_tbyte_ptr O_md23
 /* oword ptr X_add_symbol */
-#define O_oword_ptr O_md22
+#define O_oword_ptr O_md24
+/* fword ptr X_add_symbol */
+#define O_fword_ptr O_md23
+/* tbyte ptr X_add_symbol */
+#define O_tbyte_ptr O_md22
 /* xmmword ptr X_add_symbol */
-#define O_xmmword_ptr O_oword_ptr
+#define O_xmmword_ptr O_md21
 /* ymmword ptr X_add_symbol */
-#define O_ymmword_ptr O_md21
+#define O_ymmword_ptr O_md20
 /* zmmword ptr X_add_symbol */
-#define O_zmmword_ptr O_md20
+#define O_zmmword_ptr O_md19
 
 static struct
   {
@@ -107,7 +105,6 @@ const i386_types[] =
     I386_TYPE(dword, 4),
     I386_TYPE(fword, 6),
     I386_TYPE(qword, 8),
-    I386_TYPE(mmword, 8),
     I386_TYPE(tbyte, 10),
     I386_TYPE(oword, 16),
     I386_TYPE(xmmword, 16),
@@ -286,7 +283,7 @@ i386_intel_simplify_register (expressionS *e)
 	  as_bad (_("invalid use of register"));
 	  return 0;
 	}
-      if (i386_regtab[reg_num].reg_type.bitfield.class == SReg
+      if (i386_regtab[reg_num].reg_type.bitfield.sreg
 	  && i386_regtab[reg_num].reg_num == RegFlat)
 	{
 	  as_bad (_("invalid use of pseudo-register"));
@@ -386,9 +383,10 @@ static int i386_intel_simplify (expressionS *e)
     case O_word_ptr:
     case O_dword_ptr:
     case O_fword_ptr:
-    case O_qword_ptr: /* O_mmword_ptr */
+    case O_qword_ptr:
     case O_tbyte_ptr:
-    case O_oword_ptr: /* O_xmmword_ptr */
+    case O_oword_ptr:
+    case O_xmmword_ptr:
     case O_ymmword_ptr:
     case O_zmmword_ptr:
     case O_near_ptr:
@@ -641,7 +639,12 @@ i386_intel_operand (char *operand_string, int got_a_float)
 
 	case O_word_ptr:
 	  i.types[this_operand].bitfield.word = 1;
-	  if (got_a_float == 2)	/* "fi..." */
+	  if ((current_templates->start->name[0] == 'l'
+	       && current_templates->start->name[2] == 's'
+	       && current_templates->start->name[3] == 0)
+	      || current_templates->start->base_opcode == 0x62 /* bound */)
+	    suffix = BYTE_MNEM_SUFFIX; /* so it will cause an error */
+	  else if (got_a_float == 2)	/* "fi..." */
 	    suffix = SHORT_MNEM_SUFFIX;
 	  else
 	    suffix = WORD_MNEM_SUFFIX;
@@ -654,12 +657,10 @@ i386_intel_operand (char *operand_string, int got_a_float)
 	       && current_templates->start->name[3] == 0)
 	      || current_templates->start->base_opcode == 0x62 /* bound */)
 	    suffix = WORD_MNEM_SUFFIX;
-	  else if (flag_code != CODE_32BIT
-		   && (current_templates->start->opcode_modifier.jump == JUMP
-		       || current_templates->start->opcode_modifier.jump
-			  == JUMP_DWORD))
-	    suffix = flag_code == CODE_16BIT ? LONG_DOUBLE_MNEM_SUFFIX
-					     : WORD_MNEM_SUFFIX;
+	  else if (flag_code == CODE_16BIT
+		   && (current_templates->start->opcode_modifier.jump
+		       || current_templates->start->opcode_modifier.jumpdword))
+	    suffix = LONG_DOUBLE_MNEM_SUFFIX;
 	  else if (got_a_float == 1)	/* "f..." */
 	    suffix = SHORT_MNEM_SUFFIX;
 	  else
@@ -678,9 +679,11 @@ i386_intel_operand (char *operand_string, int got_a_float)
 		add_prefix (DATA_PREFIX_OPCODE);
 	      suffix = LONG_DOUBLE_MNEM_SUFFIX;
 	    }
+	  else
+	    suffix = BYTE_MNEM_SUFFIX; /* so it will cause an error */
 	  break;
 
-	case O_qword_ptr: /* O_mmword_ptr */
+	case O_qword_ptr:
 	  i.types[this_operand].bitfield.qword = 1;
 	  if (current_templates->start->base_opcode == 0x62 /* bound */
 	      || got_a_float == 1)	/* "f..." */
@@ -693,15 +696,12 @@ i386_intel_operand (char *operand_string, int got_a_float)
 	  i.types[this_operand].bitfield.tbyte = 1;
 	  if (got_a_float == 1)
 	    suffix = LONG_DOUBLE_MNEM_SUFFIX;
-	  else if ((current_templates->start->operand_types[0].bitfield.fword
-		    || current_templates->start->operand_types[0].bitfield.tbyte)
-		   && flag_code == CODE_64BIT)
-	    suffix = QWORD_MNEM_SUFFIX; /* l[fgs]s, [ls][gi]dt */
 	  else
-	    i.types[this_operand].bitfield.byte = 1; /* cause an error */
+	    suffix = BYTE_MNEM_SUFFIX; /* so it will cause an error */
 	  break;
 
-	case O_oword_ptr: /* O_xmmword_ptr */
+	case O_oword_ptr:
+	case O_xmmword_ptr:
 	  i.types[this_operand].bitfield.xmmword = 1;
 	  break;
 
@@ -717,14 +717,11 @@ i386_intel_operand (char *operand_string, int got_a_float)
 	  suffix = LONG_DOUBLE_MNEM_SUFFIX;
 	  /* FALLTHROUGH */
 	case O_near_ptr:
-	  if (current_templates->start->opcode_modifier.jump != JUMP
-	      && current_templates->start->opcode_modifier.jump != JUMP_DWORD)
-	    {
-	      /* cause an error */
-	      i.types[this_operand].bitfield.byte = 1;
-	      i.types[this_operand].bitfield.tbyte = 1;
-	      suffix = i.suffix;
-	    }
+	  if (!current_templates->start->opcode_modifier.jump
+	      && !current_templates->start->opcode_modifier.jumpdword)
+	    suffix = got_a_float /* so it will cause an error */
+		     ? BYTE_MNEM_SUFFIX
+		     : LONG_DOUBLE_MNEM_SUFFIX;
 	  break;
 
 	default:
@@ -742,23 +739,21 @@ i386_intel_operand (char *operand_string, int got_a_float)
     }
 
   /* Operands for jump/call need special consideration.  */
-  if (current_templates->start->opcode_modifier.jump == JUMP
-      || current_templates->start->opcode_modifier.jump == JUMP_DWORD
-      || current_templates->start->opcode_modifier.jump == JUMP_INTERSEGMENT)
+  if (current_templates->start->opcode_modifier.jump
+      || current_templates->start->opcode_modifier.jumpdword
+      || current_templates->start->opcode_modifier.jumpintersegment)
     {
-      bfd_boolean jumpabsolute = FALSE;
-
       if (i.op[this_operand].regs
 	  || intel_state.base
 	  || intel_state.index
 	  || intel_state.is_mem > 1)
-	jumpabsolute = TRUE;
+	i.types[this_operand].bitfield.jumpabsolute = 1;
       else
 	switch (intel_state.op_modifier)
 	  {
 	  case O_near_ptr:
 	    if (intel_state.seg)
-	      jumpabsolute = TRUE;
+	      i.types[this_operand].bitfield.jumpabsolute = 1;
 	    else
 	      intel_state.is_mem = 1;
 	    break;
@@ -770,14 +765,14 @@ i386_intel_operand (char *operand_string, int got_a_float)
 		if (intel_state.op_modifier == O_absent)
 		  {
 		    if (intel_state.is_indirect == 1)
-		      jumpabsolute = TRUE;
+		      i.types[this_operand].bitfield.jumpabsolute = 1;
 		    break;
 		  }
 		as_bad (_("cannot infer the segment part of the operand"));
 		return 0;
 	      }
 	    else if (S_GET_SEGMENT (intel_state.seg) == reg_section)
-	      jumpabsolute = TRUE;
+	      i.types[this_operand].bitfield.jumpabsolute = 1;
 	    else
 	      {
 		i386_operand_type types;
@@ -811,14 +806,11 @@ i386_intel_operand (char *operand_string, int got_a_float)
 	      }
 	    break;
 	  default:
-	    jumpabsolute = TRUE;
+	    i.types[this_operand].bitfield.jumpabsolute = 1;
 	    break;
 	  }
-      if (jumpabsolute)
-	{
-	  i.jumpabsolute = TRUE;
-	  intel_state.is_mem |= 1;
-	}
+      if (i.types[this_operand].bitfield.jumpabsolute)
+	intel_state.is_mem |= 1;
     }
   else if (intel_state.seg)
     intel_state.is_mem |= 1;
@@ -860,9 +852,9 @@ i386_intel_operand (char *operand_string, int got_a_float)
 	     ljmp	0x9090,0x90909090
 	   */
 
-	  if ((current_templates->start->opcode_modifier.jump == JUMP_INTERSEGMENT
-	       || current_templates->start->opcode_modifier.jump == JUMP_DWORD
-	       || current_templates->start->opcode_modifier.jump == JUMP)
+	  if ((current_templates->start->opcode_modifier.jumpintersegment
+	       || current_templates->start->opcode_modifier.jumpdword
+	       || current_templates->start->opcode_modifier.jump)
 	      && this_operand == 1
 	      && intel_state.seg == NULL
 	      && i.mem_operands == 1
@@ -939,13 +931,12 @@ i386_intel_operand (char *operand_string, int got_a_float)
 
 	  if (flag_code == CODE_64BIT)
 	    {
+	      i.types[this_operand].bitfield.disp32 = 1;
 	      if (!i.prefix[ADDR_PREFIX])
 		{
 		  i.types[this_operand].bitfield.disp64 = 1;
 		  i.types[this_operand].bitfield.disp32s = 1;
 		}
-	      else
-		i.types[this_operand].bitfield.disp32 = 1;
 	    }
 	  else if (!i.prefix[ADDR_PREFIX] ^ (flag_code == CODE_16BIT))
 	    i.types[this_operand].bitfield.disp32 = 1;
@@ -993,7 +984,7 @@ i386_intel_operand (char *operand_string, int got_a_float)
 	      as_bad (_("segment register name expected"));
 	      return 0;
 	    }
-	  if (i386_regtab[expP->X_add_number].reg_type.bitfield.class != SReg)
+	  if (!i386_regtab[expP->X_add_number].reg_type.bitfield.sreg)
 	    {
 	      as_bad (_("invalid use of register"));
 	      return 0;

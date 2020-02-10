@@ -1,17 +1,12 @@
 	.text
-	.globl	start
-	.type	start, @function
+	.globl start
 start:
-	.globl	_start
-	.type	_start, @function
+	.globl _start
 _start:
-	.globl	__start
-	.type	__start, @function
+	.globl __start
 __start:
-	.globl	main
-	.type	main, @function
+	.globl main
 main:
 	.globl	_main
-	.type	_main, @function
 _main:
 	.dc.a 0

@@ -1,5 +1,5 @@
 /* A YACC grammar to parse a superset of the AT&T linker scripting language.
-   Copyright (C) 1991-2020 Free Software Foundation, Inc.
+   Copyright (C) 1991-2019 Free Software Foundation, Inc.
    Written by Steve Chamberlain of Cygnus Support (steve@cygnus.com).
 
    This file is part of the GNU Binutils.
@@ -29,7 +29,6 @@
 #include "sysdep.h"
 #include "bfd.h"
 #include "bfdlink.h"
-#include "ctf-api.h"
 #include "ld.h"
 #include "ldexp.h"
 #include "ldver.h"

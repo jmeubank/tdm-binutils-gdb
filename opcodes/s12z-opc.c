@@ -1,5 +1,5 @@
 /* s12z-decode.c -- Freescale S12Z disassembly
-   Copyright (C) 2018-2020 Free Software Foundation, Inc.
+   Copyright (C) 2018 Free Software Foundation, Inc.
 
    This file is part of the GNU opcodes library.
 
@@ -256,8 +256,7 @@ xysp_reg_from_postbyte (uint8_t postbyte)
   return reg;
 }
 
-static struct operand *
-create_immediate_operand (int value)
+static struct operand * create_immediate_operand (int value)
 {
   struct immediate_operand *op = malloc (sizeof (*op));
 
@@ -268,8 +267,7 @@ create_immediate_operand (int value)
   return (struct operand *) op;
 }
 
-static struct operand *
-create_bitfield_operand (int width, int offset)
+static struct operand * create_bitfield_operand (int width, int offset)
 {
   struct bitfield_operand *op = malloc (sizeof (*op));
 
@@ -299,8 +297,7 @@ create_register_operand (int reg)
   return create_register_operand_with_size (reg, -1);
 }
 
-static struct operand *
-create_register_all_operand (void)
+static struct operand * create_register_all_operand (void)
 {
   struct register_operand *op = malloc (sizeof (*op));
 
@@ -310,8 +307,7 @@ create_register_all_operand (void)
   return (struct operand *) op;
 }
 
-static struct operand *
-create_register_all16_operand (void)
+static struct operand * create_register_all16_operand (void)
 {
   struct register_operand *op = malloc (sizeof (*op));
 
@@ -375,8 +371,7 @@ create_memory_auto_operand (enum op_reg_mutation mutation, int reg)
 
 
 static void
-z_ext24_decode (struct mem_read_abstraction_base *mra, int *n_operands,
-		struct operand **operand)
+z_ext24_decode (struct mem_read_abstraction_base *mra, int *n_operands, struct operand **operand)
 {
   uint8_t buffer[3];
   int status = mra->read (mra, 0, 3, buffer);
@@ -396,8 +391,7 @@ z_ext24_decode (struct mem_read_abstraction_base *mra, int *n_operands,
 
 
 static uint32_t
-z_decode_signed_value (struct mem_read_abstraction_base *mra, int offset,
-		       short size)
+z_decode_signed_value (struct mem_read_abstraction_base *mra, int offset, short size)
 {
   assert (size >0);
   assert (size <= 4);
@@ -410,7 +404,9 @@ z_decode_signed_value (struct mem_read_abstraction_base *mra, int offset,
   int i;
   uint32_t value = 0;
   for (i = 0; i < size; ++i)
-    value = (value << 8) | buffer[i];
+    {
+      value |= buffer[i] << (8 * (size - i - 1));
+    }
 
   if (buffer[0] & 0x80)
     {
@@ -442,7 +438,7 @@ x_imm1 (struct mem_read_abstraction_base *mra,
 /* An eight bit immediate operand.  */
 static void
 imm1_decode (struct mem_read_abstraction_base *mra,
-	     int *n_operands, struct operand **operand)
+	int *n_operands, struct operand **operand)
 {
   x_imm1 (mra, 0, n_operands, operand);
 }
@@ -489,30 +485,30 @@ x_opr_decode_with_size (struct mem_read_abstraction_base *mra, int offset,
 	else
 	  n = x;
 
-	operand = create_immediate_operand (n);
+        operand = create_immediate_operand (n);
 	break;
       }
     case OPR_REG:
       {
 	uint8_t x = (postbyte & 0x07);
-	operand = create_register_operand (x);
+        operand = create_register_operand (x);
 	break;
       }
     case OPR_OFXYS:
       {
-	operand = create_memory_operand (false, postbyte & 0x0F, 1,
+        operand = create_memory_operand (false, postbyte & 0x0F, 1,
 					 xysp_reg_from_postbyte (postbyte), -1);
 	break;
       }
     case OPR_REG_DIRECT:
       {
-	operand = create_memory_operand (false, 0, 2, postbyte & 0x07,
+        operand = create_memory_operand (false, 0, 2, postbyte & 0x07,
 					 xysp_reg_from_postbyte (postbyte));
 	break;
       }
     case OPR_REG_INDIRECT:
       {
-	operand = create_memory_operand (true, 0, 2, postbyte & 0x07,
+        operand = create_memory_operand (true, 0, 2, postbyte & 0x07,
 					 (postbyte & 0x10) ? REG_Y : REG_X);
 	break;
       }
@@ -529,7 +525,7 @@ x_opr_decode_with_size (struct mem_read_abstraction_base *mra, int offset,
 	    idx -= 0x1UL << 8;
 	  }
 
-	operand = create_memory_operand (true, idx, 1,
+        operand = create_memory_operand (true, idx, 1,
 					 xysp_reg_from_postbyte (postbyte), -1);
 	break;
       }
@@ -546,7 +542,7 @@ x_opr_decode_with_size (struct mem_read_abstraction_base *mra, int offset,
 	    idx -= 0x1UL << 24;
 	  }
 
-	operand = create_memory_operand (false, idx, 1,
+        operand = create_memory_operand (false, idx, 1,
 					 xysp_reg_from_postbyte (postbyte), -1);
 	break;
       }
@@ -563,7 +559,7 @@ x_opr_decode_with_size (struct mem_read_abstraction_base *mra, int offset,
 	    idx -= 0x1UL << 24;
 	  }
 
-	operand = create_memory_operand (false, idx, 1, postbyte & 0x07, -1);
+        operand = create_memory_operand (false, idx, 1, postbyte & 0x07, -1);
 	break;
       }
 
@@ -596,7 +592,7 @@ x_opr_decode_with_size (struct mem_read_abstraction_base *mra, int offset,
 	    idx -= 0x1UL << 8;
 	  }
 
-	operand = create_memory_operand (false, idx, 1,
+        operand = create_memory_operand (false, idx, 1,
 					 xysp_reg_from_postbyte (postbyte), -1);
 	break;
       }
@@ -608,7 +604,7 @@ x_opr_decode_with_size (struct mem_read_abstraction_base *mra, int offset,
 	uint32_t idx = x[1] | x[0] << 8 ;
 	idx |= (postbyte & 0x30) << 12;
 
-	operand = create_memory_operand (false, idx, 1, postbyte & 0x07, -1);
+        operand = create_memory_operand (false, idx, 1, postbyte & 0x07, -1);
 	break;
       }
 
@@ -713,7 +709,7 @@ x_opr_decode_with_size (struct mem_read_abstraction_base *mra, int offset,
 	    ext24 |= buffer[i] << (8 * (size - i - 1));
 	  }
 
-	operand = create_memory_operand (true, ext24, 0, -1, -1);
+        operand = create_memory_operand (true, ext24, 0, -1, -1);
 	break;
       }
 
@@ -1007,9 +1003,7 @@ sub_d6_y_x (struct mem_read_abstraction_base *mra ATTRIBUTE_UNUSED,
   operand[(*n_operands)++] = create_register_operand (REG_X);
 }
 
-static void
-ld_18bit_decode (struct mem_read_abstraction_base *mra, int *n_operands,
-		 struct operand **operand);
+static void ld_18bit_decode (struct mem_read_abstraction_base *mra, int *n_operands, struct operand **operand);
 
 static enum optr
 mul_discrim (struct mem_read_abstraction_base *mra, enum optr hint)
@@ -2201,32 +2195,24 @@ loop_prim_n_bytes (struct mem_read_abstraction_base *mra)
 
 
 static enum optr
-exg_sex_discrim (struct mem_read_abstraction_base *mra,
-		 enum optr hint ATTRIBUTE_UNUSED)
+exg_sex_discrim (struct mem_read_abstraction_base *mra, enum optr hint ATTRIBUTE_UNUSED)
 {
   uint8_t eb;
   int status = mra->read (mra, 0, 1, &eb);
-  enum optr operator = OP_INVALID;
   if (status < 0)
-    return operator;
+    return OP_INVALID;
 
   struct operand *op0 = create_register_operand ((eb & 0xf0) >> 4);
   struct operand *op1 = create_register_operand (eb & 0xf);
 
-  int reg0 = ((struct register_operand *) op0)->reg;
-  int reg1 = ((struct register_operand *) op1)->reg;
-  if (reg0 >= 0 && reg0 < S12Z_N_REGISTERS
-      && reg1 >= 0 && reg1 < S12Z_N_REGISTERS)
-    {
-      const struct reg *r0 = registers + reg0;
-      const struct reg *r1 = registers + reg1;
+  const struct reg *r0 = registers + ((struct register_operand *) op0)->reg;
+  const struct reg *r1 = registers + ((struct register_operand *) op1)->reg;
 
-      operator = r0->bytes < r1->bytes ? OP_sex : OP_exg;
-    }
+  enum optr operator = (r0->bytes < r1->bytes) ? OP_sex : OP_exg;
 
   free (op0);
   free (op1);
-
+  
   return operator;
 }
 
@@ -2260,7 +2246,7 @@ loop_primitive_discrim (struct mem_read_abstraction_base *mra,
 
 static void
 loop_primitive_decode (struct mem_read_abstraction_base *mra,
-		       int *n_operands, struct operand **operands)
+		  int *n_operands, struct operand **operands)
 {
   int offs = 1;
   uint8_t lb;
@@ -2300,8 +2286,7 @@ loop_primitive_decode (struct mem_read_abstraction_base *mra,
 
 
 static enum optr
-shift_discrim (struct mem_read_abstraction_base *mra,
-	       enum optr hint ATTRIBUTE_UNUSED)
+shift_discrim (struct mem_read_abstraction_base *mra,  enum optr hint ATTRIBUTE_UNUSED)
 {
   size_t i;
   uint8_t sb;
@@ -2330,8 +2315,7 @@ shift_discrim (struct mem_read_abstraction_base *mra,
 
 
 static void
-shift_decode (struct mem_read_abstraction_base *mra, int *n_operands,
-	      struct operand **operands)
+shift_decode (struct mem_read_abstraction_base *mra,  int *n_operands, struct operand **operands)
 {
   size_t i;
 
@@ -2423,30 +2407,30 @@ shift_decode (struct mem_read_abstraction_base *mra, int *n_operands,
 
     case SB_REG_REG_N:
       {
-	uint8_t xb;
-	mra->read (mra, 1, 1, &xb);
+        uint8_t xb;
+        mra->read (mra, 1, 1, &xb);
 
-	/* This case is slightly unusual.
-	   If XB matches the binary pattern 0111XXXX, then instead of
-	   interpreting this as a general OPR postbyte in the IMMe4 mode,
-	   the XB byte is interpreted in s special way.  */
-	if ((xb & 0xF0) == 0x70)
-	  {
-	    if (byte & 0x10)
-	      {
-		int shift = ((sb & 0x08) >> 3) | ((xb & 0x0f) << 1);
-		operands[(*n_operands)++] = create_immediate_operand (shift);
-	      }
-	    else
-	      {
-		/* This should not happen.  */
-		abort ();
-	      }
-	  }
-	else
-	  {
-	    operands[(*n_operands)++] = x_opr_decode (mra, 1);
-	  }
+        /* This case is slightly unusual.
+           If XB matches the binary pattern 0111XXXX, then instead of
+           interpreting this as a general OPR postbyte in the IMMe4 mode,
+           the XB byte is interpreted in s special way.  */
+        if ((xb & 0xF0) == 0x70)
+          {
+            if (byte & 0x10)
+              {
+                int shift = ((sb & 0x08) >> 3) | ((xb & 0x0f) << 1);
+                operands[(*n_operands)++] = create_immediate_operand (shift);
+              }
+            else
+              {
+                /* This should not happen.  */
+                abort ();
+              }
+          }
+        else
+          {
+            operands[(*n_operands)++] = x_opr_decode (mra, 1);
+          }
       }
       break;
     case SB_REG_OPR_OPR:
@@ -2478,8 +2462,8 @@ shift_decode (struct mem_read_abstraction_base *mra, int *n_operands,
     case SB_REG_OPR_EFF:
     case SB_OPR_N:
       {
-	int imm = (sb & 0x08) ? 2 : 1;
-	operands[(*n_operands)++] = create_immediate_operand (imm);
+        int imm = (sb & 0x08) ? 2 : 1;
+        operands[(*n_operands)++] = create_immediate_operand (imm);
       }
       break;
 
@@ -2513,7 +2497,9 @@ psh_pul_decode (struct mem_read_abstraction_base *mra,
   if (byte & 0x40)
     {
       if ((byte & 0x3F) == 0)
-	operand[(*n_operands)++] = create_register_all16_operand ();
+        {
+	  operand[(*n_operands)++] = create_register_all16_operand ();
+        }
       else
 	for (bit = 5; bit >= 0; --bit)
 	  {
@@ -2526,7 +2512,9 @@ psh_pul_decode (struct mem_read_abstraction_base *mra,
   else
     {
       if ((byte & 0x3F) == 0)
-	operand[(*n_operands)++] = create_register_all_operand ();
+        {
+	  operand[(*n_operands)++] = create_register_all_operand ();
+        }
       else
 	for (bit = 5; bit >= 0; --bit)
 	  {
@@ -2539,8 +2527,7 @@ psh_pul_decode (struct mem_read_abstraction_base *mra,
 }
 
 static enum optr
-bit_field_discrim (struct mem_read_abstraction_base *mra,
-		   enum optr hint ATTRIBUTE_UNUSED)
+bit_field_discrim (struct mem_read_abstraction_base *mra, enum optr hint ATTRIBUTE_UNUSED)
 {
   int status;
   bfd_byte bb;
@@ -2574,10 +2561,10 @@ bit_field_decode (struct mem_read_abstraction_base *mra,
     {
       bbs = bb_modes + i;
       if ((bb & bbs->mask) == bbs->value)
-	{
-	  mode = bbs->mode;
-	  break;
-	}
+        {
+          mode = bbs->mode;
+          break;
+        }
     }
   int reg1 = byte2 & 0x07;
   /* First operand */
@@ -2605,15 +2592,15 @@ bit_field_decode (struct mem_read_abstraction_base *mra,
     case BB_REG_REG_REG:
     case BB_REG_REG_IMM:
       {
-	int reg_src = (bb >> 2) & 0x07;
-	operands[(*n_operands)++] = create_register_operand (reg_src);
+        int reg_src = (bb >> 2) & 0x07;
+        operands[(*n_operands)++] = create_register_operand (reg_src);
       }
       break;
     case BB_OPR_REG_REG:
     case BB_OPR_REG_IMM:
       {
-	int reg_src = (byte2 & 0x07);
-	operands[(*n_operands)++] = create_register_operand (reg_src);
+        int reg_src = (byte2 & 0x07);
+        operands[(*n_operands)++] = create_register_operand (reg_src);
       }
       break;
     case BB_REG_OPR_REG:
@@ -2633,7 +2620,7 @@ bit_field_decode (struct mem_read_abstraction_base *mra,
     case BB_OPR_REG_REG:
     case BB_REG_OPR_REG:
       {
-	int reg_parm = bb & 0x03;
+        int reg_parm = bb & 0x03;
 	operands[(*n_operands)++] = create_register_operand (reg_parm);
       }
       break;
@@ -2641,13 +2628,13 @@ bit_field_decode (struct mem_read_abstraction_base *mra,
     case BB_OPR_REG_IMM:
     case BB_REG_OPR_IMM:
       {
-	bfd_byte i1;
-	mra->read (mra, 1, 1, &i1);
-	int offset = i1 & 0x1f;
-	int width = bb & 0x03;
-	width <<= 3;
-	width |= i1 >> 5;
-	operands[(*n_operands)++] = create_bitfield_operand (width, offset);
+        bfd_byte i1;
+        mra->read (mra, 1, 1, &i1);
+        int offset = i1 & 0x1f;
+        int width = bb & 0x03;
+        width <<= 3;
+        width |= i1 >> 5;
+        operands[(*n_operands)++] = create_bitfield_operand (width, offset);
       }
       break;
     }

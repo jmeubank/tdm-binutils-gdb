@@ -18,7 +18,7 @@ esac
 rm -f e${EMULATION_NAME}.c
 (echo;echo;echo;echo;echo)>e${EMULATION_NAME}.c # there, now line numbers match ;-)
 fragment <<EOF
-/* Copyright (C) 2006-2020 Free Software Foundation, Inc.
+/* Copyright (C) 2006-2019 Free Software Foundation, Inc.
    Written by Kai Tietz, OneVision Software GmbH&CoKg.
 
    This file is part of the GNU Binutils.
@@ -51,7 +51,6 @@ fragment <<EOF
 #include "sysdep.h"
 #include "bfd.h"
 #include "bfdlink.h"
-#include "ctf-api.h"
 #include "getopt.h"
 #include "libiberty.h"
 #include "filenames.h"
@@ -247,8 +246,7 @@ enum options
   OPTION_INSERT_TIMESTAMP,
   OPTION_NO_INSERT_TIMESTAMP,
   OPTION_TERMINAL_SERVER_AWARE,
-  OPTION_BUILD_ID,
-  OPTION_ENABLE_RELOC_SECTION
+  OPTION_BUILD_ID
 };
 
 static void
@@ -326,7 +324,6 @@ gld${EMULATION_NAME}_add_options
     {"insert-timestamp", no_argument, NULL, OPTION_INSERT_TIMESTAMP},
     {"no-insert-timestamp", no_argument, NULL, OPTION_NO_INSERT_TIMESTAMP},
     {"build-id", optional_argument, NULL, OPTION_BUILD_ID},
-    {"enable-reloc-section", no_argument, NULL, OPTION_ENABLE_RELOC_SECTION},
     {NULL, no_argument, NULL, 0}
   };
 
@@ -450,7 +447,6 @@ gld_${EMULATION_NAME}_list_options (FILE *file)
                                        layout randomization (ASLR)\n"));
   fprintf (file, _("  --dynamicbase                      Image base address may be relocated using\n\
                                        address space layout randomization (ASLR)\n"));
-  fprintf (file, _("  --enable-reloc-section             Create the base relocation table\n"));
   fprintf (file, _("  --forceinteg               Code integrity checks are enforced\n"));
   fprintf (file, _("  --nxcompat                 Image is compatible with data execution prevention\n"));
   fprintf (file, _("  --no-isolation             Image understands isolation but do not isolate the image\n"));
@@ -802,12 +798,9 @@ gld${EMULATION_NAME}_handle_option (int optc)
     /*  Get DLLCharacteristics bits  */
     case OPTION_HIGH_ENTROPY_VA:
       pe_dll_characteristics |= IMAGE_DLL_CHARACTERISTICS_HIGH_ENTROPY_VA;
-      /* fall through */
+      break;
     case OPTION_DYNAMIC_BASE:
       pe_dll_characteristics |= IMAGE_DLL_CHARACTERISTICS_DYNAMIC_BASE;
-      /* fall through */
-    case OPTION_ENABLE_RELOC_SECTION:
-      pep_dll_enable_reloc_section = 1;
       break;
     case OPTION_FORCE_INTEGRITY:
       pe_dll_characteristics |= IMAGE_DLL_CHARACTERISTICS_FORCE_INTEGRITY;
@@ -1517,7 +1510,7 @@ gld_${EMULATION_NAME}_after_open (void)
 			/* Rename this implib to match the other one.  */
 			n = xmalloc (strlen (other_bfd_filename) + 1);
 			strcpy (n, other_bfd_filename);
-			bfd_set_filename (is->the_bfd->my_archive, n);
+			is->the_bfd->my_archive->filename = n;
 		      }
 
 		    free (relocs);
@@ -1622,7 +1615,7 @@ gld_${EMULATION_NAME}_after_open (void)
 
 		new_name = xmalloc (strlen (is->the_bfd->filename) + 3);
 		sprintf (new_name, "%s.%c", is->the_bfd->filename, seq);
-		bfd_set_filename (is->the_bfd, new_name);
+		is->the_bfd->filename = new_name;
 
 		new_name = xmalloc (strlen (is->filename) + 3);
 		sprintf (new_name, "%s.%c", is->filename, seq);
@@ -1761,7 +1754,6 @@ gld_${EMULATION_NAME}_finish (void)
 
 #ifdef DLL_SUPPORT
   if (bfd_link_pic (&link_info)
-      || pep_dll_enable_reloc_section
       || (!bfd_link_relocatable (&link_info)
 	  && pep_def_file->num_exports != 0))
     {
@@ -1922,7 +1914,9 @@ gld_${EMULATION_NAME}_place_orphan (asection *s,
 		&& (nexts->flags & SEC_EXCLUDE) == 0
 		&& ((nexts->flags ^ flags) & (SEC_LOAD | SEC_ALLOC)) == 0
 		&& (nexts->owner->flags & DYNAMIC) == 0
-		&& !bfd_input_just_syms (nexts->owner))
+		&& nexts->owner->usrdata != NULL
+		&& !(((lang_input_statement_type *) nexts->owner->usrdata)
+		     ->flags.just_syms))
 	      flags = (((flags ^ SEC_READONLY)
 			| (nexts->flags ^ SEC_READONLY))
 		       ^ SEC_READONLY);
@@ -1957,7 +1951,7 @@ gld_${EMULATION_NAME}_place_orphan (asection *s,
 						       NULL);
 	  if (after == NULL)
 	    /* *ABS* is always the first output section statement.  */
-	    after = (void *) lang_os_list.head;
+	    after = &lang_os_list.head->output_section_statement;
 	}
 
       /* All sections in an executable must be aligned to a page boundary.
@@ -1985,7 +1979,7 @@ gld_${EMULATION_NAME}_place_orphan (asection *s,
 
       ls = &(*pl)->input_section;
 
-      lname = bfd_section_name (ls->section);
+      lname = bfd_get_section_name (ls->section->owner, ls->section);
       if (strchr (lname, '\$') != NULL
 	  && (dollar == NULL || strcmp (orig_secname, lname) < 0))
 	break;
@@ -2173,8 +2167,6 @@ struct ld_emulation_xfer_struct ld_${EMULATION_NAME}_emulation =
   gld_${EMULATION_NAME}_recognized_file,
   gld_${EMULATION_NAME}_find_potential_libraries,
   NULL,	/* new_vers_pattern.  */
-  NULL,	/* extra_map_file_text */
-  ${LDEMUL_EMIT_CTF_EARLY-NULL},
-  ${LDEMUL_EXAMINE_STRTAB_FOR_CTF-NULL}
+  NULL	/* extra_map_file_text */
 };
 EOF

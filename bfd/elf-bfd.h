@@ -1,5 +1,5 @@
 /* BFD back-end data structures for ELF files.
-   Copyright (C) 1992-2020 Free Software Foundation, Inc.
+   Copyright (C) 1992-2019 Free Software Foundation, Inc.
    Written by Cygnus Support.
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -527,13 +527,6 @@ struct elf_sym_strtab
   Elf_Internal_Sym sym;
   unsigned long dest_index;
   unsigned long destshndx_index;
-};
-
-struct bfd_link_needed_list
-{
-  struct bfd_link_needed_list *next;
-  bfd *by;
-  const char *name;
 };
 
 /* ELF linker hash table.  */
@@ -1165,7 +1158,7 @@ struct elf_backend_data
 
   /* This function is called to modify program headers just before
      they are written.  */
-  bfd_boolean (*elf_backend_modify_headers)
+  bfd_boolean (*elf_backend_modify_program_headers)
     (bfd *, struct bfd_link_info *);
 
   /* This function is called to see if the PHDR header should be
@@ -1192,9 +1185,10 @@ struct elf_backend_data
   bfd_boolean (*gc_mark_extra_sections)
     (struct bfd_link_info *, elf_gc_mark_hook_fn);
 
-  /* This function is called to initialise ELF file header info.
-     Customised versions can modify things like the OS and ABI version.  */
-  bfd_boolean (*elf_backend_init_file_header)
+  /* This function, if defined, is called after the ELF headers have
+     been created.  This allows for things like the OS and ABI versions
+     to be changed.  */
+  void (*elf_backend_post_process_headers)
     (bfd *, struct bfd_link_info *);
 
   /* This function, if defined, prints a symbol to file and returns the
@@ -1375,8 +1369,6 @@ struct elf_backend_data
     (bfd *templ, bfd_vma ehdr_vma, bfd_size_type size, bfd_vma *loadbasep,
      int (*target_read_memory) (bfd_vma vma, bfd_byte *myaddr,
 				bfd_size_type len));
-
-  bfd_boolean (*elf_backend_core_find_build_id) (bfd *, bfd_vma);
 
   /* This function is used by `_bfd_elf_get_synthetic_symtab';
      see elf.c.  */
@@ -1836,14 +1828,6 @@ typedef struct elf_section_list
   struct elf_section_list *  next;
 } elf_section_list;
 
-enum dynamic_lib_link_class {
-  DYN_NORMAL = 0,
-  DYN_AS_NEEDED = 1,
-  DYN_DT_NEEDED = 2,
-  DYN_NO_ADD_NEEDED = 4,
-  DYN_NO_NEEDED = 8
-};
-
 /* Some private data is stashed away for future use using the tdata pointer
    in the bfd structure.  */
 
@@ -2052,7 +2036,6 @@ extern char *bfd_elf_string_from_elf_section
 extern Elf_Internal_Sym *bfd_elf_get_elf_syms
   (bfd *, Elf_Internal_Shdr *, size_t, size_t, Elf_Internal_Sym *, void *,
    Elf_External_Sym_Shndx *);
-extern char * bfd_elf_get_str_section (bfd *, unsigned int);
 extern const char *bfd_elf_sym_name
   (bfd *, Elf_Internal_Shdr *, Elf_Internal_Sym *, asection *);
 
@@ -2127,8 +2110,6 @@ extern bfd_boolean _bfd_elf_merge_sections
 extern bfd_boolean _bfd_elf_match_sections_by_type
   (bfd *, const asection *, bfd *, const asection *);
 extern bfd_boolean bfd_elf_is_group_section
-  (bfd *, const struct bfd_section *);
-extern const char *bfd_elf_group_name
   (bfd *, const struct bfd_section *);
 extern bfd_boolean _bfd_elf_section_already_linked
   (bfd *, asection *, struct bfd_link_info *);
@@ -2253,12 +2234,8 @@ extern void _bfd_elf_strtab_restore
   (struct elf_strtab_hash *, void *);
 extern bfd_size_type _bfd_elf_strtab_size
   (struct elf_strtab_hash *);
-extern bfd_size_type _bfd_elf_strtab_len
-  (struct elf_strtab_hash *);
 extern bfd_size_type _bfd_elf_strtab_offset
   (struct elf_strtab_hash *, size_t);
-extern const char * _bfd_elf_strtab_str
-  (struct elf_strtab_hash *, size_t idx, bfd_size_type *offset);
 extern bfd_boolean _bfd_elf_strtab_emit
   (bfd *, struct elf_strtab_hash *);
 extern void _bfd_elf_strtab_finalize
@@ -2304,42 +2281,9 @@ extern bfd_boolean _bfd_elf_compute_section_file_positions
   (bfd *, struct bfd_link_info *);
 extern file_ptr _bfd_elf_assign_file_position_for_section
   (Elf_Internal_Shdr *, file_ptr, bfd_boolean);
-extern bfd_boolean _bfd_elf_modify_headers
-  (bfd *, struct bfd_link_info *);
 
 extern bfd_boolean _bfd_elf_validate_reloc
   (bfd *, arelent *);
-
-extern bfd_boolean bfd_elf_record_link_assignment
-  (bfd *, struct bfd_link_info *, const char *, bfd_boolean,
-   bfd_boolean);
-extern bfd_boolean bfd_elf_stack_segment_size (bfd *, struct bfd_link_info *,
-					       const char *, bfd_vma);
-extern bfd_boolean bfd_elf_size_dynamic_sections
-  (bfd *, const char *, const char *, const char *, const char *, const char *,
-   const char * const *, struct bfd_link_info *, struct bfd_section **);
-extern bfd_boolean bfd_elf_size_dynsym_hash_dynstr
-  (bfd *, struct bfd_link_info *);
-extern bfd_boolean bfd_elf_get_bfd_needed_list
-  (bfd *, struct bfd_link_needed_list **);
-extern struct bfd_link_needed_list *bfd_elf_get_needed_list
-  (bfd *, struct bfd_link_info *);
-extern void bfd_elf_set_dt_needed_name
-  (bfd *, const char *);
-extern const char *bfd_elf_get_dt_soname
-  (bfd *);
-extern void bfd_elf_set_dyn_lib_class
-  (bfd *, enum dynamic_lib_link_class);
-extern int bfd_elf_get_dyn_lib_class
-  (bfd *);
-extern struct bfd_link_needed_list *bfd_elf_get_runpath_list
-  (bfd *, struct bfd_link_info *);
-extern int bfd_elf_discard_info
-  (bfd *, struct bfd_link_info *);
-extern unsigned int _bfd_elf_default_action_discarded
-  (struct bfd_section *);
-extern struct bfd_section *_bfd_elf_tls_setup
-  (bfd *, struct bfd_link_info *);
 
 extern bfd_boolean _bfd_elf_link_create_dynamic_sections
   (bfd *, struct bfd_link_info *);
@@ -2390,7 +2334,7 @@ extern bfd_boolean _bfd_elf_setup_sections
 extern struct bfd_link_hash_entry *bfd_elf_define_start_stop
   (struct bfd_link_info *, const char *, asection *);
 
-extern bfd_boolean _bfd_elf_init_file_header (bfd *, struct bfd_link_info *);
+extern void _bfd_elf_post_process_headers (bfd *, struct bfd_link_info *);
 
 extern bfd_boolean _bfd_elf_final_write_processing (bfd *);
 
@@ -2406,8 +2350,6 @@ extern bfd_boolean bfd_elf32_core_file_matches_executable_p
   (bfd *, bfd *);
 extern int bfd_elf32_core_file_pid
   (bfd *);
-extern bfd_boolean _bfd_elf32_core_find_build_id
-  (bfd *, bfd_vma);
 
 extern bfd_boolean bfd_elf32_swap_symbol_in
   (bfd *, const void *, const void *, Elf_Internal_Sym *);
@@ -2454,8 +2396,6 @@ extern bfd_boolean bfd_elf64_core_file_matches_executable_p
   (bfd *, bfd *);
 extern int bfd_elf64_core_file_pid
   (bfd *);
-extern bfd_boolean _bfd_elf64_core_find_build_id
-  (bfd *, bfd_vma);
 
 extern bfd_boolean bfd_elf64_swap_symbol_in
   (bfd *, const void *, const void *, Elf_Internal_Sym *);
@@ -2615,22 +2555,6 @@ extern bfd_boolean _bfd_elf_ppc_set_arch (bfd *);
 extern bfd_boolean _bfd_elf_ppc_merge_fp_attributes
   (bfd *, struct bfd_link_info *);
 
-/* Return an upper bound on the number of bytes required to store a
-   copy of ABFD's program header table entries.  Return -1 if an error
-   occurs; bfd_get_error will return an appropriate code.  */
-extern long bfd_get_elf_phdr_upper_bound
-  (bfd *abfd);
-
-/* Copy ABFD's program header table entries to *PHDRS.  The entries
-   will be stored as an array of Elf_Internal_Phdr structures, as
-   defined in include/elf/internal.h.  To find out how large the
-   buffer needs to be, call bfd_get_elf_phdr_upper_bound.
-
-   Return the number of program header table entries read, or -1 if an
-   error occurs; bfd_get_error will return an appropriate code.  */
-extern int bfd_get_elf_phdrs
-  (bfd *abfd, void *phdrs);
-
 /* Exported interface for writing elf corefile notes.  */
 extern char *elfcore_write_note
   (bfd *, char *, int *, const char *, int, const void *, int);
@@ -2780,7 +2704,6 @@ extern bfd_boolean _bfd_elf_merge_object_attributes
 extern bfd_boolean _bfd_elf_merge_unknown_attribute_low (bfd *, bfd *, int);
 extern bfd_boolean _bfd_elf_merge_unknown_attribute_list (bfd *, bfd *);
 extern Elf_Internal_Shdr *_bfd_elf_single_rel_hdr (asection *sec);
-extern bfd_boolean elf_read_notes (bfd *, file_ptr, bfd_size_type, size_t);
 
 extern bfd_boolean _bfd_elf_parse_gnu_properties
   (bfd *, Elf_Internal_Note *);
@@ -2836,8 +2759,8 @@ extern asection _bfd_elf_large_com_section;
 /* Hash for local symbol with the first section id, ID, in the input
    file and the local symbol index, SYM.  */
 #define ELF_LOCAL_SYMBOL_HASH(ID, SYM) \
-  (((((ID) & 0xffU) << 24) | (((ID) & 0xff00) << 8)) \
-   ^ (SYM) ^ (((ID) & 0xffff0000U) >> 16))
+  (((((ID) & 0xff) << 24) | (((ID) & 0xff00) << 8)) \
+   ^ (SYM) ^ ((ID) >> 16))
 
 /* This is the condition under which finish_dynamic_symbol will be called.
    If our finish_dynamic_symbol isn't called, we'll need to do something
@@ -2972,14 +2895,6 @@ extern asection _bfd_elf_large_com_section;
      && ((INFO)->symbolic \
 	 || (H)->start_stop \
 	 || ((INFO)->dynamic && !(H)->dynamic)))
-
-/* Determine if a section contains CTF data, using its name.  */
-static inline bfd_boolean
-bfd_section_is_ctf (const asection *sec)
-{
-  const char *name = bfd_section_name (sec);
-  return strncmp (name, ".ctf", 4) == 0 && (name[4] == 0 || name[4] == '.');
-}
 
 #ifdef __cplusplus
 }

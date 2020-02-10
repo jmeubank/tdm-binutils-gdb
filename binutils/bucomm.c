@@ -1,5 +1,5 @@
 /* bucomm.c -- Bin Utils COMmon code.
-   Copyright (C) 1991-2020 Free Software Foundation, Inc.
+   Copyright (C) 1991-2019 Free Software Foundation, Inc.
 
    This file is part of GNU Binutils.
 
@@ -64,10 +64,10 @@ bfd_nonfatal (const char *string)
    bfd error message is printed.  In summary, error messages are of
    one of the following forms:
 
-   PROGRAM: file: bfd-error-message
-   PROGRAM: file[section]: bfd-error-message
-   PROGRAM: file: printf-message: bfd-error-message
-   PROGRAM: file[section]: printf-message: bfd-error-message.  */
+   PROGRAM:file: bfd-error-message
+   PROGRAM:file[section]: bfd-error-message
+   PROGRAM:file: printf-message: bfd-error-message
+   PROGRAM:file[section]: printf-message: bfd-error-message.  */
 
 void
 bfd_nonfatal_message (const char *filename,
@@ -94,12 +94,12 @@ bfd_nonfatal_message (const char *filename,
       if (!filename)
 	filename = bfd_get_archive_filename (abfd);
       if (section)
-	section_name = bfd_section_name (section);
+	section_name = bfd_get_section_name (abfd, section);
     }
   if (section_name)
-    fprintf (stderr, ": %s[%s]", filename, section_name);
+    fprintf (stderr, ":%s[%s]", filename, section_name);
   else
-    fprintf (stderr, ": %s", filename);
+    fprintf (stderr, ":%s", filename);
 
   if (format)
     {
@@ -532,7 +532,7 @@ template_in_dir (const char *path)
    as FILENAME.  */
 
 char *
-make_tempname (const char *filename)
+make_tempname (char *filename)
 {
   char *tmpname = template_in_dir (filename);
   int fd;
@@ -558,7 +558,7 @@ make_tempname (const char *filename)
    directory containing FILENAME.  */
 
 char *
-make_tempdir (const char *filename)
+make_tempdir (char *filename)
 {
   char *tmpname = template_in_dir (filename);
 

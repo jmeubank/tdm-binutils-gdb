@@ -1,5 +1,5 @@
 /* BFD back-end for archive files (libraries).
-   Copyright (C) 1990-2020 Free Software Foundation, Inc.
+   Copyright (C) 1990-2019 Free Software Foundation, Inc.
    Written by Cygnus Support.  Mostly Gumby Henkel-Wallace's fault.
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -856,7 +856,7 @@ bfd_generic_archive_p (bfd *abfd)
       return NULL;
     }
 
-  bfd_set_thin_archive (abfd, strncmp (armag, ARMAGT, SARMAG) == 0);
+  bfd_is_thin_archive (abfd) = (strncmp (armag, ARMAGT, SARMAG) == 0);
 
   if (strncmp (armag, ARMAG, SARMAG) != 0
       && ! bfd_is_thin_archive (abfd))
@@ -968,7 +968,7 @@ do_slurp_bsd_armap (bfd *abfd)
   if (parsed_size < 4)
     return FALSE;
 
-  raw_armap = (bfd_byte *) bfd_alloc (abfd, parsed_size);
+  raw_armap = (bfd_byte *) bfd_zalloc (abfd, parsed_size);
   if (raw_armap == NULL)
     return FALSE;
 
@@ -1013,7 +1013,7 @@ do_slurp_bsd_armap (bfd *abfd)
   /* FIXME, we should provide some way to free raw_ardata when
      we are done using the strings from it.  For now, it seems
      to be allocated on an objalloc anyway...  */
-  abfd->has_armap = TRUE;
+  bfd_has_map (abfd) = TRUE;
   return TRUE;
 }
 
@@ -1059,22 +1059,16 @@ do_slurp_coff_armap (bfd *abfd)
      bsd-style one in core all at once, for simplicity.  */
 
   if (nsymz > ~ (bfd_size_type) 0 / sizeof (carsym))
-    {
-      bfd_set_error (bfd_error_no_memory);
-      return FALSE;
-    }
+    return FALSE;
 
   carsym_size = (nsymz * sizeof (carsym));
   ptrsize = (4 * nsymz);
 
   if (carsym_size + stringsize + 1 <= carsym_size)
-    {
-      bfd_set_error (bfd_error_no_memory);
-      return FALSE;
-    }
+    return FALSE;
 
-  ardata->symdefs = (struct carsym *) bfd_alloc (abfd,
-						 carsym_size + stringsize + 1);
+  ardata->symdefs = (struct carsym *) bfd_zalloc (abfd,
+						  carsym_size + stringsize + 1);
   if (ardata->symdefs == NULL)
     return FALSE;
   carsyms = ardata->symdefs;
@@ -1089,7 +1083,7 @@ do_slurp_coff_armap (bfd *abfd)
     {
       if (bfd_get_error () != bfd_error_system_call)
 	bfd_set_error (bfd_error_malformed_archive);
-      goto release_symdefs;
+      goto release_raw_armap;
     }
 
   /* OK, build the carsyms.  */
@@ -1111,7 +1105,7 @@ do_slurp_coff_armap (bfd *abfd)
   /* Pad to an even boundary if you have to.  */
   ardata->first_file_filepos += (ardata->first_file_filepos) % 2;
 
-  abfd->has_armap = TRUE;
+  bfd_has_map (abfd) = TRUE;
   bfd_release (abfd, raw_armap);
 
   /* Check for a second archive header (as used by PE).  */
@@ -1134,6 +1128,8 @@ do_slurp_coff_armap (bfd *abfd)
 
   return TRUE;
 
+release_raw_armap:
+  bfd_release (abfd, raw_armap);
 release_symdefs:
   bfd_release (abfd, (ardata)->symdefs);
   return FALSE;
@@ -1192,7 +1188,7 @@ bfd_slurp_armap (bfd *abfd)
 	return do_slurp_bsd_armap (abfd);
     }
 
-  abfd->has_armap = FALSE;
+  bfd_has_map (abfd) = FALSE;
   return TRUE;
 }
 
@@ -1242,7 +1238,7 @@ _bfd_slurp_extended_name_table (bfd *abfd)
 	goto byebye;
 
       bfd_ardata (abfd)->extended_names_size = amt;
-      bfd_ardata (abfd)->extended_names = (char *) bfd_alloc (abfd, amt + 1);
+      bfd_ardata (abfd)->extended_names = (char *) bfd_zalloc (abfd, amt + 1);
       if (bfd_ardata (abfd)->extended_names == NULL)
 	{
 	byebye:
@@ -1260,7 +1256,6 @@ _bfd_slurp_extended_name_table (bfd *abfd)
 	  bfd_ardata (abfd)->extended_names = NULL;
 	  goto byebye;
 	}
-      bfd_ardata (abfd)->extended_names[amt] = 0;
 
       /* Since the archive is supposed to be printable if it contains
 	 text, the entries in the list are newline-padded, not null
@@ -1304,9 +1299,6 @@ normalize (bfd *abfd, const char *file)
   const char *last;
   char *copy;
 
-  if (abfd->flags & BFD_ARCHIVE_FULL_PATH)
-    return file;
-
   first = file + strlen (file) - 1;
   last = first + 1;
 
@@ -1334,10 +1326,8 @@ normalize (bfd *abfd, const char *file)
 
 #else
 static const char *
-normalize (bfd *abfd, const char *file)
+normalize (bfd *abfd ATTRIBUTE_UNUSED, const char *file)
 {
-  if (abfd->flags & BFD_ARCHIVE_FULL_PATH)
-    return file;
   return lbasename (file);
 }
 #endif
@@ -1572,7 +1562,7 @@ _bfd_construct_extended_name_table (bfd *abfd,
 	  continue;
 	}
 
-      normal = normalize (abfd, current->filename);
+      normal = normalize (current, current->filename);
       if (normal == NULL)
 	return FALSE;
 
@@ -1612,7 +1602,7 @@ _bfd_construct_extended_name_table (bfd *abfd,
   if (total_namelen == 0)
     return TRUE;
 
-  *tabloc = (char *) bfd_alloc (abfd, total_namelen);
+  *tabloc = (char *) bfd_zalloc (abfd, total_namelen);
   if (*tabloc == NULL)
     return FALSE;
 
@@ -1653,7 +1643,7 @@ _bfd_construct_extended_name_table (bfd *abfd,
 	}
       else
 	{
-	  normal = normalize (abfd, filename);
+	  normal = normalize (current, filename);
 	  if (normal == NULL)
 	    return FALSE;
 	}
@@ -1669,14 +1659,16 @@ _bfd_construct_extended_name_table (bfd *abfd,
 	    stroff = last_stroff;
 	  else
 	    {
-	      last_filename = filename;
+	      strcpy (strptr, normal);
+	      if (! trailing_slash)
+		strptr[thislen] = ARFMAG[1];
+	      else
+		{
+		  strptr[thislen] = '/';
+		  strptr[thislen + 1] = ARFMAG[1];
+		}
 	      stroff = strptr - *tabloc;
 	      last_stroff = stroff;
-	      memcpy (strptr, normal, thislen);
-	      strptr += thislen;
-	      if (trailing_slash)
-		*strptr++ = '/';
-	      *strptr++ = ARFMAG[1];
 	    }
 	  hdr->ar_name[0] = ar_padchar (current);
 	  if (bfd_is_thin_archive (abfd) && current->origin > 0)
@@ -1689,6 +1681,13 @@ _bfd_construct_extended_name_table (bfd *abfd,
 	    }
 	  else
 	    _bfd_ar_spacepad (hdr->ar_name + 1, maxname - 1, "%-ld", stroff);
+	  if (normal != last_filename)
+	    {
+	      strptr += thislen + 1;
+	      if (trailing_slash)
+		++strptr;
+	      last_filename = filename;
+	    }
 	}
     }
 
@@ -1715,7 +1714,7 @@ _bfd_archive_bsd44_construct_extended_name_table (bfd *abfd,
        current != NULL;
        current = current->archive_next)
     {
-      const char *normal = normalize (abfd, current->filename);
+      const char *normal = normalize (current, current->filename);
       int has_space = 0;
       unsigned int len;
 

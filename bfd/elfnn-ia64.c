@@ -1,5 +1,5 @@
 /* IA-64 support for 64-bit ELF
-   Copyright (C) 1998-2020 Free Software Foundation, Inc.
+   Copyright (C) 1998-2019 Free Software Foundation, Inc.
    Contributed by David Mosberger-Tang <davidm@hpl.hp.com>
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -38,10 +38,6 @@
 #if ARCH_SIZE == 32
 #define	LOG_SECTION_ALIGN	2
 #endif
-
-#define is_ia64_elf(bfd)			   \
-  (bfd_get_flavour (bfd) == bfd_target_elf_flavour \
-   && elf_object_id (bfd) == IA64_ELF_DATA)
 
 typedef struct bfd_hash_entry *(*new_hash_entry_func)
   (struct bfd_hash_entry *, struct bfd_hash_table *, const char *);
@@ -960,7 +956,7 @@ elfNN_ia64_fake_sections (bfd *abfd, Elf_Internal_Shdr *hdr,
 {
   const char *name;
 
-  name = bfd_section_name (sec);
+  name = bfd_get_section_name (abfd, sec);
 
   if (is_unwind_section_name (abfd, name))
     {
@@ -1195,7 +1191,8 @@ elfNN_ia64_modify_segment_map (bfd *abfd,
    for SHF_IA_64_NORECOV on each.  */
 
 static bfd_boolean
-elfNN_ia64_modify_headers (bfd *abfd, struct bfd_link_info *info)
+elfNN_ia64_modify_program_headers (bfd *abfd,
+				   struct bfd_link_info *info ATTRIBUTE_UNUSED)
 {
   struct elf_obj_tdata *tdata = elf_tdata (abfd);
   struct elf_segment_map *m;
@@ -1227,7 +1224,7 @@ elfNN_ia64_modify_headers (bfd *abfd, struct bfd_link_info *info)
       found:;
       }
 
-  return _bfd_elf_modify_headers (abfd, info);
+  return TRUE;
 }
 
 /* According to the Tahoe assembler spec, all labels starting with a
@@ -1564,10 +1561,11 @@ elfNN_ia64_create_dynamic_sections (bfd *abfd,
     return FALSE;
 
   {
-    flagword flags = bfd_section_flags (ia64_info->root.sgot);
-    bfd_set_section_flags (ia64_info->root.sgot, SEC_SMALL_DATA | flags);
+    flagword flags = bfd_get_section_flags (abfd, ia64_info->root.sgot);
+    bfd_set_section_flags (abfd, ia64_info->root.sgot,
+			   SEC_SMALL_DATA | flags);
     /* The .got section is always aligned at 8 bytes.  */
-    if (!bfd_set_section_alignment (ia64_info->root.sgot, 3))
+    if (! bfd_set_section_alignment (abfd, ia64_info->root.sgot, 3))
       return FALSE;
   }
 
@@ -1581,7 +1579,7 @@ elfNN_ia64_create_dynamic_sections (bfd *abfd,
 					   | SEC_LINKER_CREATED
 					   | SEC_READONLY));
   if (s == NULL
-      || !bfd_set_section_alignment (s, LOG_SECTION_ALIGN))
+      || !bfd_set_section_alignment (abfd, s, LOG_SECTION_ALIGN))
     return FALSE;
   ia64_info->rel_pltoff_sec = s;
 
@@ -1979,11 +1977,11 @@ get_got (bfd *abfd, struct bfd_link_info *info,
       got = ia64_info->root.sgot;
 
       /* The .got section is always aligned at 8 bytes.  */
-      if (!bfd_set_section_alignment (got, 3))
+      if (!bfd_set_section_alignment (abfd, got, 3))
 	return NULL;
 
-      flags = bfd_section_flags (got);
-      if (!bfd_set_section_flags (got, SEC_SMALL_DATA | flags))
+      flags = bfd_get_section_flags (abfd, got);
+      if (! bfd_set_section_flags (abfd, got, SEC_SMALL_DATA | flags))
 	return NULL;
     }
 
@@ -2018,7 +2016,7 @@ get_fptr (bfd *abfd, struct bfd_link_info *info,
 						     ? 0 : SEC_READONLY)
 						  | SEC_LINKER_CREATED));
       if (!fptr
-	  || !bfd_set_section_alignment (fptr, 4))
+	  || !bfd_set_section_alignment (abfd, fptr, 4))
 	{
 	  BFD_ASSERT (0);
 	  return NULL;
@@ -2036,7 +2034,8 @@ get_fptr (bfd *abfd, struct bfd_link_info *info,
 							  | SEC_LINKER_CREATED
 							  | SEC_READONLY));
 	  if (fptr_rel == NULL
-	      || !bfd_set_section_alignment (fptr_rel, LOG_SECTION_ALIGN))
+	      || !bfd_set_section_alignment (abfd, fptr_rel,
+					     LOG_SECTION_ALIGN))
 	    {
 	      BFD_ASSERT (0);
 	      return NULL;
@@ -2072,7 +2071,7 @@ get_pltoff (bfd *abfd, struct bfd_link_info *info ATTRIBUTE_UNUSED,
 						    | SEC_SMALL_DATA
 						    | SEC_LINKER_CREATED));
       if (!pltoff
-	  || !bfd_set_section_alignment (pltoff, 4))
+	  || !bfd_set_section_alignment (abfd, pltoff, 4))
 	{
 	  BFD_ASSERT (0);
 	  return NULL;
@@ -2113,7 +2112,8 @@ get_reloc_section (bfd *abfd,
 						  | SEC_LINKER_CREATED
 						  | SEC_READONLY));
       if (srel == NULL
-	  || !bfd_set_section_alignment (srel, LOG_SECTION_ALIGN))
+	  || !bfd_set_section_alignment (dynobj, srel,
+					 LOG_SECTION_ALIGN))
 	return NULL;
     }
 
@@ -3171,7 +3171,7 @@ elfNN_ia64_size_dynamic_sections (bfd *output_bfd ATTRIBUTE_UNUSED,
 
 	  /* It's OK to base decisions on the section name, because none
 	     of the dynobj section names depend upon the input files.  */
-	  name = bfd_section_name (sec);
+	  name = bfd_get_section_name (dynobj, sec);
 
 	  if (strcmp (name, ".got.plt") == 0)
 	    strip = FALSE;
@@ -4736,7 +4736,6 @@ elfNN_ia64_set_private_flags (bfd *abfd, flagword flags)
 
 /* Merge backend specific data from an object file to the output
    object file when linking.  */
-
 static bfd_boolean
 elfNN_ia64_merge_private_bfd_data (bfd *ibfd, struct bfd_link_info *info)
 {
@@ -4745,8 +4744,10 @@ elfNN_ia64_merge_private_bfd_data (bfd *ibfd, struct bfd_link_info *info)
   flagword in_flags;
   bfd_boolean ok = TRUE;
 
-  if (!is_ia64_elf (ibfd) || !is_ia64_elf (obfd))
-    return TRUE;
+  /* Don't even pretend to support mixed-format linking.  */
+  if (bfd_get_flavour (ibfd) != bfd_target_elf_flavour
+      || bfd_get_flavour (obfd) != bfd_target_elf_flavour)
+    return FALSE;
 
   in_flags  = elf_elfheader (ibfd)->e_flags;
   out_flags = elf_elfheader (obfd)->e_flags;
@@ -4975,18 +4976,14 @@ elfNN_ia64_hpux_vec (const bfd_target *vec)
   return (vec == &ia64_elfNN_hpux_be_vec);
 }
 
-static bfd_boolean
-elfNN_hpux_init_file_header (bfd *abfd, struct bfd_link_info *info)
+static void
+elfNN_hpux_post_process_headers (bfd *abfd,
+				 struct bfd_link_info *info ATTRIBUTE_UNUSED)
 {
-  Elf_Internal_Ehdr *i_ehdrp;
+  Elf_Internal_Ehdr *i_ehdrp = elf_elfheader (abfd);
 
-  if (!_bfd_elf_init_file_header (abfd, info))
-    return FALSE;
-
-  i_ehdrp = elf_elfheader (abfd);
   i_ehdrp->e_ident[EI_OSABI] = get_elf_backend_data (abfd)->elf_osabi;
   i_ehdrp->e_ident[EI_ABIVERSION] = 1;
-  return TRUE;
 }
 
 static bfd_boolean
@@ -5043,8 +5040,8 @@ elfNN_hpux_backend_symbol_processing (bfd *abfd ATTRIBUTE_UNUSED,
 	elfNN_ia64_additional_program_headers
 #define elf_backend_modify_segment_map \
 	elfNN_ia64_modify_segment_map
-#define elf_backend_modify_headers \
-	elfNN_ia64_modify_headers
+#define elf_backend_modify_program_headers \
+	elfNN_ia64_modify_program_headers
 #define elf_info_to_howto \
 	elfNN_ia64_info_to_howto
 
@@ -5128,8 +5125,8 @@ elfNN_hpux_backend_symbol_processing (bfd *abfd ATTRIBUTE_UNUSED,
 
 /* These are HP-UX specific functions.  */
 
-#undef  elf_backend_init_file_header
-#define elf_backend_init_file_header elfNN_hpux_init_file_header
+#undef  elf_backend_post_process_headers
+#define elf_backend_post_process_headers elfNN_hpux_post_process_headers
 
 #undef  elf_backend_section_from_bfd_section
 #define elf_backend_section_from_bfd_section elfNN_hpux_backend_section_from_bfd_section

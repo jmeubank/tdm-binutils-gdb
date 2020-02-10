@@ -1,5 +1,5 @@
 /* VAX series support for 32-bit ELF
-   Copyright (C) 1993-2020 Free Software Foundation, Inc.
+   Copyright (C) 1993-2019 Free Software Foundation, Inc.
    Contributed by Matt Thomas <matt@3am-software.com>.
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -1069,7 +1069,7 @@ elf_vax_size_dynamic_sections (bfd *output_bfd, struct bfd_link_info *info)
 
       /* It's OK to base decisions on the section name, because none
 	 of the dynobj section names depend upon the input files.  */
-      name = bfd_section_name (s);
+      name = bfd_get_section_name (dynobj, s);
 
       if (strcmp (name, ".plt") == 0)
 	{
@@ -1094,7 +1094,8 @@ elf_vax_size_dynamic_sections (bfd *output_bfd, struct bfd_link_info *info)
 		     section, then we probably need a DT_TEXTREL
 		     entry.  .rela.plt is actually associated with
 		     .got.plt, which is never readonly.  */
-		  outname = bfd_section_name (s->output_section);
+		  outname = bfd_get_section_name (output_bfd,
+						  s->output_section);
 		  target = bfd_get_section_by_name (output_bfd, outname + 5);
 		  if (target != NULL
 		      && (target->flags & SEC_READONLY) != 0
@@ -1632,7 +1633,7 @@ elf_vax_relocate_section (bfd *output_bfd,
 		    if (name == NULL)
 		      return FALSE;
 		    if (*name == '\0')
-		      name = bfd_section_name (sec);
+		      name = bfd_section_name (input_bfd, sec);
 		  }
 		info->callbacks->reloc_overflow
 		  (info, (h ? &h->root : NULL), name, howto->name,

@@ -17,8 +17,10 @@ eaixrs6.c
 ealpha.c
 ealphavms.c
 earcelf.c
+earcelf_prof.c
 earclinux.c
 earclinux_nps.c
+earclinux_prof.c
 earcv2elf.c
 earcv2elfx.c
 earm_wince_pe.c
@@ -95,6 +97,7 @@ eelf32btsmip_fbsd.c
 eelf32btsmipn32.c
 eelf32btsmipn32_fbsd.c
 eelf32cr16.c
+eelf32cr16c.c
 eelf32crx.c
 eelf32ebmip.c
 eelf32ebmipvxworks.c
@@ -159,7 +162,6 @@ eelf32xc16xl.c
 eelf32xc16xs.c
 eelf32xstormy16.c
 eelf32xtensa.c
-eelf32z80.c
 eelf64_aix.c
 eelf64_ia64.c
 eelf64_ia64_fbsd.c
@@ -291,6 +293,7 @@ etic3xcoff.c
 etic3xcoff_onchip.c
 etic4xcoff.c
 etic54xcoff.c
+etic80coff.c
 ev850.c
 ev850_rh850.c
 evanilla.c

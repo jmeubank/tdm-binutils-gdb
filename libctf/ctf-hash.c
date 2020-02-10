@@ -1,5 +1,5 @@
 /* Interface to hashtable implementations.
-   Copyright (C) 2006-2020 Free Software Foundation, Inc.
+   Copyright (C) 2006-2019 Free Software Foundation, Inc.
 
    This file is part of libctf.
 
@@ -82,28 +82,6 @@ ctf_hash_eq_string (const void *a, const void *b)
   return !strcmp((const char *) hep_a->key, (const char *) hep_b->key);
 }
 
-/* Hash a type_mapping_key.  */
-unsigned int
-ctf_hash_type_mapping_key (const void *ptr)
-{
-  ctf_helem_t *hep = (ctf_helem_t *) ptr;
-  ctf_link_type_mapping_key_t *k = (ctf_link_type_mapping_key_t *) hep->key;
-
-  return htab_hash_pointer (k->cltm_fp) + 59 * htab_hash_pointer ((void *) k->cltm_idx);
-}
-
-int
-ctf_hash_eq_type_mapping_key (const void *a, const void *b)
-{
-  ctf_helem_t *hep_a = (ctf_helem_t *) a;
-  ctf_helem_t *hep_b = (ctf_helem_t *) b;
-  ctf_link_type_mapping_key_t *key_a = (ctf_link_type_mapping_key_t *) hep_a->key;
-  ctf_link_type_mapping_key_t *key_b = (ctf_link_type_mapping_key_t *) hep_b->key;
-
-  return (key_a->cltm_fp == key_b->cltm_fp)
-    && (key_a->cltm_idx == key_b->cltm_idx);
-}
-
 /* The dynhash, used for hashes whose size is not known at creation time. */
 
 /* Free a single ctf_helem.  */
@@ -152,9 +130,7 @@ ctf_hashtab_lookup (struct htab *htab, const void *key, enum insert_option inser
 }
 
 static ctf_helem_t *
-ctf_hashtab_insert (struct htab *htab, void *key, void *value,
-		    ctf_hash_free_fun key_free,
-		    ctf_hash_free_fun value_free)
+ctf_hashtab_insert (struct htab *htab, void *key, void *value)
 {
   ctf_helem_t **slot;
 
@@ -171,15 +147,8 @@ ctf_hashtab_insert (struct htab *htab, void *key, void *value,
       *slot = malloc (sizeof (ctf_helem_t));
       if (!*slot)
 	return NULL;
+      (*slot)->key = key;
     }
-  else
-    {
-      if (key_free)
-	  key_free ((*slot)->key);
-      if (value_free)
-	  value_free ((*slot)->value);
-    }
-  (*slot)->key = key;
   (*slot)->value = value;
   return *slot;
 }
@@ -189,14 +158,13 @@ ctf_dynhash_insert (ctf_dynhash_t *hp, void *key, void *value)
 {
   ctf_helem_t *slot;
 
-  slot = ctf_hashtab_insert (hp->htab, key, value,
-			     hp->key_free, hp->value_free);
+  slot = ctf_hashtab_insert (hp->htab, key, value);
 
   if (!slot)
     return errno;
 
   /* We need to keep the key_free and value_free around in each item because the
-     del function has no visibility into the hash as a whole, only into the
+     del function has no visiblity into the hash as a whole, only into the
      individual items.  */
 
   slot->key_free = hp->key_free;
@@ -210,12 +178,6 @@ ctf_dynhash_remove (ctf_dynhash_t *hp, const void *key)
 {
   ctf_helem_t hep = { (void *) key, NULL, NULL, NULL };
   htab_remove_elt (hp->htab, &hep);
-}
-
-void
-ctf_dynhash_empty (ctf_dynhash_t *hp)
-{
-  htab_empty (hp->htab);
 }
 
 void *
@@ -309,25 +271,23 @@ int
 ctf_hash_insert_type (ctf_hash_t *hp, ctf_file_t *fp, uint32_t type,
 		      uint32_t name)
 {
-  const char *str = ctf_strraw (fp, name);
+  ctf_strs_t *ctsp = &fp->ctf_str[CTF_NAME_STID (name)];
+  const char *str = ctsp->cts_strs + CTF_NAME_OFFSET (name);
 
   if (type == 0)
     return EINVAL;
 
-  if (str == NULL
-      && CTF_NAME_STID (name) == CTF_STRTAB_1
-      && fp->ctf_syn_ext_strtab == NULL
-      && fp->ctf_str[CTF_NAME_STID (name)].cts_strs == NULL)
+  if (ctsp->cts_strs == NULL)
     return ECTF_STRTAB;
 
-  if (str == NULL)
+  if (ctsp->cts_len <= CTF_NAME_OFFSET (name))
     return ECTF_BADNAME;
 
   if (str[0] == '\0')
     return 0;		   /* Just ignore empty strings on behalf of caller.  */
 
   if (ctf_hashtab_insert ((struct htab *) hp, (char *) str,
-			  (void *) (ptrdiff_t) type, NULL, NULL) != NULL)
+			  (void *) (ptrdiff_t) type) != NULL)
     return 0;
   return errno;
 }

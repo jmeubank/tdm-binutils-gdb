@@ -1,5 +1,5 @@
 /* tc-alpha.c - Processor-specific code for the DEC Alpha AXP CPU.
-   Copyright (C) 1989-2020 Free Software Foundation, Inc.
+   Copyright (C) 1989-2019 Free Software Foundation, Inc.
    Contributed by Carnegie Mellon University, 1993.
    Written by Alessandro Forin, based on earlier gas-1.38 target CPU files.
    Modified by Ken Raeburn for gas-2.x and ECOFF support.
@@ -1205,9 +1205,10 @@ create_literal_section (const char *name,
 
   *secp = new_sec = subseg_new (name, 0);
   subseg_set (current_section, current_subsec);
-  bfd_set_section_alignment (new_sec, 4);
-  bfd_set_section_flags (new_sec, (SEC_RELOC | SEC_ALLOC | SEC_LOAD
-				   | SEC_READONLY | SEC_DATA));
+  bfd_set_section_alignment (stdoutput, new_sec, 4);
+  bfd_set_section_flags (stdoutput, new_sec,
+			 SEC_RELOC | SEC_ALLOC | SEC_LOAD | SEC_READONLY
+			 | SEC_DATA);
 
   S_CLEAR_EXTERNAL (*symp = section_symbol (new_sec));
 }
@@ -3984,8 +3985,8 @@ s_alpha_stab (int n)
   if (alpha_flag_mdebug < 0)
     {
       segT sec = subseg_new (".mdebug", 0);
-      bfd_set_section_flags (sec, SEC_HAS_CONTENTS | SEC_READONLY);
-      bfd_set_section_alignment (sec, 3);
+      bfd_set_section_flags (stdoutput, sec, SEC_HAS_CONTENTS | SEC_READONLY);
+      bfd_set_section_alignment (stdoutput, sec, 3);
 
       ecoff_read_begin_hook ();
 
@@ -5300,7 +5301,7 @@ maybe_set_gp (asection *sec)
 
   if (!sec)
     return;
-  vma = bfd_section_vma (sec);
+  vma = bfd_get_section_vma (sec->owner, sec);
   if (vma && vma < alpha_gp_value)
     alpha_gp_value = vma;
 }
@@ -5514,8 +5515,8 @@ md_begin (void)
   if (ECOFF_DEBUGGING)
     {
       segT sec = subseg_new (".mdebug", (subsegT) 0);
-      bfd_set_section_flags (sec, SEC_HAS_CONTENTS | SEC_READONLY);
-      bfd_set_section_alignment (sec, 3);
+      bfd_set_section_flags (stdoutput, sec, SEC_HAS_CONTENTS | SEC_READONLY);
+      bfd_set_section_alignment (stdoutput, sec, 3);
     }
 #endif
 
@@ -5562,7 +5563,7 @@ md_assemble (char *str)
 valueT
 md_section_align (segT seg, valueT size)
 {
-  int align = bfd_section_alignment (seg);
+  int align = bfd_get_section_alignment (stdoutput, seg);
   valueT mask = ((valueT) 1 << align) - 1;
 
   return (size + mask) & ~mask;

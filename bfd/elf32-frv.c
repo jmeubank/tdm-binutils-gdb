@@ -1,5 +1,5 @@
 /* FRV-specific support for 32-bit ELF.
-   Copyright (C) 2002-2020 Free Software Foundation, Inc.
+   Copyright (C) 2002-2019 Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
@@ -2736,7 +2736,7 @@ elf32_frv_relocate_section (bfd *output_bfd ATTRIBUTE_UNUSED,
 	  name = bfd_elf_string_from_elf_section
 	    (input_bfd, symtab_hdr->sh_link, sym->st_name);
 	  if (name == NULL || name[0] == 0)
-	    name = bfd_section_name (sec);
+	    name = bfd_section_name (input_bfd, sec);
 	}
       else
 	{
@@ -3566,7 +3566,8 @@ elf32_frv_relocate_section (bfd *output_bfd ATTRIBUTE_UNUSED,
 		    && (!h || FRVFDPIC_FUNCDESC_LOCAL (info, h)))
 		  {
 		    addend += frvfdpic_got_section (info)->output_section->vma;
-		    if ((bfd_section_flags (input_section->output_section)
+		    if ((bfd_get_section_flags (output_bfd,
+						input_section->output_section)
 			 & (SEC_ALLOC | SEC_LOAD)) == (SEC_ALLOC | SEC_LOAD))
 		      {
 			bfd_vma offset;
@@ -3596,7 +3597,8 @@ elf32_frv_relocate_section (bfd *output_bfd ATTRIBUTE_UNUSED,
 						 picrel);
 		      }
 		  }
-		else if ((bfd_section_flags (input_section->output_section)
+		else if ((bfd_get_section_flags (output_bfd,
+						 input_section->output_section)
 			  & (SEC_ALLOC | SEC_LOAD)) == (SEC_ALLOC | SEC_LOAD))
 		  {
 		    bfd_vma offset;
@@ -3689,7 +3691,8 @@ elf32_frv_relocate_section (bfd *output_bfd ATTRIBUTE_UNUSED,
 		if (osec)
 		  addend += osec->output_section->vma;
 		if (IS_FDPIC (input_bfd)
-		    && (bfd_section_flags (input_section->output_section)
+		    && (bfd_get_section_flags (output_bfd,
+					       input_section->output_section)
 			& (SEC_ALLOC | SEC_LOAD)) == (SEC_ALLOC | SEC_LOAD))
 		  {
 		    if (_frvfdpic_osec_readonly_p (output_bfd,
@@ -3729,7 +3732,8 @@ elf32_frv_relocate_section (bfd *output_bfd ATTRIBUTE_UNUSED,
 	      }
 	    else
 	      {
-		if ((bfd_section_flags (input_section->output_section)
+		if ((bfd_get_section_flags (output_bfd,
+					    input_section->output_section)
 		     & (SEC_ALLOC | SEC_LOAD)) == (SEC_ALLOC | SEC_LOAD))
 		  {
 		    bfd_vma offset;
@@ -4188,7 +4192,7 @@ _frv_create_got_section (bfd *abfd, struct bfd_link_info *info)
   s = bfd_make_section_anyway_with_flags (abfd, ".got", flags);
   elf_hash_table (info)->sgot = s;
   if (s == NULL
-      || !bfd_set_section_alignment (s, ptralign))
+      || !bfd_set_section_alignment (abfd, s, ptralign))
     return FALSE;
 
   if (bed->want_got_sym)
@@ -4226,14 +4230,14 @@ _frv_create_got_section (bfd *abfd, struct bfd_link_info *info)
 					      (flags | SEC_READONLY));
       elf_hash_table (info)->srelgot = s;
       if (s == NULL
-	  || !bfd_set_section_alignment (s, 2))
+	  || ! bfd_set_section_alignment (abfd, s, 2))
 	return FALSE;
 
       /* Machine-specific.  */
       s = bfd_make_section_anyway_with_flags (abfd, ".rofixup",
 					      (flags | SEC_READONLY));
       if (s == NULL
-	  || !bfd_set_section_alignment (s, 2))
+	  || ! bfd_set_section_alignment (abfd, s, 2))
 	return FALSE;
 
       frvfdpic_gotfixup_section (info) = s;
@@ -4281,7 +4285,7 @@ _frv_create_got_section (bfd *abfd, struct bfd_link_info *info)
 
   s = bfd_make_section_anyway_with_flags (abfd, ".plt", pltflags);
   if (s == NULL
-      || !bfd_set_section_alignment (s, bed->plt_alignment))
+      || ! bfd_set_section_alignment (abfd, s, bed->plt_alignment))
     return FALSE;
   /* FRV-specific: remember it.  */
   frvfdpic_plt_section (info) = s;
@@ -4301,7 +4305,7 @@ _frv_create_got_section (bfd *abfd, struct bfd_link_info *info)
   s = bfd_make_section_anyway_with_flags (abfd, ".rel.plt",
 					  flags | SEC_READONLY);
   if (s == NULL
-      || !bfd_set_section_alignment (s, bed->s->log_file_align))
+      || ! bfd_set_section_alignment (abfd, s, bed->s->log_file_align))
     return FALSE;
   /* FRV-specific: remember it.  */
   frvfdpic_pltrel_section (info) = s;
@@ -4369,7 +4373,7 @@ elf32_frvfdpic_create_dynamic_sections (bfd *abfd, struct bfd_link_info *info)
 						   ? ".rela.bss" : ".rel.bss"),
 						  flags | SEC_READONLY);
 	  if (s == NULL
-	      || !bfd_set_section_alignment (s, bed->s->log_file_align))
+	      || ! bfd_set_section_alignment (abfd, s, bed->s->log_file_align))
 	    return FALSE;
 	}
     }
@@ -6133,7 +6137,7 @@ elf32_frv_check_relocs (bfd *abfd,
 
 	case R_FRV_FUNCDESC_VALUE:
 	  picrel->relocsfdv++;
-	  if (bfd_section_flags (sec) & SEC_ALLOC)
+	  if (bfd_get_section_flags (abfd, sec) & SEC_ALLOC)
 	    picrel->relocs32--;
 	  /* Fall through.  */
 
@@ -6142,7 +6146,7 @@ elf32_frv_check_relocs (bfd *abfd,
 	    break;
 
 	  picrel->sym = 1;
-	  if (bfd_section_flags (sec) & SEC_ALLOC)
+	  if (bfd_get_section_flags (abfd, sec) & SEC_ALLOC)
 	    picrel->relocs32++;
 	  break;
 

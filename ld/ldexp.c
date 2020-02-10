@@ -1,5 +1,5 @@
 /* This module handles expression trees.
-   Copyright (C) 1991-2020 Free Software Foundation, Inc.
+   Copyright (C) 1991-2019 Free Software Foundation, Inc.
    Written by Steve Chamberlain of Cygnus Support <sac@cygnus.com>.
 
    This file is part of the GNU Binutils.
@@ -30,7 +30,6 @@
 #include "sysdep.h"
 #include "bfd.h"
 #include "bfdlink.h"
-#include "ctf-api.h"
 
 #include "ld.h"
 #include "ldmain.h"
@@ -730,10 +729,7 @@ fold_name (etree_type *tree)
 					    tree->name.name,
 					    TRUE, FALSE, TRUE);
 	  if (!h)
-	    {
-	      if (expld.phase != lang_first_phase_enum)
-		einfo (_("%F%P: bfd_link_hash_lookup failed: %E\n"));
-	    }
+	    einfo (_("%F%P: bfd_link_hash_lookup failed: %E\n"));
 	  else if (h->type == bfd_link_hash_defined
 		   || h->type == bfd_link_hash_defweak)
 	    {
@@ -855,8 +851,7 @@ fold_name (etree_type *tree)
 
 	      if (tree->type.node_code == SIZEOF)
 		val = (os->bfd_section->size
-		       / bfd_octets_per_byte (link_info.output_bfd,
-					      os->bfd_section));
+		       / bfd_octets_per_byte (link_info.output_bfd));
 	      else
 		val = (bfd_vma)1 << os->bfd_section->alignment_power;
 

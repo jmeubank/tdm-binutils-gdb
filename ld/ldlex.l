@@ -2,7 +2,7 @@
 
 %{
 
-/* Copyright (C) 1991-2020 Free Software Foundation, Inc.
+/* Copyright (C) 1991-2019 Free Software Foundation, Inc.
    Written by Steve Chamberlain of Cygnus Support.
 
    This file is part of the GNU Binutils.
@@ -25,7 +25,6 @@
 #include "bfd.h"
 #include "safe-ctype.h"
 #include "bfdlink.h"
-#include "ctf-api.h"
 #include "ld.h"
 #include "ldmisc.h"
 #include "ldexp.h"

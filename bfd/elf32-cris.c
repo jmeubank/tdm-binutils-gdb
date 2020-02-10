@@ -1,5 +1,5 @@
 /* CRIS-specific support for 32-bit ELF.
-   Copyright (C) 2000-2020 Free Software Foundation, Inc.
+   Copyright (C) 2000-2019 Free Software Foundation, Inc.
    Contributed by Axis Communications AB.
    Written by Hans-Peter Nilsson, based on elf32-fr30.c
    PIC and shlib bits based primarily on elf32-m68k.c and elf32-i386.c.
@@ -1044,7 +1044,7 @@ cris_elf_relocate_section (bfd *output_bfd ATTRIBUTE_UNUSED,
 	  symname = (bfd_elf_string_from_elf_section
 		     (input_bfd, symtab_hdr->sh_link, sym->st_name));
 	  if (symname == NULL)
-	    symname = bfd_section_name (sec);
+	    symname = bfd_section_name (input_bfd, sec);
 	}
       else
 	{
@@ -2480,7 +2480,7 @@ cris_elf_plt_sym_val (bfd_vma i ATTRIBUTE_UNUSED, const asection *plt,
   if ((got = bfd_get_section_by_name (abfd, ".got")) == NULL)
     return (bfd_vma) -1;
 
-  plt_sec_size =  bfd_section_size (plt);
+  plt_sec_size =  bfd_section_size (plt->owner, plt);
   plt_entry_size
     = (bfd_get_mach (abfd) == bfd_mach_cris_v32
        ? PLT_ENTRY_SIZE_V32 : PLT_ENTRY_SIZE);
@@ -3580,7 +3580,7 @@ elf_cris_size_dynamic_sections (bfd *output_bfd ATTRIBUTE_UNUSED,
 
       /* It's OK to base decisions on the section name, because none
 	 of the dynobj section names depend upon the input files.  */
-      name = bfd_section_name (s);
+      name = bfd_get_section_name (dynobj, s);
 
       if (strcmp (name, ".plt") == 0)
 	{

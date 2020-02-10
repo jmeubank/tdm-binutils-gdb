@@ -1,6 +1,6 @@
 // powerpc.cc -- powerpc target support for gold.
 
-// Copyright (C) 2008-2020 Free Software Foundation, Inc.
+// Copyright (C) 2008-2019 Free Software Foundation, Inc.
 // Written by David S. Miller <davem@davemloft.net>
 //        and David Edelsohn <edelsohn@gnu.org>
 
@@ -7355,6 +7355,7 @@ Target_powerpc<size, big_endian>::Scan::check_non_pic(Relobj* object,
     case elfcpp::R_POWERPC_ADDR14_BRTAKEN:
     case elfcpp::R_POWERPC_ADDR14_BRNTAKEN:
     case elfcpp::R_POWERPC_REL32:
+    case elfcpp::R_POWERPC_REL24:
     case elfcpp::R_POWERPC_TPREL16:
     case elfcpp::R_POWERPC_TPREL16_LO:
     case elfcpp::R_POWERPC_TPREL16_HI:
@@ -7403,7 +7404,6 @@ Target_powerpc<size, big_endian>::Scan::check_non_pic(Relobj* object,
 	{
 	  // These are the relocation types supported only on 32-bit.
 	  // ??? glibc ld.so doesn't need to support these.
-	case elfcpp::R_POWERPC_REL24:
 	case elfcpp::R_POWERPC_DTPREL16:
 	case elfcpp::R_POWERPC_DTPREL16_LO:
 	case elfcpp::R_POWERPC_DTPREL16_HI:

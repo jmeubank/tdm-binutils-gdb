@@ -1,5 +1,5 @@
 /* dw2gencfi.c - Support for generating Dwarf2 CFI information.
-   Copyright (C) 2003-2020 Free Software Foundation, Inc.
+   Copyright (C) 2003-2019 Free Software Foundation, Inc.
    Contributed by Michal Ludvig <mludvig@suse.cz>
 
    This file is part of GAS, the GNU Assembler.
@@ -232,7 +232,7 @@ get_debugseg_name (segT seg, const char *base_name)
   if (!seg)
     return concat (base_name, NULL);
 
-  name = bfd_section_name (seg);
+  name = bfd_get_section_name (stdoutput, seg);
 
   if (name == NULL || *name == 0)
     return concat (base_name, NULL);
@@ -281,7 +281,7 @@ is_now_linkonce_segment (void)
   if (compact_eh)
     return now_seg;
 
-  if ((bfd_section_flags (now_seg)
+  if ((bfd_get_section_flags (stdoutput, now_seg)
        & (SEC_LINK_ONCE | SEC_LINK_DUPLICATES_DISCARD
 	  | SEC_LINK_DUPLICATES_ONE_ONLY | SEC_LINK_DUPLICATES_SAME_SIZE
 	  | SEC_LINK_DUPLICATES_SAME_CONTENTS)) != 0)
@@ -306,16 +306,16 @@ make_debug_seg (segT cseg, char *name, int sflags)
   if (!cseg)
     flags = 0;
   else
-    flags = (bfd_section_flags (cseg)
-	     & (SEC_LINK_ONCE | SEC_LINK_DUPLICATES_DISCARD
-		| SEC_LINK_DUPLICATES_ONE_ONLY | SEC_LINK_DUPLICATES_SAME_SIZE
-		| SEC_LINK_DUPLICATES_SAME_CONTENTS));
+    flags = bfd_get_section_flags (stdoutput, cseg)
+      & (SEC_LINK_ONCE | SEC_LINK_DUPLICATES_DISCARD
+	 | SEC_LINK_DUPLICATES_ONE_ONLY | SEC_LINK_DUPLICATES_SAME_SIZE
+	 | SEC_LINK_DUPLICATES_SAME_CONTENTS);
 
   /* Add standard section flags.  */
   flags |= sflags;
 
   /* Apply possibly linked once flags to new generated segment, too.  */
-  if (!bfd_set_section_flags (r, flags))
+  if (!bfd_set_section_flags (stdoutput, r, flags))
     as_bad (_("bfd_set_section_flags: %s"),
 	    bfd_errmsg (bfd_get_error ()));
 
@@ -726,7 +726,6 @@ const pseudo_typeS cfi_pseudo_table[] =
     { "cfi_remember_state", dot_cfi, DW_CFA_remember_state },
     { "cfi_restore_state", dot_cfi, DW_CFA_restore_state },
     { "cfi_window_save", dot_cfi, DW_CFA_GNU_window_save },
-    { "cfi_negate_ra_state", dot_cfi, DW_CFA_AARCH64_negate_ra_state },
     { "cfi_escape", dot_cfi_escape, 0 },
     { "cfi_signal_frame", dot_cfi, CFI_signal_frame },
     { "cfi_personality", dot_cfi_personality, 0 },
@@ -1360,7 +1359,7 @@ get_cfi_seg (segT cseg, const char *base, flagword flags, int align)
   else
     {
       cseg = subseg_new (base, 0);
-      bfd_set_section_flags (cseg, flags);
+      bfd_set_section_flags (stdoutput, cseg, flags);
     }
   record_alignment (cseg, align);
   return cseg;
@@ -1599,9 +1598,7 @@ output_cfi_insn (struct cfi_insn_data *insn)
 	    addressT delta = S_GET_VALUE (to) - S_GET_VALUE (from);
 	    addressT scaled = delta / DWARF2_LINE_MIN_INSN_LENGTH;
 
-	    if (scaled == 0)
-	      ;
-	    else if (scaled <= 0x3F)
+	    if (scaled <= 0x3F)
 	      out_one (DW_CFA_advance_loc + scaled);
 	    else if (scaled <= 0xFF)
 	      {
@@ -1631,12 +1628,7 @@ output_cfi_insn (struct cfi_insn_data *insn)
 	    /* The code in ehopt.c expects that one byte of the encoding
 	       is already allocated to the frag.  This comes from the way
 	       that it scans the .eh_frame section looking first for the
-	       .byte DW_CFA_advance_loc4.  Call frag_grow with the sum of
-	       room needed by frag_more and frag_var to preallocate space
-	       ensuring that the DW_CFA_advance_loc4 is in the fixed part
-	       of the rs_cfa frag, so that the relax machinery can remove
-	       the advance_loc should it advance by zero.  */
-	    frag_grow (5);
+	       .byte DW_CFA_advance_loc4.  */
 	    *frag_more (1) = DW_CFA_advance_loc4;
 
 	    frag_var (rs_cfa, 4, 0, DWARF2_LINE_MIN_INSN_LENGTH << 3,
@@ -1861,7 +1853,7 @@ output_cie (struct cie_entry *cie, bfd_boolean eh_frame, int align)
       if (fmt != dwarf2_format_32bit)
 	out_four (-1);
     }
-  out_one (flag_dwarf_cie_version);		/* Version.  */
+  out_one (DW_CIE_VERSION);			/* Version.  */
   if (eh_frame)
     {
       out_one ('z');				/* Augmentation.  */
@@ -1877,23 +1869,10 @@ output_cie (struct cie_entry *cie, bfd_boolean eh_frame, int align)
   if (cie->signal_frame)
     out_one ('S');
   out_one (0);
-  if (flag_dwarf_cie_version >= 4)
-    {
-      /* For now we are assuming a flat address space with 4 or 8 byte
-         addresses.  */
-      int address_size = dwarf2_format_32bit ? 4 : 8;
-      out_one (address_size);			/* Address size.  */
-      out_one (0);				/* Segment size.  */
-    }
   out_uleb128 (DWARF2_LINE_MIN_INSN_LENGTH);	/* Code alignment.  */
   out_sleb128 (DWARF2_CIE_DATA_ALIGNMENT);	/* Data alignment.  */
-  if (flag_dwarf_cie_version == 1)		/* Return column.  */
-    {
-      if ((cie->return_column & 0xff) != cie->return_column)
-	as_bad (_("return column number %d overflows in CIE version 1"),
-		cie->return_column);
-      out_one (cie->return_column);
-    }
+  if (DW_CIE_VERSION == 1)			/* Return column.  */
+    out_one (cie->return_column);
   else
     out_uleb128 (cie->return_column);
   if (eh_frame)

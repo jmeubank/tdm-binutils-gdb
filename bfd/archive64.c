@@ -1,5 +1,5 @@
 /* Support for 64-bit archives.
-   Copyright (C) 1996-2020 Free Software Foundation, Inc.
+   Copyright (C) 1996-2019 Free Software Foundation, Inc.
    Ian Lance Taylor, Cygnus Support
    Linker support added by Mark Mitchell, CodeSourcery, LLC.
    <mark@codesourcery.com>
@@ -66,7 +66,7 @@ _bfd_archive_64_bit_slurp_armap (bfd *abfd)
 
   if (! CONST_STRNEQ (nextname, "/SYM64/         "))
     {
-      abfd->has_armap = FALSE;
+      bfd_has_map (abfd) = FALSE;
       return TRUE;
     }
 
@@ -137,7 +137,7 @@ _bfd_archive_64_bit_slurp_armap (bfd *abfd)
   /* Pad to an even boundary if you have to.  */
   ardata->first_file_filepos += (ardata->first_file_filepos) % 2;
 
-  abfd->has_armap = TRUE;
+  bfd_has_map (abfd) = TRUE;
   bfd_release (abfd, raw_armap);
 
   return TRUE;

@@ -1,5 +1,5 @@
 /* ldlang.h - linker command language support
-   Copyright (C) 1991-2020 Free Software Foundation, Inc.
+   Copyright (C) 1991-2019 Free Software Foundation, Inc.
 
    This file is part of the GNU Binutils.
 
@@ -296,8 +296,6 @@ typedef struct lang_input_statement_struct
 
   bfd *the_bfd;
 
-  ctf_archive_t *the_ctf;
-
   struct flag_info *section_flag_list;
 
   /* Next pointer for file_chain statement list.  */
@@ -331,12 +329,8 @@ typedef struct input_section_userdata_struct
   unsigned long map_symbol_def_count;
 } input_section_userdata_type;
 
-static inline bfd_boolean
-bfd_input_just_syms (const bfd *abfd)
-{
-  lang_input_statement_type *is = bfd_usrdata (abfd);
-  return is != NULL && is->flags.just_syms;
-}
+#define get_userdata(x) ((x)->userdata)
+
 
 typedef struct lang_wild_statement_struct lang_wild_statement_type;
 
@@ -574,7 +568,7 @@ extern asection *section_for_dot
 
 #define LANG_FOR_EACH_INPUT_STATEMENT(statement)			\
   lang_input_statement_type *statement;					\
-  for (statement = (lang_input_statement_type *) file_chain.head;	\
+  for (statement = &file_chain.head->input_statement;			\
        statement != NULL;						\
        statement = statement->next)
 
@@ -679,12 +673,6 @@ extern void add_excluded_libs (const char *);
 extern bfd_boolean load_symbols
   (lang_input_statement_type *, lang_statement_list_type *);
 
-struct elf_sym_strtab;
-struct elf_strtab_hash;
-extern void ldlang_ctf_apply_strsym
-  (struct elf_sym_strtab *, bfd_size_type, struct elf_strtab_hash *);
-extern void ldlang_write_ctf_late
-  (void);
 extern bfd_boolean
 ldlang_override_segment_assignment
   (struct bfd_link_info *, bfd *, asection *, asection *, bfd_boolean);

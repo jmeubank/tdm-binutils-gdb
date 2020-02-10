@@ -1,5 +1,5 @@
 /* IBM S/390-specific support for ELF 32 and 64 bit functions
-   Copyright (C) 2000-2020 Free Software Foundation, Inc.
+   Copyright (C) 2000-2019 Free Software Foundation, Inc.
    Contributed by Andreas Krebbel.
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -131,7 +131,8 @@ s390_elf_create_ifunc_sections (bfd *abfd, struct bfd_link_info *info)
       s = bfd_make_section_with_flags (abfd, ".rela.ifunc",
 				       flags | SEC_READONLY);
       if (s == NULL
-	  || !bfd_set_section_alignment (s, bed->s->log_file_align))
+	  || ! bfd_set_section_alignment (abfd, s,
+					  bed->s->log_file_align))
 	return FALSE;
       htab->irelifunc = s;
     }
@@ -140,19 +141,21 @@ s390_elf_create_ifunc_sections (bfd *abfd, struct bfd_link_info *info)
   s = bfd_make_section_with_flags (abfd, ".iplt",
 				   flags | SEC_CODE | SEC_READONLY);
   if (s == NULL
-      || !bfd_set_section_alignment (s, bed->plt_alignment))
+      || ! bfd_set_section_alignment (abfd, s, bed->plt_alignment))
     return FALSE;
   htab->iplt = s;
 
   s = bfd_make_section_with_flags (abfd, ".rela.iplt", flags | SEC_READONLY);
   if (s == NULL
-      || !bfd_set_section_alignment (s, bed->s->log_file_align))
+      || ! bfd_set_section_alignment (abfd, s,
+				      bed->s->log_file_align))
     return FALSE;
   htab->irelplt = s;
 
   s = bfd_make_section_with_flags (abfd, ".igot.plt", flags);
   if (s == NULL
-      || !bfd_set_section_alignment (s, bed->s->log_file_align))
+      || !bfd_set_section_alignment (abfd, s,
+				     bed->s->log_file_align))
     return FALSE;
   htab->igotplt = s;
 

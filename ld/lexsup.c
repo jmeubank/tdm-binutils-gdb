@@ -1,5 +1,5 @@
 /* Parse options for the GNU linker.
-   Copyright (C) 1991-2020 Free Software Foundation, Inc.
+   Copyright (C) 1991-2019 Free Software Foundation, Inc.
 
    This file is part of the GNU Binutils.
 
@@ -27,7 +27,6 @@
 #include "safe-ctype.h"
 #include "getopt.h"
 #include "bfdlink.h"
-#include "ctf-api.h"
 #include "ld.h"
 #include "ldmain.h"
 #include "ldmisc.h"
@@ -566,18 +565,6 @@ parse_args (unsigned argc, char **argv)
   struct option *really_longopts;
   int last_optind;
   enum report_method how_to_report_unresolved_symbols = RM_GENERATE_ERROR;
-  enum symbolic_enum
-  {
-    symbolic_unset = 0,
-    symbolic,
-    symbolic_functions,
-  } opt_symbolic = symbolic_unset;
-  enum dynamic_list_enum
-  {
-    dynamic_list_unset = 0,
-    dynamic_list_data,
-    dynamic_list
-  } opt_dynamic_list = dynamic_list_unset;
 
   shortopts = (char *) xmalloc (OPTION_COUNT * 3 + 2);
   longopts = (struct option *)
@@ -1246,10 +1233,10 @@ parse_args (unsigned argc, char **argv)
 	  config.stats = TRUE;
 	  break;
 	case OPTION_SYMBOLIC:
-	  opt_symbolic = symbolic;
+	  command_line.symbolic = symbolic;
 	  break;
 	case OPTION_SYMBOLIC_FUNCTIONS:
-	  opt_symbolic = symbolic_functions;
+	  command_line.symbolic = symbolic_functions;
 	  break;
 	case 't':
 	  ++trace_files;
@@ -1394,23 +1381,23 @@ parse_args (unsigned argc, char **argv)
 	  command_line.version_exports_section = optarg;
 	  break;
 	case OPTION_DYNAMIC_LIST_DATA:
-	  opt_dynamic_list = dynamic_list_data;
-	  if (opt_symbolic == symbolic)
-	    opt_symbolic = symbolic_unset;
+	  command_line.dynamic_list = dynamic_list_data;
+	  if (command_line.symbolic == symbolic)
+	    command_line.symbolic = symbolic_unset;
 	  break;
 	case OPTION_DYNAMIC_LIST_CPP_TYPEINFO:
 	  lang_append_dynamic_list_cpp_typeinfo ();
-	  if (opt_dynamic_list != dynamic_list_data)
-	    opt_dynamic_list = dynamic_list;
-	  if (opt_symbolic == symbolic)
-	    opt_symbolic = symbolic_unset;
+	  if (command_line.dynamic_list != dynamic_list_data)
+	    command_line.dynamic_list = dynamic_list;
+	  if (command_line.symbolic == symbolic)
+	    command_line.symbolic = symbolic_unset;
 	  break;
 	case OPTION_DYNAMIC_LIST_CPP_NEW:
 	  lang_append_dynamic_list_cpp_new ();
-	  if (opt_dynamic_list != dynamic_list_data)
-	    opt_dynamic_list = dynamic_list;
-	  if (opt_symbolic == symbolic)
-	    opt_symbolic = symbolic_unset;
+	  if (command_line.dynamic_list != dynamic_list_data)
+	    command_line.dynamic_list = dynamic_list;
+	  if (command_line.symbolic == symbolic)
+	    command_line.symbolic = symbolic_unset;
 	  break;
 	case OPTION_DYNAMIC_LIST:
 	  /* This option indicates a small script that only specifies
@@ -1425,10 +1412,10 @@ parse_args (unsigned argc, char **argv)
 	    parser_input = input_dynamic_list;
 	    yyparse ();
 	  }
-	  if (opt_dynamic_list != dynamic_list_data)
-	    opt_dynamic_list = dynamic_list;
-	  if (opt_symbolic == symbolic)
-	    opt_symbolic = symbolic_unset;
+	  if (command_line.dynamic_list != dynamic_list_data)
+	    command_line.dynamic_list = dynamic_list;
+	  if (command_line.symbolic == symbolic)
+	    command_line.symbolic = symbolic_unset;
 	  break;
 	case OPTION_WARN_COMMON:
 	  config.warn_common = TRUE;
@@ -1638,33 +1625,32 @@ parse_args (unsigned argc, char **argv)
       && command_line.check_section_addresses < 0)
     command_line.check_section_addresses = 0;
 
-  /* -Bsymbolic and -Bsymbols-functions are for shared library output.  */
-  if (bfd_link_dll (&link_info))
-    switch (opt_symbolic)
-      {
-      case symbolic_unset:
-	break;
-      case symbolic:
-	link_info.symbolic = TRUE;
-	if (link_info.dynamic_list)
-	  {
-	    struct bfd_elf_version_expr *ent, *next;
-	    for (ent = link_info.dynamic_list->head.list; ent; ent = next)
-	      {
-		next = ent->next;
-		free (ent);
-	      }
-	    free (link_info.dynamic_list);
-	    link_info.dynamic_list = NULL;
-	  }
-	opt_dynamic_list = dynamic_list_unset;
-	break;
-      case symbolic_functions:
-	opt_dynamic_list = dynamic_list_data;
-	break;
-      }
+  /* We may have -Bsymbolic, -Bsymbolic-functions, --dynamic-list-data,
+     --dynamic-list-cpp-new, --dynamic-list-cpp-typeinfo and
+     --dynamic-list FILE.  -Bsymbolic and -Bsymbolic-functions are
+     for PIC outputs.  -Bsymbolic overrides all others and vice versa.  */
+  switch (command_line.symbolic)
+    {
+    case symbolic_unset:
+      break;
+    case symbolic:
+      /* -Bsymbolic is for PIC output only.  */
+      if (bfd_link_pic (&link_info))
+	{
+	  link_info.symbolic = TRUE;
+	  /* Should we free the unused memory?  */
+	  link_info.dynamic_list = NULL;
+	  command_line.dynamic_list = dynamic_list_unset;
+	}
+      break;
+    case symbolic_functions:
+      /* -Bsymbolic-functions is for PIC output only.  */
+      if (bfd_link_pic (&link_info))
+	command_line.dynamic_list = dynamic_list_data;
+      break;
+    }
 
-  switch (opt_dynamic_list)
+  switch (command_line.dynamic_list)
     {
     case dynamic_list_unset:
       break;

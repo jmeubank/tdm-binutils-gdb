@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2020 Free Software Foundation, Inc.
+# Copyright (C) 2012-2019 Free Software Foundation, Inc.
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -128,11 +128,8 @@ if [expr ([istarget "i*86-*-*"] ||  [istarget "x86_64-*-*"]) && [gas_32_check]] 
     run_dump_test "nops-5-i686"
     run_dump_test "nops-6"
     run_dump_test "nops-7"
-    run_dump_test "noreg16"
-    run_dump_test "noreg32"
     run_dump_test "addr16"
     run_dump_test "addr32"
-    run_dump_test "code16"
     run_list_test "oversized16" "-al"
     run_dump_test "sse4_1"
     run_dump_test "sse4_1-intel"
@@ -356,7 +353,6 @@ if [expr ([istarget "i*86-*-*"] ||  [istarget "x86_64-*-*"]) && [gas_32_check]] 
     run_dump_test "avx512bw_vl"
     run_dump_test "avx512dq-intel"
     run_dump_test "avx512dq"
-    run_list_test "avx512dq-inval"
     run_dump_test "avx512dq_vl-intel"
     run_dump_test "avx512dq_vl"
     run_dump_test "omit-lock-yes"
@@ -499,24 +495,6 @@ if [expr ([istarget "i*86-*-*"] ||  [istarget "x86_64-*-*"]) && [gas_32_check]] 
     run_list_test "optimize-6a" "-I${srcdir}/$subdir -march=+noavx -al"
     run_dump_test "optimize-6b"
     run_list_test "optimize-7" "-I${srcdir}/$subdir -march=+noavx2 -al"
-    run_dump_test "align-branch-1a"
-    run_dump_test "align-branch-1b"
-    run_dump_test "align-branch-1c"
-    run_dump_test "align-branch-1d"
-    run_dump_test "align-branch-1e"
-    run_dump_test "align-branch-1f"
-    run_dump_test "align-branch-1g"
-    run_dump_test "align-branch-1h"
-    run_dump_test "align-branch-1i"
-    run_dump_test "align-branch-2a"
-    run_dump_test "align-branch-2b"
-    run_dump_test "align-branch-2c"
-    run_dump_test "align-branch-4a"
-    run_dump_test "align-branch-4b"
-    run_dump_test "align-branch-5"
-    run_dump_test "align-branch-6"
-    run_dump_test "align-branch-7"
-    run_dump_test "align-branch-8"
 
     # These tests require support for 8 and 16 bit relocs,
     # so we only run them for ELF and COFF targets.
@@ -551,9 +529,6 @@ if [expr ([istarget "i*86-*-*"] ||  [istarget "x86_64-*-*"]) && [gas_32_check]] 
 	run_list_test "reloc32" "--defsym _bad_=1"
 	run_dump_test "intel-got32"
 	run_dump_test "intel-movs32"
-	run_dump_test "intel-movs16"
-	run_dump_test "intel-cmps32"
-	run_dump_test "intel-cmps16"
 	run_list_test "inval-equ-1" "-al"
 	run_list_test "inval-equ-2" "-al"
 	run_dump_test "ifunc"
@@ -591,10 +566,6 @@ if [expr ([istarget "i*86-*-*"] ||  [istarget "x86_64-*-*"]) && [gas_32_check]] 
 	run_dump_test "evex-no-scale-32"
 	run_dump_test "property-1"
 	run_dump_test "property-2"
-
-	if {[istarget "*-*-linux*"]} then {
-	    run_dump_test "align-branch-3"
-	}
 
 	if { [gas_64_check] } then {
 	    run_dump_test "att-regs"
@@ -725,11 +696,6 @@ if [expr ([istarget "i*86-*-*"] || [istarget "x86_64-*-*"]) && [gas_64_check]] t
     run_dump_test "x86-64-nops-5"
     run_dump_test "x86-64-nops-5-k8"
     run_dump_test "x86-64-nops-7"
-    run_dump_test "x86-64-sysenter-intel"
-    run_dump_test "x86-64-sysenter-mixed"
-    run_dump_test "x86-64-sysenter-amd"
-    run_list_test "x86-64-sysenter-amd"
-    run_dump_test "noreg64"
     run_list_test "cvtsi2sX"
     run_dump_test "x86-64-sse4_1"
     run_dump_test "x86-64-sse4_1-intel"
@@ -751,7 +717,6 @@ if [expr ([istarget "i*86-*-*"] || [istarget "x86_64-*-*"]) && [gas_64_check]] t
     run_dump_test "x86-64-disp"
     run_dump_test "x86-64-disp-intel"
     run_dump_test "intel-movs64"
-    run_dump_test "intel-cmps64"
     run_dump_test "x86-64-disp32"
     run_dump_test "rexw"
     run_list_test "x86-64-specific-reg"
@@ -1059,26 +1024,6 @@ if [expr ([istarget "i*86-*-*"] || [istarget "x86_64-*-*"]) && [gas_64_check]] t
     run_list_test "x86-64-optimize-7a" "-I${srcdir}/$subdir -march=+noavx -al"
     run_dump_test "x86-64-optimize-7b"
     run_list_test "x86-64-optimize-8" "-I${srcdir}/$subdir -march=+noavx2 -al"
-    run_dump_test "x86-64-align-branch-1a"
-    run_dump_test "x86-64-align-branch-1b"
-    run_dump_test "x86-64-align-branch-1c"
-    run_dump_test "x86-64-align-branch-1d"
-    run_dump_test "x86-64-align-branch-1e"
-    run_dump_test "x86-64-align-branch-1f"
-    run_dump_test "x86-64-align-branch-1g"
-    run_dump_test "x86-64-align-branch-1h"
-    run_dump_test "x86-64-align-branch-1i"
-    if { ![istarget "*-*-darwin*"] } then {
-	run_dump_test "x86-64-align-branch-2a"
-	run_dump_test "x86-64-align-branch-2b"
-	run_dump_test "x86-64-align-branch-2c"
-    }
-    run_dump_test "x86-64-align-branch-4a"
-    run_dump_test "x86-64-align-branch-4b"
-    run_dump_test "x86-64-align-branch-5"
-    run_dump_test "x86-64-align-branch-6"
-    run_dump_test "x86-64-align-branch-7"
-    run_dump_test "x86-64-align-branch-8"
 
     if { ![istarget "*-*-aix*"]
       && ![istarget "*-*-beos*"]
@@ -1127,7 +1072,7 @@ if [expr ([istarget "i*86-*-*"] || [istarget "x86_64-*-*"]) && [gas_64_check]] t
 
 	run_dump_test "x86-64-jump"
 	run_dump_test "x86-64-branch-2"
-	run_dump_test "x86-64-branch-3"
+	run_list_test "x86-64-branch-3" "-al -mintel64"
 	run_list_test "x86-64-branch-4" "-al -mintel64"
 
 	run_dump_test "x86-64-gotpcrel"
@@ -1143,11 +1088,6 @@ if [expr ([istarget "i*86-*-*"] || [istarget "x86_64-*-*"]) && [gas_64_check]] t
 	run_dump_test "evex-no-scale-64"
 	run_dump_test "x86-64-property-1"
 	run_dump_test "x86-64-property-2"
-
-	if {[istarget "*-*-linux*"]} then {
-	    run_dump_test "x86-64-align-branch-3"
-	}
-
     }
 
     set ASFLAGS "$old_ASFLAGS"

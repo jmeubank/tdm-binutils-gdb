@@ -1,5 +1,5 @@
 /* Print i386 instructions for GDB, the GNU debugger.
-   Copyright (C) 1988-2020 Free Software Foundation, Inc.
+   Copyright (C) 1988-2019 Free Software Foundation, Inc.
 
    This file is part of the GNU opcodes library.
 
@@ -101,13 +101,13 @@ static void VPCOM_Fixup (int, int);
 static void OP_0f07 (int, int);
 static void OP_Monitor (int, int);
 static void OP_Mwait (int, int);
+static void OP_Mwaitx (int, int);
 static void NOP_Fixup1 (int, int);
 static void NOP_Fixup2 (int, int);
 static void OP_3DNowSuffix (int, int);
 static void CMP_Fixup (int, int);
 static void BadOp (void);
 static void REP_Fixup (int, int);
-static void SEP_Fixup (int, int);
 static void BND_Fixup (int, int);
 static void NOTRACK_Fixup (int, int);
 static void HLE_Fixup1 (int, int);
@@ -297,7 +297,6 @@ fetch_data (struct disassemble_info *info, bfd_byte *addr)
 #define I1 { OP_I, const_1_mode }
 #define Jb { OP_J, b_mode }
 #define Jv { OP_J, v_mode }
-#define Jdqw { OP_J, dqw_mode }
 #define Cm { OP_C, m_mode }
 #define Dm { OP_D, m_mode }
 #define Td { OP_T, d_mode }
@@ -413,7 +412,6 @@ fetch_data (struct disassemble_info *info, bfd_byte *addr)
 #define EMCq { OP_EMC, q_mode }
 #define MXC { OP_MXC, 0 }
 #define OPSUF { OP_3DNowSuffix, 0 }
-#define SEP { SEP_Fixup, 0 }
 #define CMP { CMP_Fixup, 0 }
 #define XMM0 { XMM_Fixup, 0 }
 #define FXSAVE { FXSAVE_Fixup, 0 }
@@ -561,8 +559,7 @@ enum
   v_bndmk_mode,
   /* operand size depends on REX prefixes.  */
   dq_mode,
-  /* registers like dq_mode, memory like w_mode, displacements like
-     v_mode without considering Intel64 ISA.  */
+  /* registers like dq_mode, memory like w_mode.  */
   dqw_mode,
   /* bounds operand */
   bnd_mode,
@@ -742,8 +739,8 @@ enum
   REG_0F01,
   REG_0F0D,
   REG_0F18,
-  REG_0F1C_P_0_MOD_0,
-  REG_0F1E_P_1_MOD_3,
+  REG_0F1C_MOD_0,
+  REG_0F1E_MOD_3,
   REG_0F71,
   REG_0F72,
   REG_0F73,
@@ -954,21 +951,19 @@ enum
   RM_0F01_REG_1,
   RM_0F01_REG_2,
   RM_0F01_REG_3,
-  RM_0F01_REG_5_MOD_3,
-  RM_0F01_REG_7_MOD_3,
-  RM_0F1E_P_1_MOD_3_REG_7,
-  RM_0FAE_REG_6_MOD_3_P_0,
-  RM_0FAE_REG_7_MOD_3,
+  RM_0F01_REG_5,
+  RM_0F01_REG_7,
+  RM_0F1E_MOD_3_REG_7,
+  RM_0FAE_REG_6,
+  RM_0FAE_REG_7
 };
 
 enum
 {
   PREFIX_90 = 0,
-  PREFIX_0F01_REG_5_MOD_0,
-  PREFIX_0F01_REG_5_MOD_3_RM_0,
-  PREFIX_0F01_REG_5_MOD_3_RM_2,
-  PREFIX_0F01_REG_7_MOD_3_RM_2,
-  PREFIX_0F01_REG_7_MOD_3_RM_3,
+  PREFIX_MOD_0_0F01_REG_5,
+  PREFIX_MOD_3_0F01_REG_5_RM_0,
+  PREFIX_MOD_3_0F01_REG_5_RM_2,
   PREFIX_0F09,
   PREFIX_0F10,
   PREFIX_0F11,
@@ -1010,25 +1005,25 @@ enum
   PREFIX_0F7D,
   PREFIX_0F7E,
   PREFIX_0F7F,
-  PREFIX_0FAE_REG_0_MOD_3,
-  PREFIX_0FAE_REG_1_MOD_3,
-  PREFIX_0FAE_REG_2_MOD_3,
-  PREFIX_0FAE_REG_3_MOD_3,
-  PREFIX_0FAE_REG_4_MOD_0,
-  PREFIX_0FAE_REG_4_MOD_3,
-  PREFIX_0FAE_REG_5_MOD_0,
-  PREFIX_0FAE_REG_5_MOD_3,
-  PREFIX_0FAE_REG_6_MOD_0,
-  PREFIX_0FAE_REG_6_MOD_3,
-  PREFIX_0FAE_REG_7_MOD_0,
+  PREFIX_0FAE_REG_0,
+  PREFIX_0FAE_REG_1,
+  PREFIX_0FAE_REG_2,
+  PREFIX_0FAE_REG_3,
+  PREFIX_MOD_0_0FAE_REG_4,
+  PREFIX_MOD_3_0FAE_REG_4,
+  PREFIX_MOD_0_0FAE_REG_5,
+  PREFIX_MOD_3_0FAE_REG_5,
+  PREFIX_MOD_0_0FAE_REG_6,
+  PREFIX_MOD_1_0FAE_REG_6,
+  PREFIX_0FAE_REG_7,
   PREFIX_0FB8,
   PREFIX_0FBC,
   PREFIX_0FBD,
   PREFIX_0FC2,
-  PREFIX_0FC3_MOD_0,
-  PREFIX_0FC7_REG_6_MOD_0,
-  PREFIX_0FC7_REG_6_MOD_3,
-  PREFIX_0FC7_REG_7_MOD_3,
+  PREFIX_MOD_0_0FC3,
+  PREFIX_MOD_0_0FC7_REG_6,
+  PREFIX_MOD_3_0FC7_REG_6,
+  PREFIX_MOD_3_0FC7_REG_7,
   PREFIX_0FD0,
   PREFIX_0FD6,
   PREFIX_0FE6,
@@ -2715,8 +2710,8 @@ static const struct dis386 dis386_twobyte[] = {
   { "rdtsc",		{ XX }, 0 },
   { "rdmsr",		{ XX }, 0 },
   { "rdpmc",		{ XX }, 0 },
-  { "sysenter",		{ SEP }, 0 },
-  { "sysexit",		{ SEP }, 0 },
+  { "sysenter",		{ XX }, 0 },
+  { "sysexit",		{ XX }, 0 },
   { Bad_Opcode },
   { "getsec",		{ XX }, 0 },
   /* 38 */
@@ -3440,7 +3435,7 @@ static const struct dis386 reg_table[][8] = {
     { MOD_TABLE (MOD_0F18_REG_6) },
     { MOD_TABLE (MOD_0F18_REG_7) },
   },
-  /* REG_0F1C_P_0_MOD_0 */
+  /* REG_0F1C_MOD_0 */
   {
     { "cldemote",	{ Mb }, 0 },
     { "nopQ",		{ Ev }, 0 },
@@ -3451,7 +3446,7 @@ static const struct dis386 reg_table[][8] = {
     { "nopQ",		{ Ev }, 0 },
     { "nopQ",		{ Ev }, 0 },
   },
-  /* REG_0F1E_P_1_MOD_3 */
+  /* REG_0F1E_MOD_3 */
   {
     { "nopQ",		{ Ev }, 0 },
     { "rdsspK",		{ Rdq }, PREFIX_OPCODE },
@@ -3460,7 +3455,7 @@ static const struct dis386 reg_table[][8] = {
     { "nopQ",		{ Ev }, 0 },
     { "nopQ",		{ Ev }, 0 },
     { "nopQ",		{ Ev }, 0 },
-    { RM_TABLE (RM_0F1E_P_1_MOD_3_REG_7) },
+    { RM_TABLE (RM_0F1E_MOD_3_REG_7) },
   },
   /* REG_0F71 */
   {
@@ -3630,33 +3625,22 @@ static const struct dis386 prefix_table[][4] = {
     { NULL, { { NULL, 0 } }, PREFIX_IGNORED }
   },
 
-  /* PREFIX_0F01_REG_5_MOD_0 */
+  /* PREFIX_MOD_0_0F01_REG_5 */
   {
     { Bad_Opcode },
     { "rstorssp",	{ Mq }, PREFIX_OPCODE },
   },
 
-  /* PREFIX_0F01_REG_5_MOD_3_RM_0 */
+  /* PREFIX_MOD_3_0F01_REG_5_RM_0 */
   {
     { Bad_Opcode },
     { "setssbsy",	{ Skip_MODRM }, PREFIX_OPCODE },
   },
 
-  /* PREFIX_0F01_REG_5_MOD_3_RM_2 */
+  /* PREFIX_MOD_3_0F01_REG_5_RM_2 */
   {
     { Bad_Opcode },
     { "saveprevssp",	{ Skip_MODRM }, PREFIX_OPCODE },
-  },
-
-  /* PREFIX_0F01_REG_7_MOD_3_RM_2 */
-  {
-    { "monitorx",	{ { OP_Monitor, 0 } }, 0  },
-    { "mcommit",	{ Skip_MODRM }, 0 },
-  },
-
-  /* PREFIX_0F01_REG_7_MOD_3_RM_3 */
-  {
-    { "mwaitx",		{ { OP_Mwait, eBX_reg } }, 0  },
   },
 
   /* PREFIX_0F09 */
@@ -3967,69 +3951,69 @@ static const struct dis386 prefix_table[][4] = {
     { "movdqa",	{ EXxS, XM }, PREFIX_OPCODE },
   },
 
-  /* PREFIX_0FAE_REG_0_MOD_3 */
+  /* PREFIX_0FAE_REG_0 */
   {
     { Bad_Opcode },
     { "rdfsbase", { Ev }, 0 },
   },
 
-  /* PREFIX_0FAE_REG_1_MOD_3 */
+  /* PREFIX_0FAE_REG_1 */
   {
     { Bad_Opcode },
     { "rdgsbase", { Ev }, 0 },
   },
 
-  /* PREFIX_0FAE_REG_2_MOD_3 */
+  /* PREFIX_0FAE_REG_2 */
   {
     { Bad_Opcode },
     { "wrfsbase", { Ev }, 0 },
   },
 
-  /* PREFIX_0FAE_REG_3_MOD_3 */
+  /* PREFIX_0FAE_REG_3 */
   {
     { Bad_Opcode },
     { "wrgsbase", { Ev }, 0 },
   },
 
-  /* PREFIX_0FAE_REG_4_MOD_0 */
+  /* PREFIX_MOD_0_0FAE_REG_4 */
   {
     { "xsave",	{ FXSAVE }, 0 },
     { "ptwrite%LQ", { Edq }, 0 },
   },
 
-  /* PREFIX_0FAE_REG_4_MOD_3 */
+  /* PREFIX_MOD_3_0FAE_REG_4 */
   {
     { Bad_Opcode },
     { "ptwrite%LQ", { Edq }, 0 },
   },
 
-  /* PREFIX_0FAE_REG_5_MOD_0 */
+  /* PREFIX_MOD_0_0FAE_REG_5 */
   {
     { "xrstor",		{ FXSAVE }, PREFIX_OPCODE },
   },
 
-  /* PREFIX_0FAE_REG_5_MOD_3 */
+  /* PREFIX_MOD_3_0FAE_REG_5 */
   {
     { "lfence",		{ Skip_MODRM }, 0 },
     { "incsspK",	{ Rdq }, PREFIX_OPCODE },
   },
 
-  /* PREFIX_0FAE_REG_6_MOD_0 */
+  /* PREFIX_MOD_0_0FAE_REG_6 */
   {
     { "xsaveopt",	{ FXSAVE }, PREFIX_OPCODE },
     { "clrssbsy",	{ Mq }, PREFIX_OPCODE },
     { "clwb",	{ Mb }, PREFIX_OPCODE },
   },
 
-  /* PREFIX_0FAE_REG_6_MOD_3 */
+  /* PREFIX_MOD_1_0FAE_REG_6 */
   {
-    { RM_TABLE (RM_0FAE_REG_6_MOD_3_P_0) },
+    { RM_TABLE (RM_0FAE_REG_6) },
     { "umonitor",	{ Eva }, PREFIX_OPCODE },
     { "tpause",	{ Edq }, PREFIX_OPCODE },
     { "umwait",	{ Edq }, PREFIX_OPCODE },
   },
 
-  /* PREFIX_0FAE_REG_7_MOD_0 */
+  /* PREFIX_0FAE_REG_7 */
   {
     { "clflush",	{ Mb }, 0 },
     { Bad_Opcode },
@@ -4064,26 +4048,26 @@ static const struct dis386 prefix_table[][4] = {
     { "cmpsd",	{ XM, EXq, CMP }, PREFIX_OPCODE },
   },
 
-  /* PREFIX_0FC3_MOD_0 */
+  /* PREFIX_MOD_0_0FC3 */
   {
     { "movntiS", { Edq, Gdq }, PREFIX_OPCODE },
   },
 
-  /* PREFIX_0FC7_REG_6_MOD_0 */
+  /* PREFIX_MOD_0_0FC7_REG_6 */
   {
     { "vmptrld",{ Mq }, 0 },
     { "vmxon",	{ Mq }, 0 },
     { "vmclear",{ Mq }, 0 },
   },
 
-  /* PREFIX_0FC7_REG_6_MOD_3 */
+  /* PREFIX_MOD_3_0FC7_REG_6 */
   {
     { "rdrand",	{ Ev }, 0 },
     { Bad_Opcode },
     { "rdrand",	{ Ev }, 0 }
   },
 
-  /* PREFIX_0FC7_REG_7_MOD_3 */
+  /* PREFIX_MOD_3_0FC7_REG_7 */
   {
     { "rdseed",	{ Ev }, 0 },
     { "rdpid",	{ Em }, 0 },
@@ -10245,13 +10229,13 @@ static const struct dis386 mod_table[][2] = {
   },
   {
     /* MOD_0F01_REG_5 */
-    { PREFIX_TABLE (PREFIX_0F01_REG_5_MOD_0) },
-    { RM_TABLE (RM_0F01_REG_5_MOD_3) },
+    { PREFIX_TABLE (PREFIX_MOD_0_0F01_REG_5) },
+    { RM_TABLE (RM_0F01_REG_5) },
   },
   {
     /* MOD_0F01_REG_7 */
     { "invlpg",		{ Mb }, 0 },
-    { RM_TABLE (RM_0F01_REG_7_MOD_3) },
+    { RM_TABLE (RM_0F01_REG_7) },
   },
   {
     /* MOD_0F12_PREFIX_0 */
@@ -10320,13 +10304,13 @@ static const struct dis386 mod_table[][2] = {
   },
   {
     /* MOD_0F1C_PREFIX_0 */
-    { REG_TABLE (REG_0F1C_P_0_MOD_0) },
+    { REG_TABLE (REG_0F1C_MOD_0) },
     { "nopQ",		{ Ev }, 0 },
   },
   {
     /* MOD_0F1E_PREFIX_1 */
     { "nopQ",		{ Ev }, 0 },
-    { REG_TABLE (REG_0F1E_P_1_MOD_3) },
+    { REG_TABLE (REG_0F1E_MOD_3) },
   },
   {
     /* MOD_0F24 */
@@ -10412,42 +10396,42 @@ static const struct dis386 mod_table[][2] = {
   {
     /* MOD_0FAE_REG_0 */
     { "fxsave",		{ FXSAVE }, 0 },
-    { PREFIX_TABLE (PREFIX_0FAE_REG_0_MOD_3) },
+    { PREFIX_TABLE (PREFIX_0FAE_REG_0) },
   },
   {
     /* MOD_0FAE_REG_1 */
     { "fxrstor",	{ FXSAVE }, 0 },
-    { PREFIX_TABLE (PREFIX_0FAE_REG_1_MOD_3) },
+    { PREFIX_TABLE (PREFIX_0FAE_REG_1) },
   },
   {
     /* MOD_0FAE_REG_2 */
     { "ldmxcsr",	{ Md }, 0 },
-    { PREFIX_TABLE (PREFIX_0FAE_REG_2_MOD_3) },
+    { PREFIX_TABLE (PREFIX_0FAE_REG_2) },
   },
   {
     /* MOD_0FAE_REG_3 */
     { "stmxcsr",	{ Md }, 0 },
-    { PREFIX_TABLE (PREFIX_0FAE_REG_3_MOD_3) },
+    { PREFIX_TABLE (PREFIX_0FAE_REG_3) },
   },
   {
     /* MOD_0FAE_REG_4 */
-    { PREFIX_TABLE (PREFIX_0FAE_REG_4_MOD_0) },
-    { PREFIX_TABLE (PREFIX_0FAE_REG_4_MOD_3) },
+    { PREFIX_TABLE (PREFIX_MOD_0_0FAE_REG_4) },
+    { PREFIX_TABLE (PREFIX_MOD_3_0FAE_REG_4) },
   },
   {
     /* MOD_0FAE_REG_5 */
-    { PREFIX_TABLE (PREFIX_0FAE_REG_5_MOD_0) },
-    { PREFIX_TABLE (PREFIX_0FAE_REG_5_MOD_3) },
+    { PREFIX_TABLE (PREFIX_MOD_0_0FAE_REG_5) },
+    { PREFIX_TABLE (PREFIX_MOD_3_0FAE_REG_5) },
   },
   {
     /* MOD_0FAE_REG_6 */
-    { PREFIX_TABLE (PREFIX_0FAE_REG_6_MOD_0) },
-    { PREFIX_TABLE (PREFIX_0FAE_REG_6_MOD_3) },
+    { PREFIX_TABLE (PREFIX_MOD_0_0FAE_REG_6) },
+    { PREFIX_TABLE (PREFIX_MOD_1_0FAE_REG_6) },
   },
   {
     /* MOD_0FAE_REG_7 */
-    { PREFIX_TABLE (PREFIX_0FAE_REG_7_MOD_0) },
-    { RM_TABLE (RM_0FAE_REG_7_MOD_3) },
+    { PREFIX_TABLE (PREFIX_0FAE_REG_7) },
+    { RM_TABLE (RM_0FAE_REG_7) },
   },
   {
     /* MOD_0FB2 */
@@ -10463,7 +10447,7 @@ static const struct dis386 mod_table[][2] = {
   },
   {
     /* MOD_0FC3 */
-    { PREFIX_TABLE (PREFIX_0FC3_MOD_0) },
+    { PREFIX_TABLE (PREFIX_MOD_0_0FC3) },
   },
   {
     /* MOD_0FC7_REG_3 */
@@ -10479,13 +10463,13 @@ static const struct dis386 mod_table[][2] = {
   },
   {
     /* MOD_0FC7_REG_6 */
-    { PREFIX_TABLE (PREFIX_0FC7_REG_6_MOD_0) },
-    { PREFIX_TABLE (PREFIX_0FC7_REG_6_MOD_3) }
+    { PREFIX_TABLE (PREFIX_MOD_0_0FC7_REG_6) },
+    { PREFIX_TABLE (PREFIX_MOD_3_0FC7_REG_6) }
   },
   {
     /* MOD_0FC7_REG_7 */
     { "vmptrst",	{ Mq }, 0 },
-    { PREFIX_TABLE (PREFIX_0FC7_REG_7_MOD_3) }
+    { PREFIX_TABLE (PREFIX_MOD_3_0FC7_REG_7) }
   },
   {
     /* MOD_0FD7 */
@@ -10526,7 +10510,7 @@ static const struct dis386 mod_table[][2] = {
   },
   {
     /* MOD_0F38F9_PREFIX_0 */
-    { "movdiri",	{ Ev, Gv }, PREFIX_OPCODE },
+    { "movdiri",	{ Em, Gv }, PREFIX_OPCODE },
   },
   {
     /* MOD_62_32BIT */
@@ -10973,7 +10957,7 @@ static const struct dis386 rm_table[][8] = {
   },
   {
     /* RM_C7_REG_7 */
-    { "xbeginT",	{ Skip_MODRM, Jdqw }, 0 },
+    { "xbeginT",	{ Skip_MODRM, Jv }, 0 },
   },
   {
     /* RM_0F01_REG_0 */
@@ -11018,10 +11002,10 @@ static const struct dis386 rm_table[][8] = {
     { "invlpga",	{ Skip_MODRM }, 0 },
   },
   {
-    /* RM_0F01_REG_5_MOD_3 */
-    { PREFIX_TABLE (PREFIX_0F01_REG_5_MOD_3_RM_0) },
+    /* RM_0F01_REG_5 */
+    { PREFIX_TABLE (PREFIX_MOD_3_0F01_REG_5_RM_0) },
     { Bad_Opcode },
-    { PREFIX_TABLE (PREFIX_0F01_REG_5_MOD_3_RM_2) },
+    { PREFIX_TABLE (PREFIX_MOD_3_0F01_REG_5_RM_2) },
     { Bad_Opcode },
     { Bad_Opcode },
     { Bad_Opcode },
@@ -11029,16 +11013,15 @@ static const struct dis386 rm_table[][8] = {
     { "wrpkru",		{ Skip_MODRM }, 0 },
   },
   {
-    /* RM_0F01_REG_7_MOD_3 */
+    /* RM_0F01_REG_7 */
     { "swapgs",		{ Skip_MODRM }, 0  },
     { "rdtscp",		{ Skip_MODRM }, 0  },
-    { PREFIX_TABLE (PREFIX_0F01_REG_7_MOD_3_RM_2) },
-    { PREFIX_TABLE (PREFIX_0F01_REG_7_MOD_3_RM_3) },
+    { "monitorx",	{ { OP_Monitor, 0 } }, 0  },
+    { "mwaitx",		{ { OP_Mwaitx,  0 } }, 0  },
     { "clzero",		{ Skip_MODRM }, 0  },
-    { "rdpru",		{ Skip_MODRM }, 0  },
   },
   {
-    /* RM_0F1E_P_1_MOD_3_REG_7 */
+    /* RM_0F1E_MOD_3_REG_7 */
     { "nopQ",		{ Ev }, 0 },
     { "nopQ",		{ Ev }, 0 },
     { "endbr64",	{ Skip_MODRM },  PREFIX_OPCODE },
@@ -11049,11 +11032,11 @@ static const struct dis386 rm_table[][8] = {
     { "nopQ",		{ Ev }, 0 },
   },
   {
-    /* RM_0FAE_REG_6_MOD_3 */
+    /* RM_0FAE_REG_6 */
     { "mfence",		{ Skip_MODRM }, 0 },
   },
   {
-    /* RM_0FAE_REG_7_MOD_3 */
+    /* RM_0FAE_REG_7 */
     { "sfence",		{ Skip_MODRM }, 0 },
 
   },
@@ -11068,9 +11051,6 @@ static const struct dis386 rm_table[][8] = {
 #define XRELEASE_PREFIX	(0xf3 | 0x400)
 #define BND_PREFIX	(0xf2 | 0x400)
 #define NOTRACK_PREFIX	(0x3e | 0x100)
-
-/* Remember if the current op is a jump instruction.  */
-static bfd_boolean op_is_jump = FALSE;
 
 static int
 ckprefix (void)
@@ -11321,7 +11301,7 @@ static char scale_char;
 
 enum x86_64_isa
 {
-  amd64 = 1,
+  amd64 = 0,
   intel64
 };
 
@@ -12146,50 +12126,6 @@ print_insn (bfd_vma pc, disassemble_info *info)
 	}
     }
 
-  /* Clear instruction information.  */
-  if (the_info)
-    {
-      the_info->insn_info_valid = 0;
-      the_info->branch_delay_insns = 0;
-      the_info->data_size = 0;
-      the_info->insn_type = dis_noninsn;
-      the_info->target = 0;
-      the_info->target2 = 0;
-    }
-
-  /* Reset jump operation indicator.  */
-  op_is_jump = FALSE;
-
-  {
-    int jump_detection = 0;
-
-    /* Extract flags.  */
-    for (i = 0; i < MAX_OPERANDS; ++i)
-      {
-	if ((dp->op[i].rtn == OP_J)
-	    || (dp->op[i].rtn == OP_indirE))
-	  jump_detection |= 1;
-	else if ((dp->op[i].rtn == BND_Fixup)
-		 || (!dp->op[i].rtn && !dp->op[i].bytemode))
-	  jump_detection |= 2;
-	else if ((dp->op[i].bytemode == cond_jump_mode)
-		 || (dp->op[i].bytemode == loop_jcxz_mode))
-	  jump_detection |= 4;
-      }
-
-    /* Determine if this is a jump or branch.  */
-    if ((jump_detection & 0x3) == 0x3)
-      {
-	op_is_jump = TRUE;
-	if (jump_detection & 0x4)
-	  the_info->insn_type = dis_condbranch;
-	else
-	  the_info->insn_type =
-	    (dp->name && !strncmp(dp->name, "call", 4))
-	    ? dis_jsr : dis_branch;
-      }
-  }
-
   /* If VEX.vvvv and EVEX.vvvv are unused, they must be all 1s, which
      are all 0s in inverted form.  */
   if (need_vex && vex.register_specifier != 0)
@@ -12303,19 +12239,7 @@ print_insn (bfd_vma pc, disassemble_info *info)
 	if (needcomma)
 	  (*info->fprintf_func) (info->stream, ",");
 	if (op_index[i] != -1 && !op_riprel[i])
-	  {
-	    bfd_vma target = (bfd_vma) op_address[op_index[i]];
-
-	    if (the_info && op_is_jump)
-	      {
-		the_info->insn_info_valid = 1;
-		the_info->branch_delay_insns = 0;
-		the_info->data_size = 0;
-		the_info->target = target;
-		the_info->target2 = 0;
-	      }
-	    (*info->print_address_func) (target, info);
-	  }
+	  (*info->print_address_func) ((bfd_vma) op_address[op_index[i]], info);
 	else
 	  (*info->fprintf_func) (info->stream, "%s", op_txt[i]);
 	needcomma = 1;
@@ -14890,13 +14814,11 @@ OP_J (int bytemode, int sizeflag)
 	disp -= 0x100;
       break;
     case v_mode:
-      if (isa64 != intel64)
-    case dqw_mode:
+      if (isa64 == amd64)
 	USED_REX (REX_W);
       if ((sizeflag & DFLAG)
 	  || (address_mode == mode_64bit
-	      && ((isa64 == intel64 && bytemode != dqw_mode)
-		  || (rex & REX_W))))
+	      && (isa64 != amd64 || (rex & REX_W))))
 	disp = get32s ();
       else
 	{
@@ -14913,7 +14835,7 @@ OP_J (int bytemode, int sizeflag)
 		       & ~((bfd_vma) 0xffff));
 	}
       if (address_mode != mode_64bit
-	  || (isa64 != intel64 && !(rex & REX_W)))
+	  || (isa64 == amd64 && !(rex & REX_W)))
 	used_prefixes |= (prefixes & PREFIX_DATA);
       break;
     default:
@@ -15582,15 +15504,35 @@ CMP_Fixup (int bytemode ATTRIBUTE_UNUSED, int sizeflag ATTRIBUTE_UNUSED)
 }
 
 static void
-OP_Mwait (int bytemode, int sizeflag ATTRIBUTE_UNUSED)
+OP_Mwaitx (int bytemode ATTRIBUTE_UNUSED,
+	  int sizeflag ATTRIBUTE_UNUSED)
 {
-  /* mwait %eax,%ecx / mwaitx %eax,%ecx,%ebx  */
+  /* mwaitx %eax,%ecx,%ebx */
   if (!intel_syntax)
     {
-      strcpy (op_out[0], names32[0]);
-      strcpy (op_out[1], names32[1]);
-      if (bytemode == eBX_reg)
-	strcpy (op_out[2], names32[3]);
+      const char **names = (address_mode == mode_64bit
+			    ? names64 : names32);
+      strcpy (op_out[0], names[0]);
+      strcpy (op_out[1], names[1]);
+      strcpy (op_out[2], names[3]);
+      two_source_ops = 1;
+    }
+  /* Skip mod/rm byte.  */
+  MODRM_CHECK;
+  codep++;
+}
+
+static void
+OP_Mwait (int bytemode ATTRIBUTE_UNUSED,
+	  int sizeflag ATTRIBUTE_UNUSED)
+{
+  /* mwait %eax,%ecx  */
+  if (!intel_syntax)
+    {
+      const char **names = (address_mode == mode_64bit
+			    ? names64 : names32);
+      strcpy (op_out[0], names[0]);
+      strcpy (op_out[1], names[1]);
       two_source_ops = 1;
     }
   /* Skip mod/rm byte.  */
@@ -15602,25 +15544,27 @@ static void
 OP_Monitor (int bytemode ATTRIBUTE_UNUSED,
 	    int sizeflag ATTRIBUTE_UNUSED)
 {
-  /* monitor %{e,r,}ax,%ecx,%edx"  */
+  /* monitor %eax,%ecx,%edx"  */
   if (!intel_syntax)
     {
+      const char **op1_names;
       const char **names = (address_mode == mode_64bit
 			    ? names64 : names32);
 
-      if (prefixes & PREFIX_ADDR)
+      if (!(prefixes & PREFIX_ADDR))
+	op1_names = (address_mode == mode_16bit
+		     ? names16 : names);
+      else
 	{
 	  /* Remove "addr16/addr32".  */
 	  all_prefixes[last_addr_prefix] = 0;
-	  names = (address_mode != mode_32bit
-		   ? names32 : names16);
+	  op1_names = (address_mode != mode_32bit
+		       ? names32 : names16);
 	  used_prefixes |= PREFIX_ADDR;
 	}
-      else if (address_mode == mode_16bit)
-	names = names16;
-      strcpy (op_out[0], names[0]);
-      strcpy (op_out[1], names32[1]);
-      strcpy (op_out[2], names32[2]);
+      strcpy (op_out[0], op1_names[0]);
+      strcpy (op_out[1], names[1]);
+      strcpy (op_out[2], names[2]);
       two_source_ops = 1;
     }
   /* Skip mod/rm byte.  */
@@ -15661,18 +15605,6 @@ REP_Fixup (int bytemode, int sizeflag)
       abort ();
       break;
     }
-}
-
-static void
-SEP_Fixup (int bytemode ATTRIBUTE_UNUSED, int sizeflag ATTRIBUTE_UNUSED)
-{
-  if ( isa64 != amd64 )
-    return;
-
-  obufp = obuf;
-  BadOp ();
-  mnemonicendp = obufp;
-  ++codep;
 }
 
 /* For BND-prefixed instructions 0xF2 prefix should be displayed as

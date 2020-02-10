@@ -9,6 +9,5 @@ _start:
 
 	.intel_syntax noprefix
 	movdiri [ecx], eax
-	movdiri dword ptr [ecx], eax
 	movdir64b eax,[ecx]
 	movdir64b ax,[si]

@@ -1,5 +1,5 @@
 /* tc-riscv.c -- RISC-V assembler
-   Copyright (C) 2011-2020 Free Software Foundation, Inc.
+   Copyright (C) 2011-2019 Free Software Foundation, Inc.
 
    Contributed by Andrew Waterman (andrew@sifive.com).
    Based on MIPS target.
@@ -121,28 +121,15 @@ riscv_subset_supports (const char *feature)
 }
 
 static bfd_boolean
-riscv_multi_subset_supports (enum riscv_insn_class insn_class)
+riscv_multi_subset_supports (const char *features[])
 {
-  switch (insn_class)
-    {
-    case INSN_CLASS_I: return riscv_subset_supports ("i");
-    case INSN_CLASS_C: return riscv_subset_supports ("c");
-    case INSN_CLASS_A: return riscv_subset_supports ("a");
-    case INSN_CLASS_M: return riscv_subset_supports ("m");
-    case INSN_CLASS_F: return riscv_subset_supports ("f");
-    case INSN_CLASS_D: return riscv_subset_supports ("d");
-    case INSN_CLASS_D_AND_C:
-      return riscv_subset_supports ("d") && riscv_subset_supports ("c");
+  unsigned i = 0;
+  bfd_boolean supported = TRUE;
 
-    case INSN_CLASS_F_AND_C:
-      return riscv_subset_supports ("f") && riscv_subset_supports ("c");
+  for (;features[i]; ++i)
+    supported = supported && riscv_subset_supports (features[i]);
 
-    case INSN_CLASS_Q: return riscv_subset_supports ("q");
-
-    default:
-      as_fatal ("Unreachable");
-      return FALSE;
-    }
+  return supported;
 }
 
 /* Set which ISA and extensions are available.  */
@@ -446,6 +433,12 @@ opcode_name_lookup (char **s)
   return o;
 }
 
+struct regname
+{
+  const char *name;
+  unsigned int num;
+};
+
 enum reg_class
 {
   RCLASS_GPR,
@@ -483,7 +476,7 @@ hash_reg_names (enum reg_class class, const char * const names[], unsigned n)
 static unsigned int
 reg_lookup_internal (const char *s, enum reg_class class)
 {
-  void *r = hash_find (reg_names_hash, s);
+  struct regname *r = (struct regname *) hash_find (reg_names_hash, s);
 
   if (r == NULL || DECODE_REG_CLASS (r) != class)
     return -1;
@@ -1043,9 +1036,9 @@ static void
 load_const (int reg, expressionS *ep)
 {
   int shift = RISCV_IMM_BITS;
-  bfd_vma upper_imm, sign = (bfd_vma) 1 << (RISCV_IMM_BITS - 1);
+  bfd_vma upper_imm;
   expressionS upper = *ep, lower = *ep;
-  lower.X_add_number = ((ep->X_add_number & (sign + sign - 1)) ^ sign) - sign;
+  lower.X_add_number = (int32_t) ep->X_add_number << (32-shift) >> (32-shift);
   upper.X_add_number -= lower.X_add_number;
 
   if (ep->X_op != O_constant)
@@ -1434,7 +1427,7 @@ riscv_ip (char *str, struct riscv_cl_insn *ip, expressionS *imm_expr,
       if ((insn->xlen_requirement != 0) && (xlen != insn->xlen_requirement))
 	continue;
 
-      if (!riscv_multi_subset_supports (insn->insn_class))
+      if (!riscv_multi_subset_supports (insn->subset))
 	continue;
 
       create_insn (ip, insn);
@@ -2341,12 +2334,6 @@ riscv_after_parse_args (void)
 
   /* Insert float_abi into the EF_RISCV_FLOAT_ABI field of elf_flags.  */
   elf_flags |= float_abi * (EF_RISCV_FLOAT_ABI & ~(EF_RISCV_FLOAT_ABI << 1));
-
-  /* If the CIE to be produced has not been overridden on the command line,
-     then produce version 3 by default.  This allows us to use the full
-     range of registers in a .cfi_return_column directive.  */
-  if (flag_dwarf_cie_version == -1)
-    flag_dwarf_cie_version = 3;
 }
 
 long
@@ -3042,10 +3029,6 @@ tc_riscv_regname_to_dw2regnum (char *regname)
 
   if ((reg = reg_lookup_internal (regname, RCLASS_FPR)) >= 0)
     return reg + 32;
-
-  /* CSRs are numbered 4096 -> 8191.  */
-  if ((reg = reg_lookup_internal (regname, RCLASS_CSR)) >= 0)
-    return reg + 4096;
 
   as_bad (_("unknown register `%s'"), regname);
   return -1;

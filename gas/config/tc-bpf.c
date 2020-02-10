@@ -1,5 +1,5 @@
 /* tc-bpf.c -- Assembler for the Linux eBPF.
-   Copyright (C) 2019-2020 Free Software Foundation, Inc.
+   Copyright (C) 2019 Free Software Foundation, Inc.
    Contributed by Oracle, Inc.
 
    This file is part of GAS, the GNU Assembler.
@@ -189,7 +189,7 @@ md_begin (void)
 valueT
 md_section_align (segT segment, valueT size)
 {
-  int align = bfd_section_alignment (segment);
+  int align = bfd_get_section_alignment (stdoutput, segment);
 
   return ((size + (1 << align) - 1) & -(1 << align));
 }

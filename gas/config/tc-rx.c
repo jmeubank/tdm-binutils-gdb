@@ -1,5 +1,5 @@
 /* tc-rx.c -- Assembler for the Renesas RX
-   Copyright (C) 2008-2020 Free Software Foundation, Inc.
+   Copyright (C) 2008-2019 Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
@@ -509,7 +509,7 @@ parse_rx_section (char * name)
       obj_elf_change_section (name, type, 0, attr, 0, NULL, FALSE, FALSE);
     }
 
-  bfd_set_section_alignment (now_seg, align);
+  bfd_set_section_alignment (stdoutput, now_seg, align);
 }
 
 static void
@@ -1290,7 +1290,7 @@ md_operand (expressionS * exp ATTRIBUTE_UNUSED)
 valueT
 md_section_align (segT segment, valueT size)
 {
-  int align = bfd_section_alignment (segment);
+  int align = bfd_get_section_alignment (stdoutput, segment);
   return ((size + (1 << align) - 1) & -(1 << align));
 }
 

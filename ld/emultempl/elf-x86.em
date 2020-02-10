@@ -1,5 +1,5 @@
 # This shell script emits a C file. -*- C -*-
-# Copyright (C) 2019-2020 Free Software Foundation, Inc.
+# Copyright (C) 2019 Free Software Foundation, Inc.
 #
 # This file is part of the GNU Binutils.
 #
@@ -18,7 +18,7 @@
 # see <http://www.gnu.org/licenses/>.
 #
 
-# This file is sourced from elf.em, and defines x86 specific routines.
+# This file is sourced from elf32.em, and defines x86 specific routines.
 #
 fragment <<EOF
 

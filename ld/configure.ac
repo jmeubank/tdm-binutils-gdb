@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script
 dnl
-dnl   Copyright (C) 2012-2020 Free Software Foundation, Inc.
+dnl   Copyright (C) 2012-2019 Free Software Foundation, Inc.
 dnl
 dnl This file is free software; you can redistribute it and/or modify
 dnl it under the terms of the GNU General Public License as published by
@@ -293,10 +293,6 @@ BFD_BINARY_FOPEN
 
 AC_CHECK_DECLS([strstr, free, sbrk, getenv, environ])
 
-# Link in zlib if we can.  This allows us to read and write
-# compressed CTF sections.
-AM_ZLIB
-
 # When converting linker scripts into strings for use in emulation
 # files, use astring.sed if the compiler supports ANSI string
 # concatenation, or ostring.sed otherwise.  This is to support the
@@ -382,7 +378,7 @@ tdir_$i=$result"
 	    elf_list_options=TRUE
 	    ;;
 	  *)
-	    if $GREP "TEMPLATE_NAME=elf" ${srcdir}/emulparams/${i}.sh >/dev/null 2>/dev/null; then
+	    if $GREP "TEMPLATE_NAME=elf32" ${srcdir}/emulparams/${i}.sh >/dev/null 2>/dev/null; then
 	      elf_list_options=TRUE
 	    fi
 	    ;;
@@ -491,13 +487,10 @@ AC_SUBST(EMULATION_LIBPATH)
 
 if test x${enable_static} = xno; then
   TESTBFDLIB="-Wl,--rpath,../bfd/.libs ../bfd/.libs/libbfd.so"
-  TESTCTFLIB="-Wl,--rpath,../libctf/.libs ../libctf/.libs/libctf.so"
 else
   TESTBFDLIB="../bfd/.libs/libbfd.a"
-  TESTCTFLIB="../libctf/.libs/libctf.a"
 fi
 AC_SUBST(TESTBFDLIB)
-AC_SUBST(TESTCTFLIB)
 
 target_vendor=${target_vendor=$host_vendor}
 case "$target_vendor" in

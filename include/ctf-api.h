@@ -1,5 +1,5 @@
 /* Public API to libctf.
-   Copyright (C) 2019-2020 Free Software Foundation, Inc.
+   Copyright (C) 2019 Free Software Foundation, Inc.
 
    This file is part of libctf.
 
@@ -24,6 +24,7 @@
 #ifndef	_CTF_API_H
 #define	_CTF_API_H
 
+#include <sys/param.h>
 #include <sys/types.h>
 #include <ctf.h>
 #include <zlib.h>
@@ -63,28 +64,6 @@ typedef struct ctf_sect
   size_t cts_size;		  /* Size of data in bytes.  */
   size_t cts_entsize;		  /* Size of each section entry (symtab only).  */
 } ctf_sect_t;
-
-/* A minimal symbol extracted from a linker's internal symbol table
-   representation.  */
-
-typedef struct ctf_link_sym
-{
-  /* The st_name will not be accessed outside the call to
-     ctf_link_shuffle_syms().  */
-
-  const char *st_name;
-  uint32_t st_shndx;
-  uint32_t st_type;
-  uint32_t st_value;
-} ctf_link_sym_t;
-
-/* Indication of how to share types when linking.  */
-
-/* Share all types thare are not in conflict.  The default.  */
-#define CTF_LINK_SHARE_UNCONFLICTED 0x0
-
-/* Share only types that are used by multiple inputs.  Not implemented yet.  */
-#define CTF_LINK_SHARE_DUPLICATED 0x1
 
 /* Symbolic names for CTF sections.  */
 
@@ -166,7 +145,7 @@ enum
    ECTF_NOSYMTAB,		/* Symbol table data is not available.  */
    ECTF_NOPARENT,		/* Parent CTF container is not available.  */
    ECTF_DMODEL,			/* Data model mismatch.  */
-   ECTF_LINKADDEDLATE,		/* File added to link too late.  */
+   ECTF_UNUSED,			/* Unused error.  */
    ECTF_ZALLOC,			/* Failed to allocate (de)compression buffer.  */
    ECTF_DECOMPRESS,		/* Failed to decompress CTF data.  */
    ECTF_STRTAB,			/* String table for this string is missing.  */
@@ -201,10 +180,7 @@ enum
    ECTF_ARNNAME,		/* Name not found in CTF archive.  */
    ECTF_SLICEOVERFLOW,		/* Overflow of type bitness or offset in slice.  */
    ECTF_DUMPSECTUNKNOWN,	/* Unknown section number in dump.  */
-   ECTF_DUMPSECTCHANGED,	/* Section changed in middle of dump.  */
-   ECTF_NOTYET,			/* Feature not yet implemented.  */
-   ECTF_INTERNAL,		/* Internal error in link.  */
-   ECTF_NONREPRESENTABLE	/* Type not representable in CTF.  */
+   ECTF_DUMPSECTCHANGED		/* Section changed in middle of dump.  */
   };
 
 /* The CTF data model is inferred to be the caller's data model or the data
@@ -235,7 +211,6 @@ typedef int ctf_member_f (const char *name, ctf_id_t membtype,
 typedef int ctf_enum_f (const char *name, int val, void *arg);
 typedef int ctf_variable_f (const char *name, ctf_id_t type, void *arg);
 typedef int ctf_type_f (ctf_id_t type, void *arg);
-typedef int ctf_type_all_f (ctf_id_t type, int flag, void *arg);
 typedef int ctf_label_f (const char *name, const ctf_lblinfo_t *info,
 			 void *arg);
 typedef int ctf_archive_member_f (ctf_file_t *fp, const char *name, void *arg);
@@ -282,14 +257,10 @@ extern void ctf_file_close (ctf_file_t *);
 
 extern int ctf_arc_write (const char *, ctf_file_t **, size_t,
 			  const char **, size_t);
-extern int ctf_arc_write_fd (int, ctf_file_t **, size_t, const char **,
-			     size_t);
 
-extern const char *ctf_cuname (ctf_file_t *);
-extern int ctf_cuname_set (ctf_file_t *, const char *);
 extern ctf_file_t *ctf_parent_file (ctf_file_t *);
 extern const char *ctf_parent_name (ctf_file_t *);
-extern int ctf_parent_name_set (ctf_file_t *, const char *);
+extern void ctf_parent_name_set (ctf_file_t *, const char *);
 extern int ctf_type_isparent (ctf_file_t *, ctf_id_t);
 extern int ctf_type_ischild (ctf_file_t *, ctf_id_t);
 
@@ -344,7 +315,6 @@ extern int ctf_label_info (ctf_file_t *, const char *, ctf_lblinfo_t *);
 extern int ctf_member_iter (ctf_file_t *, ctf_id_t, ctf_member_f *, void *);
 extern int ctf_enum_iter (ctf_file_t *, ctf_id_t, ctf_enum_f *, void *);
 extern int ctf_type_iter (ctf_file_t *, ctf_type_f *, void *);
-extern int ctf_type_iter_all (ctf_file_t *, ctf_type_all_f *, void *);
 extern int ctf_label_iter (ctf_file_t *, ctf_label_f *, void *);
 extern int ctf_variable_iter (ctf_file_t *, ctf_variable_f *, void *);
 extern int ctf_archive_iter (const ctf_archive_t *, ctf_archive_member_f *,
@@ -405,33 +375,8 @@ extern ctf_snapshot_id_t ctf_snapshot (ctf_file_t *);
 extern int ctf_rollback (ctf_file_t *, ctf_snapshot_id_t);
 extern int ctf_discard (ctf_file_t *);
 extern int ctf_write (ctf_file_t *, int);
-extern int ctf_gzwrite (ctf_file_t *fp, gzFile fd);
+extern int ctf_gzwrite (ctf_file_t * fp, gzFile fd);
 extern int ctf_compress_write (ctf_file_t * fp, int fd);
-extern unsigned char *ctf_write_mem (ctf_file_t *, size_t *, size_t threshold);
-
-/* The ctf_link interfaces are not stable yet.  No guarantees!  */
-
-extern int ctf_link_add_ctf (ctf_file_t *, ctf_archive_t *, const char *);
-extern int ctf_link (ctf_file_t *, int share_mode);
-typedef const char *ctf_link_strtab_string_f (uint32_t *offset, void *arg);
-extern int ctf_link_add_strtab (ctf_file_t *, ctf_link_strtab_string_f *,
-				void *);
-typedef ctf_link_sym_t *ctf_link_iter_symbol_f (ctf_link_sym_t *dest,
-						void *arg);
-extern int ctf_link_shuffle_syms (ctf_file_t *, ctf_link_iter_symbol_f *,
-				  void *);
-extern unsigned char *ctf_link_write (ctf_file_t *, size_t *size,
-				      size_t threshold);
-
-/* Specialist linker functions.  These functions are not used by ld, but can be
-   used by other prgorams making use of the linker machinery for other purposes
-   to customize its output.  */
-extern int ctf_link_add_cu_mapping (ctf_file_t *, const char *from,
-				    const char *to);
-typedef char *ctf_link_memb_name_changer_f (ctf_file_t *,
-					    const char *, void *);
-extern void ctf_link_set_memb_name_changer
-  (ctf_file_t *, ctf_link_memb_name_changer_f *, void *);
 
 extern void ctf_setdebug (int debug);
 extern int ctf_getdebug (void);

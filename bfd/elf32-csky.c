@@ -1,5 +1,5 @@
 /* 32-bit ELF support for C-SKY.
-   Copyright (C) 1998-2020 Free Software Foundation, Inc.
+   Copyright (C) 1998-2019 Free Software Foundation, Inc.
    Contributed by C-SKY Microsystems and Mentor Graphics.
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -28,7 +28,6 @@
 #include "opcode/csky.h"
 #include <assert.h>
 #include "libiberty.h"
-#include "elf32-csky.h"
 
 /* Data structures used for merging different arch variants.
    V1 (510/610) and V2 (8xx) processors are incompatible, but
@@ -2093,7 +2092,7 @@ csky_elf_size_dynamic_sections (bfd *output_bfd ATTRIBUTE_UNUSED,
 	  if (htab->elf.hplt != NULL)
 	    strip_section = FALSE;
 	}
-      else if (CONST_STRNEQ (bfd_section_name (s), ".rel") )
+      else if (CONST_STRNEQ (bfd_get_section_name (dynobj, s), ".rel") )
 	{
 	  if (s->size != 0 )
 	    relocs = TRUE;
@@ -5071,7 +5070,7 @@ csky_elf_relocate_section (bfd *                  output_bfd,
 		  if (name == NULL)
 		    break;
 		  if (*name == '\0')
-		    name = bfd_section_name (sec);
+		    name = bfd_section_name (input_bfd, sec);
 		}
 	      (*info->callbacks->reloc_overflow)
 		(info,

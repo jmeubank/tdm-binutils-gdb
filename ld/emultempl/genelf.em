@@ -1,5 +1,5 @@
 # This shell script emits a C file. -*- C -*-
-#   Copyright (C) 2006-2020 Free Software Foundation, Inc.
+#   Copyright (C) 2006-2019 Free Software Foundation, Inc.
 #
 # This file is part of the GNU Binutils.
 #
@@ -23,7 +23,6 @@
 #
 fragment <<EOF
 #include "elf-bfd.h"
-#include "ldelfgen.h"
 
 EOF
 source_em ${srcdir}/emultempl/elf-generic.em
@@ -64,7 +63,7 @@ gld${EMULATION_NAME}_before_allocation (void)
 static void
 gld${EMULATION_NAME}_after_allocation (void)
 {
-  ldelf_map_segments (FALSE);
+  gld${EMULATION_NAME}_map_segments (FALSE);
 }
 EOF
 # Put these extra routines in ld_${EMULATION_NAME}_emulation

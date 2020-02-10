@@ -1,5 +1,5 @@
 /* C-SKY disassembler.
-   Copyright (C) 1988-2020 Free Software Foundation, Inc.
+   Copyright (C) 1988-2019 Free Software Foundation, Inc.
    Contributed by C-SKY Microsystems and Mentor Graphics.
 
    This file is part of the GNU opcodes library.
@@ -134,15 +134,17 @@ csky_get_mask (struct csky_opcode_info const *pinfo)
 static unsigned int
 csky_chars_to_number (unsigned char * buf, int n)
 {
+  if (n == 0)
+    abort ();
   int i;
-  unsigned int val = 0;
+  int val = 0;
 
   if (dis_info.info->endian == BFD_ENDIAN_BIG)
-    for (i = 0; i < n; i++)
-      val = val << 8 | buf[i];
+    while (n--)
+      val |= buf[n] << (n*8);
   else
-    for (i = n - 1; i >= 0; i--)
-      val = val << 8 | buf[i];
+    for (i = 0; i < n; i++)
+      val |= buf[i] << (i*8);
   return val;
 }
 

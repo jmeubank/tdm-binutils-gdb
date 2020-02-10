@@ -1,5 +1,5 @@
 /* Lattice Mico32-specific support for 32-bit ELF
-   Copyright (C) 2008-2020 Free Software Foundation, Inc.
+   Copyright (C) 2008-2019 Free Software Foundation, Inc.
    Contributed by Jon Beniston <jon@beniston.com>
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -195,7 +195,8 @@ create_rofixup_section (bfd *dynobj, struct bfd_link_info *info)
 					   | SEC_LINKER_CREATED
 					   | SEC_READONLY));
   if (lm32fdpic_fixup32_section (info) == NULL
-      || !bfd_set_section_alignment (lm32fdpic_fixup32_section (info), 2))
+      || ! bfd_set_section_alignment (dynobj,
+				      lm32fdpic_fixup32_section (info), 2))
     return FALSE;
 
   return TRUE;
@@ -820,7 +821,7 @@ lm32_elf_relocate_section (bfd *output_bfd,
 	  relocation = _bfd_elf_rela_local_sym (output_bfd, sym, &sec, rel);
 	  name = bfd_elf_string_from_elf_section
 	    (input_bfd, symtab_hdr->sh_link, sym->st_name);
-	  name = name == NULL ? bfd_section_name (sec) : name;
+	  name = (name == NULL) ? bfd_section_name (input_bfd, sec) : name;
 	}
       else
 	{
@@ -1035,7 +1036,7 @@ lm32_elf_relocate_section (bfd *output_bfd,
 		  if ((!h) || (h && h->root.type != bfd_link_hash_undefweak))
 		    {
 		      /* Only create .rofixup entries for relocs in loadable sections.  */
-		      if ((bfd_section_flags (input_section->output_section)
+		      if ((bfd_get_section_flags (output_bfd, input_section->output_section)
 			  & (SEC_ALLOC | SEC_LOAD)) == (SEC_ALLOC | SEC_LOAD))
 
 			{
@@ -1089,7 +1090,7 @@ lm32_elf_relocate_section (bfd *output_bfd,
 	      name = (bfd_elf_string_from_elf_section
 		      (input_bfd, symtab_hdr->sh_link, sym->st_name));
 	      if (name == NULL || *name == '\0')
-		name = bfd_section_name (sec);
+		name = bfd_section_name (input_bfd, sec);
 	    }
 
 	  switch (r)
@@ -2119,7 +2120,7 @@ lm32_elf_size_dynamic_sections (bfd *output_bfd,
 	  /* Strip this section if we don't need it; see the
 	     comment below.  */
 	}
-      else if (CONST_STRNEQ (bfd_section_name (s), ".rela"))
+      else if (CONST_STRNEQ (bfd_get_section_name (dynobj, s), ".rela"))
 	{
 	  if (s->size != 0 && s != htab->root.srelplt)
 	    relocs = TRUE;
@@ -2254,7 +2255,7 @@ lm32_elf_size_dynamic_sections (bfd *output_bfd,
 			  /* Don't generate entries for weak symbols.  */
 			  if (!h || (h && h->root.type != bfd_link_hash_undefweak))
 			    {
-			      if (!discarded_section (s) && !((bfd_section_flags (s) & SEC_ALLOC) == 0))
+			      if (!discarded_section (s) && !((bfd_get_section_flags (ibfd, s) & SEC_ALLOC) == 0))
 				{
 				  switch (ELF32_R_TYPE (internal_relocs->r_info))
 				    {
@@ -2276,7 +2277,7 @@ lm32_elf_size_dynamic_sections (bfd *output_bfd,
 				  if (!strcmp (current->name, h->root.root.string))
 				    break;
 				}
-			      if (!current && !discarded_section (s) && (bfd_section_flags (s) & SEC_ALLOC))
+			      if (!current && !discarded_section (s) && (bfd_get_section_flags (ibfd, s) & SEC_ALLOC))
 				{
 				  /* Will this have an entry in the GOT.  */
 				  if (ELF32_R_TYPE (internal_relocs->r_info) == R_LM32_16_GOT)
@@ -2376,7 +2377,7 @@ lm32_elf_create_dynamic_sections (bfd *abfd, struct bfd_link_info *info)
   s = bfd_make_section_anyway_with_flags (abfd, ".plt", pltflags);
   htab->root.splt = s;
   if (s == NULL
-      || !bfd_set_section_alignment (s, bed->plt_alignment))
+      || ! bfd_set_section_alignment (abfd, s, bed->plt_alignment))
     return FALSE;
 
   if (bed->want_plt_sym)
@@ -2407,7 +2408,7 @@ lm32_elf_create_dynamic_sections (bfd *abfd, struct bfd_link_info *info)
 					  flags | SEC_READONLY);
   htab->root.srelplt = s;
   if (s == NULL
-      || !bfd_set_section_alignment (s, ptralign))
+      || ! bfd_set_section_alignment (abfd, s, ptralign))
     return FALSE;
 
   if (htab->root.sgot == NULL
@@ -2446,7 +2447,7 @@ lm32_elf_create_dynamic_sections (bfd *abfd, struct bfd_link_info *info)
 						  flags | SEC_READONLY);
 	  htab->srelbss = s;
 	  if (s == NULL
-	      || !bfd_set_section_alignment (s, ptralign))
+	      || ! bfd_set_section_alignment (abfd, s, ptralign))
 	    return FALSE;
 	}
     }

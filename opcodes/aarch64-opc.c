@@ -1,5 +1,5 @@
 /* aarch64-opc.c -- AArch64 opcode support.
-   Copyright (C) 2009-2020 Free Software Foundation, Inc.
+   Copyright (C) 2009-2019 Free Software Foundation, Inc.
    Contributed by ARM Ltd.
 
    This file is part of the GNU opcodes library.
@@ -546,7 +546,7 @@ value_fit_signed_field_p (int64_t value, unsigned width)
   assert (width < 32);
   if (width < sizeof (value) * 8)
     {
-      int64_t lim = (uint64_t) 1 << (width - 1);
+      int64_t lim = (int64_t)1 << (width - 1);
       if (value >= -lim && value < lim)
 	return 1;
     }
@@ -560,7 +560,7 @@ value_fit_unsigned_field_p (int64_t value, unsigned width)
   assert (width < 32);
   if (width < sizeof (value) * 8)
     {
-      int64_t lim = (uint64_t) 1 << width;
+      int64_t lim = (int64_t)1 << width;
       if (value >= 0 && value < lim)
 	return 1;
     }
@@ -712,7 +712,6 @@ struct operand_qualifier_data aarch64_opnd_qualifiers[] =
   {8, 1, 0x3, "d", OQK_OPD_VARIANT},
   {16, 1, 0x4, "q", OQK_OPD_VARIANT},
   {4, 1, 0x0, "4b", OQK_OPD_VARIANT},
-  {4, 1, 0x0, "2h", OQK_OPD_VARIANT},
 
   {1, 4, 0x0, "4b", OQK_OPD_VARIANT},
   {1, 8, 0x0, "8b", OQK_OPD_VARIANT},
@@ -1063,7 +1062,7 @@ match_operands_qualifier (aarch64_inst *inst, bfd_boolean update_p)
    amount will be returned in *SHIFT_AMOUNT.  */
 
 bfd_boolean
-aarch64_wide_constant_p (uint64_t value, int is32, unsigned int *shift_amount)
+aarch64_wide_constant_p (int64_t value, int is32, unsigned int *shift_amount)
 {
   int amount;
 
@@ -1074,21 +1073,22 @@ aarch64_wide_constant_p (uint64_t value, int is32, unsigned int *shift_amount)
       /* Allow all zeros or all ones in top 32-bits, so that
 	 32-bit constant expressions like ~0x80000000 are
 	 permitted.  */
-      if (value >> 32 != 0 && value >> 32 != 0xffffffff)
+      uint64_t ext = value;
+      if (ext >> 32 != 0 && ext >> 32 != (uint64_t) 0xffffffff)
 	/* Immediate out of range.  */
 	return FALSE;
-      value &= 0xffffffff;
+      value &= (int64_t) 0xffffffff;
     }
 
   /* first, try movz then movn */
   amount = -1;
-  if ((value & ((uint64_t) 0xffff << 0)) == value)
+  if ((value & ((int64_t) 0xffff << 0)) == value)
     amount = 0;
-  else if ((value & ((uint64_t) 0xffff << 16)) == value)
+  else if ((value & ((int64_t) 0xffff << 16)) == value)
     amount = 16;
-  else if (!is32 && (value & ((uint64_t) 0xffff << 32)) == value)
+  else if (!is32 && (value & ((int64_t) 0xffff << 32)) == value)
     amount = 32;
-  else if (!is32 && (value & ((uint64_t) 0xffff << 48)) == value)
+  else if (!is32 && (value & ((int64_t) 0xffff << 48)) == value)
     amount = 48;
 
   if (amount == -1)
@@ -1534,7 +1534,7 @@ operand_general_constraint_met_p (const aarch64_opnd_info *opnds, int idx,
 			       : _("z0-z7 expected"));
 	      return 0;
 	    }
-	  mask = (1u << (size - shift)) - 1;
+	  mask = (1 << (size - shift)) - 1;
 	  if (!value_in_range_p (opnd->reglane.index, 0, mask))
 	    {
 	      set_elem_idx_out_of_range_error (mismatch_detail, idx, 0, mask);
@@ -1898,7 +1898,6 @@ operand_general_constraint_met_p (const aarch64_opnd_info *opnds, int idx,
 	  break;
 
 	case AARCH64_OPND_SVE_ADDR_RI_S4x16:
-	case AARCH64_OPND_SVE_ADDR_RI_S4x32:
 	  min_value = -8;
 	  max_value = 7;
 	  goto sve_imm_offset;
@@ -2160,7 +2159,7 @@ operand_general_constraint_met_p (const aarch64_opnd_info *opnds, int idx,
 	  if (!value_fit_unsigned_field_p (opnd->imm.value, size))
 	    {
 	      set_imm_out_of_range_error (mismatch_detail, idx, 0,
-					  (1u << size) - 1);
+					  (1 << size) - 1);
 	      return 0;
 	    }
 	  break;
@@ -2545,14 +2544,17 @@ operand_general_constraint_met_p (const aarch64_opnd_info *opnds, int idx,
 	case AARCH64_OPND_SVE_SHRIMM_PRED:
 	case AARCH64_OPND_SVE_SHRIMM_UNPRED:
 	case AARCH64_OPND_SVE_SHRIMM_UNPRED_22:
-	  num = (type == AARCH64_OPND_SVE_SHRIMM_UNPRED_22) ? 2 : 1;
-	  size = aarch64_get_qualifier_esize (opnds[idx - num].qualifier);
-	  if (!value_in_range_p (opnd->imm.value, 1, 8 * size))
 	    {
-	      set_imm_out_of_range_error (mismatch_detail, idx, 1, 8*size);
-	      return 0;
-	    }
-	  break;
+	      unsigned int index =
+		(type == AARCH64_OPND_SVE_SHRIMM_UNPRED_22) ? 2 : 1;
+	      size = aarch64_get_qualifier_esize (opnds[idx - index].qualifier);
+	      if (!value_in_range_p (opnd->imm.value, 1, 8 * size))
+		{
+		  set_imm_out_of_range_error (mismatch_detail, idx, 1, 8*size);
+		  return 0;
+		}
+	      break;
+	   }
 
 	default:
 	  break;
@@ -3061,12 +3063,7 @@ print_immediate_offset_address (char *buf, size_t size,
   if (opnd->addr.writeback)
     {
       if (opnd->addr.preind)
-        {
-	  if (opnd->type == AARCH64_OPND_ADDR_SIMM10 && !opnd->addr.offset.imm)
-            snprintf (buf, size, "[%s]!", base);
-          else
-	    snprintf (buf, size, "[%s, #%d]!", base, opnd->addr.offset.imm);
-        }
+	snprintf (buf, size, "[%s, #%d]!", base, opnd->addr.offset.imm);
       else
 	snprintf (buf, size, "[%s], #%d", base, opnd->addr.offset.imm);
     }
@@ -3641,7 +3638,6 @@ aarch64_print_operand (char *buf, size_t size, bfd_vma pc,
     case AARCH64_OPND_ADDR_SIMM13:
     case AARCH64_OPND_ADDR_OFFSET:
     case AARCH64_OPND_SVE_ADDR_RI_S4x16:
-    case AARCH64_OPND_SVE_ADDR_RI_S4x32:
     case AARCH64_OPND_SVE_ADDR_RI_S4xVL:
     case AARCH64_OPND_SVE_ADDR_RI_S4x2xVL:
     case AARCH64_OPND_SVE_ADDR_RI_S4x3xVL:

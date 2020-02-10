@@ -1,7 +1,7 @@
 /* libbfd.h -- Declarations used by bfd library *implementation*.
    (This include file is not for users of the library.)
 
-   Copyright (C) 1990-2020 Free Software Foundation, Inc.
+   Copyright (C) 1990-2019 Free Software Foundation, Inc.
 
    Written by Cygnus Support.
 
@@ -523,8 +523,6 @@ extern bfd_boolean _bfd_nolink_bfd_lookup_section_flags
 #define _bfd_nolink_bfd_merge_sections _bfd_bool_bfd_link_false_error
 extern bfd_boolean _bfd_nolink_bfd_is_group_section
   (bfd *, const asection *) ATTRIBUTE_HIDDEN;
-extern const char *_bfd_nolink_bfd_group_name
-  (bfd *, const asection *) ATTRIBUTE_HIDDEN;
 extern bfd_boolean _bfd_nolink_bfd_discard_group
   (bfd *, asection *) ATTRIBUTE_HIDDEN;
 extern struct bfd_link_hash_table *_bfd_nolink_bfd_link_hash_table_create
@@ -596,7 +594,7 @@ struct dwarf_debug_section
 extern const struct dwarf_debug_section dwarf_debug_sections[] ATTRIBUTE_HIDDEN;
 
 /* Find the nearest line using DWARF 2 debugging information.  */
-extern int _bfd_dwarf2_find_nearest_line
+extern bfd_boolean _bfd_dwarf2_find_nearest_line
   (bfd *, asymbol **, asymbol *, asection *, bfd_vma,
    const char **, const char **, unsigned int *, unsigned int *,
    const struct dwarf_debug_section *, void **) ATTRIBUTE_HIDDEN;

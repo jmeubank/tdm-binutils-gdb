@@ -1,6 +1,6 @@
 /* tc-microblaze.c -- Assemble code for Xilinx MicroBlaze
 
-   Copyright (C) 2009-2020 Free Software Foundation, Inc.
+   Copyright (C) 2009-2019 Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
@@ -2011,7 +2011,8 @@ md_apply_fix (fixS *   fixP,
     {
       if (S_IS_WEAK (fixP->fx_addsy)
 	  || (symbol_used_in_reloc_p (fixP->fx_addsy)
-	      && (((bfd_section_flags (S_GET_SEGMENT (fixP->fx_addsy))
+	      && (((bfd_get_section_flags (stdoutput,
+					   S_GET_SEGMENT (fixP->fx_addsy))
 		    & SEC_LINK_ONCE) != 0)
 		  || !strncmp (segment_name (S_GET_SEGMENT (fixP->fx_addsy)),
 			       ".gnu.linkonce",

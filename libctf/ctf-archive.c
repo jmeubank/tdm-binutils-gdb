@@ -1,5 +1,5 @@
 /* CTF archive files.
-   Copyright (C) 2019-2020 Free Software Foundation, Inc.
+   Copyright (C) 2019 Free Software Foundation, Inc.
 
    This file is part of libctf.
 
@@ -47,17 +47,17 @@ static int arc_mmap_unmap (void *header, size_t headersz, const char **errmsg);
 /* bsearch() internal state.  */
 static __thread char *search_nametbl;
 
-/* Write out a CTF archive to the start of the file referenced by the passed-in
-   fd.  The entries in CTF_FILES are referenced by name: the names are passed in
-   the names array, which must have CTF_FILES entries.
+/* Write out a CTF archive.  The entries in CTF_FILES are referenced by name:
+   the names are passed in the names array, which must have CTF_FILES entries.
 
    Returns 0 on success, or an errno, or an ECTF_* value.  */
 int
-ctf_arc_write_fd (int fd, ctf_file_t **ctf_files, size_t ctf_file_cnt,
-		  const char **names, size_t threshold)
+ctf_arc_write (const char *file, ctf_file_t ** ctf_files, size_t ctf_file_cnt,
+	       const char **names, size_t threshold)
 {
   const char *errmsg;
   struct ctf_archive *archdr;
+  int fd;
   size_t i;
   char dummy = 0;
   size_t headersz;
@@ -68,8 +68,14 @@ ctf_arc_write_fd (int fd, ctf_file_t **ctf_files, size_t ctf_file_cnt,
   off_t nameoffs;
   struct ctf_archive_modent *modent;
 
-  ctf_dprintf ("Writing CTF archive with %lu files\n",
+  ctf_dprintf ("Writing archive %s with %lu files\n", file,
 	       (unsigned long) ctf_file_cnt);
+
+  if ((fd = open (file, O_RDWR | O_CREAT | O_TRUNC | O_CLOEXEC, 0666)) < 0)
+    {
+      errmsg = "ctf_arc_write(): cannot create %s: %s\n";
+      goto err;
+    }
 
   /* Figure out the size of the mmap()ed header, including the
      ctf_archive_modent array.  We assume that all of this needs no
@@ -85,20 +91,20 @@ ctf_arc_write_fd (int fd, ctf_file_t **ctf_files, size_t ctf_file_cnt,
   ctf_startoffs = headersz;
   if (lseek (fd, ctf_startoffs - 1, SEEK_SET) < 0)
     {
-      errmsg = "ctf_arc_write(): cannot extend file while writing: %s\n";
-      goto err;
+      errmsg = "ctf_arc_write(): cannot extend file while writing %s: %s\n";
+      goto err_close;
     }
 
   if (write (fd, &dummy, 1) < 0)
     {
-      errmsg = "ctf_arc_write(): cannot extend file while writing: %s\n";
-      goto err;
+      errmsg = "ctf_arc_write(): cannot extend file while writing %s: %s\n";
+      goto err_close;
     }
 
   if ((archdr = arc_mmap_header (fd, headersz)) == NULL)
     {
-      errmsg = "ctf_arc_write(): Cannot mmap(): %s\n";
-      goto err;
+      errmsg = "ctf_arc_write(): Cannot mmap() %s: %s\n";
+      goto err_close;
     }
 
   /* Fill in everything we can, which is everything other than the name
@@ -131,7 +137,7 @@ ctf_arc_write_fd (int fd, ctf_file_t **ctf_files, size_t ctf_file_cnt,
   nametbl = malloc (namesz);
   if (nametbl == NULL)
     {
-      errmsg = "Error writing named CTF to archive: %s\n";
+      errmsg = "Error writing named CTF to %s: %s\n";
       goto err_unmap;
     }
 
@@ -148,12 +154,12 @@ ctf_arc_write_fd (int fd, ctf_file_t **ctf_files, size_t ctf_file_cnt,
       if ((off < 0) && (off > -ECTF_BASE))
 	{
 	  errmsg = "ctf_arc_write(): Cannot determine file "
-	    "position while writing to archive: %s";
+	    "position while writing %s: %s";
 	  goto err_free;
 	}
       if (off < 0)
 	{
-	  errmsg = "ctf_arc_write(): Cannot write CTF file to archive: %s\n";
+	  errmsg = "ctf_arc_write(): Cannot write CTF file to %s: %s\n";
 	  errno = off * -1;
 	  goto err_free;
 	}
@@ -175,7 +181,7 @@ ctf_arc_write_fd (int fd, ctf_file_t **ctf_files, size_t ctf_file_cnt,
   if ((nameoffs = lseek (fd, 0, SEEK_CUR)) < 0)
     {
       errmsg = "ctf_arc_write(): Cannot get current file position "
-	"in archive: %s\n";
+	"in %s: %s\n";
       goto err_free;
     }
   archdr->ctfa_names = htole64 (nameoffs);
@@ -185,7 +191,7 @@ ctf_arc_write_fd (int fd, ctf_file_t **ctf_files, size_t ctf_file_cnt,
       ssize_t len;
       if ((len = write (fd, np, namesz)) < 0)
 	{
-	  errmsg = "ctf_arc_write(): Cannot write name table to archive: %s\n";
+	  errmsg = "ctf_arc_write(): Cannot write name table in %s: %s\n";
 	  goto err_free;
 	}
       namesz -= len;
@@ -196,62 +202,27 @@ ctf_arc_write_fd (int fd, ctf_file_t **ctf_files, size_t ctf_file_cnt,
   if (arc_mmap_writeout (fd, archdr, headersz, &errmsg) < 0)
     goto err_unmap;
   if (arc_mmap_unmap (archdr, headersz, &errmsg) < 0)
-    goto err;
+    goto err_unlink;
+  if (close (fd) < 0)
+    {
+      errmsg = "ctf_arc_write(): Cannot close after writing to %s: %s\n";
+      goto err_unlink;
+    }
+
   return 0;
 
 err_free:
   free (nametbl);
 err_unmap:
   arc_mmap_unmap (archdr, headersz, NULL);
+err_close:
+  close (fd);
+err_unlink:
+  unlink (file);
 err:
-  ctf_dprintf (errmsg, errno < ECTF_BASE ? strerror (errno) :
+  ctf_dprintf (errmsg, file, errno < ECTF_BASE ? strerror (errno) :
 	       ctf_errmsg (errno));
   return errno;
-}
-
-/* Write out a CTF archive.  The entries in CTF_FILES are referenced by name:
-   the names are passed in the names array, which must have CTF_FILES entries.
-
-   If the filename is NULL, create a temporary file and return a pointer to it.
-
-   Returns 0 on success, or an errno, or an ECTF_* value.  */
-int
-ctf_arc_write (const char *file, ctf_file_t ** ctf_files, size_t ctf_file_cnt,
-	       const char **names, size_t threshold)
-{
-  int err;
-  int fd;
-
-  if ((fd = open (file, O_RDWR | O_CREAT | O_TRUNC | O_CLOEXEC, 0666)) < 0)
-    {
-      ctf_dprintf ("ctf_arc_write(): cannot create %s: %s\n", file,
-		   strerror (errno));
-      return errno;
-    }
-
-  err = ctf_arc_write_fd (fd, ctf_files, ctf_file_cnt, names, threshold);
-  if (err)
-    goto err;
-
-  if ((err = close (fd)) < 0)
-    {
-      ctf_dprintf ("ctf_arc_write(): Cannot close after writing to archive: "
-		   "%s\n", strerror (errno));
-      goto err_close;
-    }
-
- err:
-  close (fd);
-  if (err < 0)
-    unlink (file);
-
-  return err;
-
- err_close:
-  if (err < 0)
-    unlink (file);
-
-  return err;
 }
 
 /* Write one CTF file out.  Return the file position of the written file (or
@@ -266,9 +237,6 @@ arc_write_one_ctf (ctf_file_t * f, int fd, size_t threshold)
   char *ctfszp;
   size_t ctfsz_len;
   int (*writefn) (ctf_file_t * fp, int fd);
-
-  if (ctf_serialize (f) < 0)
-    return f->ctf_errno * -1;
 
   if ((off = lseek (fd, 0, SEEK_CUR)) < 0)
     return errno * -1;
@@ -437,10 +405,8 @@ ctf_arc_close (ctf_archive_t *arc)
   else
     ctf_file_close (arc->ctfi_file);
   free ((void *) arc->ctfi_symsect.cts_data);
-  /* Do not free the ctfi_strsect: it is bound to the bfd.  */
+  free ((void *) arc->ctfi_strsect.cts_data);
   free (arc->ctfi_data);
-  if (arc->ctfi_bfd_close)
-    arc->ctfi_bfd_close (arc);
   free (arc);
 }
 

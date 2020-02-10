@@ -1,5 +1,5 @@
 /* atof_generic.c - turn a string of digits into a Flonum
-   Copyright (C) 1987-2020 Free Software Foundation, Inc.
+   Copyright (C) 1987-2019 Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
@@ -347,12 +347,11 @@ atof_generic (/* return pointer to just AFTER number we read.  */
 		   - address_of_generic_floating_point_number->low
 		   + 1);	/* Number of destination littlenums.  */
 
-      /* precision includes two littlenums worth of guard bits,
-	 so this gives us 10 decimal guard digits here.  */
-      maximum_useful_digits = (precision
-			       * LITTLENUM_NUMBER_OF_BITS
-			       * 1000000 / 3321928
-			       + 1);	/* round up.  */
+      /* Includes guard bits (two littlenums worth) */
+      maximum_useful_digits = (((precision - 2))
+			       * ( (LITTLENUM_NUMBER_OF_BITS))
+			       * 1000000 / 3321928)
+	+ 2;			/* 2 :: guard digits.  */
 
       if (number_of_digits_available > maximum_useful_digits)
 	{

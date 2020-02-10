@@ -1,5 +1,5 @@
 /* BFD back-end for verilog hex memory dump files.
-   Copyright (C) 2009-2020 Free Software Foundation, Inc.
+   Copyright (C) 2009-2019 Free Software Foundation, Inc.
    Written by Anthony Green <green@moxielogic.com>
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -368,7 +368,6 @@ verilog_mkobject (bfd *abfd)
 #define verilog_bfd_gc_sections			     bfd_generic_gc_sections
 #define verilog_bfd_merge_sections		     bfd_generic_merge_sections
 #define verilog_bfd_is_group_section		     bfd_generic_is_group_section
-#define verilog_bfd_group_name			     bfd_generic_group_name
 #define verilog_bfd_discard_group		     bfd_generic_discard_group
 #define verilog_section_already_linked		     _bfd_generic_section_already_linked
 #define verilog_bfd_link_hash_table_create	     _bfd_generic_link_hash_table_create

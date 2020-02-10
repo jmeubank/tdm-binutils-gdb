@@ -1,5 +1,5 @@
 /* ld.h -- general linker header file
-   Copyright (C) 1991-2020 Free Software Foundation, Inc.
+   Copyright (C) 1991-2019 Free Software Foundation, Inc.
 
    This file is part of the GNU Binutils.
 
@@ -119,6 +119,20 @@ struct wildcard_list
 
 enum endian_enum { ENDIAN_UNSET = 0, ENDIAN_BIG, ENDIAN_LITTLE };
 
+enum symbolic_enum
+{
+  symbolic_unset = 0,
+  symbolic,
+  symbolic_functions,
+};
+
+enum dynamic_list_enum
+{
+  dynamic_list_unset = 0,
+  dynamic_list_data,
+  dynamic_list
+};
+
 typedef struct
 {
   /* 1 => assign space to common symbols even if `relocatable_output'.  */
@@ -168,6 +182,13 @@ typedef struct
 
   /* Big or little endian as set on command line.  */
   enum endian_enum endian;
+
+  /* -Bsymbolic and -Bsymbolic-functions, as set on command line.  */
+  enum symbolic_enum symbolic;
+
+  /* --dynamic-list, --dynamic-list-cpp-new, --dynamic-list-cpp-typeinfo
+     and --dynamic-list FILE, as set on command line.  */
+  enum dynamic_list_enum dynamic_list;
 
   /* Name of runtime interpreter to invoke.  */
   char *interpreter;

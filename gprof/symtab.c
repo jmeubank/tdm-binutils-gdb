@@ -1,6 +1,6 @@
 /* symtab.c
 
-   Copyright (C) 1999-2020 Free Software Foundation, Inc.
+   Copyright (C) 1999-2019 Free Software Foundation, Inc.
 
    This file is part of GNU Binutils.
 
@@ -149,7 +149,7 @@ symtab_finalize (Sym_Table *tab)
 
   if (tab->len > 0 && dst[-1].end_addr == 0)
     dst[-1].end_addr
-      = core_text_sect->vma + bfd_section_size (core_text_sect) - 1;
+      = core_text_sect->vma + bfd_get_section_size (core_text_sect) - 1;
 
   DBG (AOUTDEBUG | IDDEBUG,
        printf ("[symtab_finalize]: removed %d duplicate entries\n",

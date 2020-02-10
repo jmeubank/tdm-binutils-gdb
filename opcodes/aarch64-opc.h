@@ -1,5 +1,5 @@
 /* aarch64-opc.h -- Header file for aarch64-opc.c and aarch64-opc-2.c.
-   Copyright (C) 2012-2020 Free Software Foundation, Inc.
+   Copyright (C) 2012-2019 Free Software Foundation, Inc.
    Contributed by ARM Ltd.
 
    This file is part of the GNU opcodes library.
@@ -485,7 +485,7 @@ enum aarch64_modifier_kind
 aarch64_get_operand_modifier_from_value (aarch64_insn, bfd_boolean);
 
 
-bfd_boolean aarch64_wide_constant_p (uint64_t, int, unsigned int *);
+bfd_boolean aarch64_wide_constant_p (int64_t, int, unsigned int *);
 bfd_boolean aarch64_logical_immediate_p (uint64_t, int, aarch64_insn *);
 int aarch64_shrink_expanded_imm8 (uint64_t);
 

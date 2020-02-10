@@ -1,6 +1,6 @@
 // layout.cc -- lay out output file sections for gold
 
-// Copyright (C) 2006-2020 Free Software Foundation, Inc.
+// Copyright (C) 2006-2019 Free Software Foundation, Inc.
 // Written by Ian Lance Taylor <iant@google.com>.
 
 // This file is part of gold.
@@ -1129,8 +1129,7 @@ Layout::special_ordering_of_input_section(const char* name)
     ".text.unlikely",
     ".text.exit",
     ".text.startup",
-    ".text.hot",
-    ".text.sorted"
+    ".text.hot"
   };
 
   for (size_t i = 0;

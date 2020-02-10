@@ -1,5 +1,5 @@
 /* read.c - read a source file -
-   Copyright (C) 1986-2020 Free Software Foundation, Inc.
+   Copyright (C) 1986-2019 Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
@@ -742,7 +742,7 @@ assemble_one (char *line)
 static bfd_boolean
 in_bss (void)
 {
-  flagword flags = bfd_section_flags (now_seg);
+  flagword flags = bfd_get_section_flags (stdoutput, now_seg);
 
   return (flags & SEC_ALLOC) && !(flags & (SEC_LOAD | SEC_HAS_CONTENTS));
 }
@@ -2419,7 +2419,7 @@ s_linkonce (int ignore ATTRIBUTE_UNUSED)
     if ((bfd_applicable_section_flags (stdoutput) & SEC_LINK_ONCE) == 0)
       as_warn (_(".linkonce is not supported for this object file format"));
 
-    flags = bfd_section_flags (now_seg);
+    flags = bfd_get_section_flags (stdoutput, now_seg);
     flags |= SEC_LINK_ONCE;
     switch (type)
       {
@@ -2438,7 +2438,7 @@ s_linkonce (int ignore ATTRIBUTE_UNUSED)
 	flags |= SEC_LINK_DUPLICATES_SAME_CONTENTS;
 	break;
       }
-    if (!bfd_set_section_flags (now_seg, flags))
+    if (!bfd_set_section_flags (stdoutput, now_seg, flags))
       as_bad (_("bfd_set_section_flags: %s"),
 	      bfd_errmsg (bfd_get_error ()));
   }
@@ -2464,7 +2464,7 @@ bss_alloc (symbolS *symbolP, addressT size, unsigned int align)
 	{
 	  bss_seg = subseg_new (".sbss", 1);
 	  seg_info (bss_seg)->bss = 1;
-	  if (!bfd_set_section_flags (bss_seg, SEC_ALLOC))
+	  if (!bfd_set_section_flags (stdoutput, bss_seg, SEC_ALLOC))
 	    as_warn (_("error setting flags for \".sbss\": %s"),
 		     bfd_errmsg (bfd_get_error ()));
 	}
@@ -2957,9 +2957,9 @@ s_mri_sect (char *type ATTRIBUTE_UNUSED)
 	  flags = SEC_ALLOC | SEC_LOAD | SEC_DATA | SEC_READONLY | SEC_ROM;
 	if (flags != SEC_NO_FLAGS)
 	  {
-	    if (!bfd_set_section_flags (seg, flags))
+	    if (!bfd_set_section_flags (stdoutput, seg, flags))
 	      as_warn (_("error setting flags for \"%s\": %s"),
-		       bfd_section_name (seg),
+		       bfd_section_name (stdoutput, seg),
 		       bfd_errmsg (bfd_get_error ()));
 	  }
       }
@@ -5435,9 +5435,8 @@ next_char_of_string (void)
       bump_line_counters ();
       break;
 
+#ifndef NO_STRING_ESCAPES
     case '\\':
-      if (!TC_STRING_ESCAPES)
-	break;
       switch (c = *input_line_pointer++ & CHAR_MASK)
 	{
 	case 'b':
@@ -5539,6 +5538,7 @@ next_char_of_string (void)
 	  break;
 	}
       break;
+#endif /* ! defined (NO_STRING_ESCAPES) */
 
     default:
       break;

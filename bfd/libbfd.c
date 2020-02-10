@@ -1,5 +1,5 @@
 /* Assorted BFD support routines, only used internally.
-   Copyright (C) 1990-2020 Free Software Foundation, Inc.
+   Copyright (C) 1990-2019 Free Software Foundation, Inc.
    Written by Cygnus Support.
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -449,9 +449,9 @@ DESCRIPTION
 .#define bfd_put_signed_8 \
 .  bfd_put_8
 .#define bfd_get_8(abfd, ptr) \
-.  ((bfd_vma) *(const unsigned char *) (ptr) & 0xff)
+.  (*(const unsigned char *) (ptr) & 0xff)
 .#define bfd_get_signed_8(abfd, ptr) \
-.  ((((bfd_signed_vma) *(const unsigned char *) (ptr) & 0xff) ^ 0x80) - 0x80)
+.  (((*(const unsigned char *) (ptr) & 0xff) ^ 0x80) - 0x80)
 .
 .#define bfd_put_16(abfd, val, ptr) \
 .  BFD_SEND (abfd, bfd_putx16, ((val),(ptr)))
@@ -495,7 +495,7 @@ DESCRIPTION
 .  BFD_SEND (abfd, bfd_getx_signed_64, (ptr))
 .
 .#define bfd_get(bits, abfd, ptr)			\
-.  ((bits) == 8 ? bfd_get_8 (abfd, ptr)			\
+.  ((bits) == 8 ? (bfd_vma) bfd_get_8 (abfd, ptr)	\
 .   : (bits) == 16 ? bfd_get_16 (abfd, ptr)		\
 .   : (bits) == 32 ? bfd_get_32 (abfd, ptr)		\
 .   : (bits) == 64 ? bfd_get_64 (abfd, ptr)		\

@@ -1,5 +1,5 @@
 /* AArch64-specific support for NN-bit ELF.
-   Copyright (C) 2009-2020 Free Software Foundation, Inc.
+   Copyright (C) 2009-2019 Free Software Foundation, Inc.
    Contributed by ARM Ltd.
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -144,7 +144,6 @@
 #include "objalloc.h"
 #include "elf/aarch64.h"
 #include "elfxx-aarch64.h"
-#include "cpu-aarch64.h"
 
 #define ARCH_SIZE	NN
 
@@ -6791,7 +6790,7 @@ elfNN_aarch64_relocate_section (bfd *output_bfd,
 	  name = (bfd_elf_string_from_elf_section
 		  (input_bfd, symtab_hdr->sh_link, sym->st_name));
 	  if (name == NULL || *name == '\0')
-	    name = bfd_section_name (sec);
+	    name = bfd_section_name (input_bfd, sec);
 	}
 
       if (r_symndx != 0
@@ -7274,7 +7273,7 @@ elfNN_aarch64_merge_private_bfd_data (bfd *ibfd, struct bfd_link_info *info)
 
       for (sec = ibfd->sections; sec != NULL; sec = sec->next)
 	{
-	  if ((bfd_section_flags (sec)
+	  if ((bfd_get_section_flags (ibfd, sec)
 	       & (SEC_LOAD | SEC_CODE | SEC_HAS_CONTENTS))
 	      == (SEC_LOAD | SEC_CODE | SEC_HAS_CONTENTS))
 	    only_data_sections = FALSE;
@@ -7520,13 +7519,13 @@ aarch64_elf_create_got_section (bfd *abfd, struct bfd_link_info *info)
 					  (bed->dynamic_sec_flags
 					   | SEC_READONLY));
   if (s == NULL
-      || !bfd_set_section_alignment (s, bed->s->log_file_align))
+      || ! bfd_set_section_alignment (abfd, s, bed->s->log_file_align))
     return FALSE;
   htab->srelgot = s;
 
   s = bfd_make_section_anyway_with_flags (abfd, ".got", flags);
   if (s == NULL
-      || !bfd_set_section_alignment (s, bed->s->log_file_align))
+      || !bfd_set_section_alignment (abfd, s, bed->s->log_file_align))
     return FALSE;
   htab->sgot = s;
   htab->sgot->size += GOT_ENTRY_SIZE;
@@ -7548,7 +7547,8 @@ aarch64_elf_create_got_section (bfd *abfd, struct bfd_link_info *info)
     {
       s = bfd_make_section_anyway_with_flags (abfd, ".got.plt", flags);
       if (s == NULL
-	  || !bfd_set_section_alignment (s, bed->s->log_file_align))
+	  || !bfd_set_section_alignment (abfd, s,
+					 bed->s->log_file_align))
 	return FALSE;
       htab->sgotplt = s;
     }
@@ -7999,43 +7999,122 @@ elfNN_aarch64_is_target_special_symbol (bfd *abfd ATTRIBUTE_UNUSED,
 					     BFD_AARCH64_SPECIAL_SYM_TYPE_ANY);
 }
 
-/* If the ELF symbol SYM might be a function in SEC, return the
-   function size and set *CODE_OFF to the function's entry point,
-   otherwise return zero.  */
+/* This is a version of _bfd_elf_find_function() from dwarf2.c except that
+   AArch64 mapping symbols are ignored when looking for function names.  */
 
-static bfd_size_type
-elfNN_aarch64_maybe_function_sym (const asymbol *sym, asection *sec,
-				  bfd_vma *code_off)
+static bfd_boolean
+aarch64_elf_find_function (bfd *          abfd,
+			   asymbol **     symbols,
+			   asection *     section,
+			   bfd_vma        offset,
+			   const char **  filename_ptr,
+			   const char **  functionname_ptr)
 {
-  bfd_size_type size;
+  const char *filename = NULL;
+  asymbol *func = NULL;
+  bfd_vma low_func = 0;
+  asymbol **p;
 
-  if ((sym->flags & (BSF_SECTION_SYM | BSF_FILE | BSF_OBJECT
-		     | BSF_THREAD_LOCAL | BSF_RELC | BSF_SRELC)) != 0
-      || sym->section != sec)
-    return 0;
+  if (symbols == NULL)
+    return FALSE;
 
-  if (!(sym->flags & BSF_SYNTHETIC))
-    switch (ELF_ST_TYPE (((elf_symbol_type *) sym)->internal_elf_sym.st_info))
-      {
+  if (bfd_get_flavour (abfd) != bfd_target_elf_flavour)
+    return FALSE;
+
+  for (p = symbols; *p != NULL; p++)
+    {
+      elf_symbol_type *q;
+
+      q = (elf_symbol_type *) * p;
+
+      switch (ELF_ST_TYPE (q->internal_elf_sym.st_info))
+	{
+	default:
+	  break;
+	case STT_FILE:
+	  filename = bfd_asymbol_name (&q->symbol);
+	  break;
 	case STT_FUNC:
 	case STT_NOTYPE:
+	  /* Skip mapping symbols.  */
+	  if ((q->symbol.flags & BSF_LOCAL)
+	      && (bfd_is_aarch64_special_symbol_name
+		  (q->symbol.name, BFD_AARCH64_SPECIAL_SYM_TYPE_ANY)))
+	    continue;
+	  /* Fall through.  */
+	  if (bfd_get_section (&q->symbol) == section
+	      && q->symbol.value >= low_func && q->symbol.value <= offset)
+	    {
+	      func = (asymbol *) q;
+	      low_func = q->symbol.value;
+	    }
 	  break;
-	default:
-	  return 0;
-      }
+	}
+    }
 
-  if ((sym->flags & BSF_LOCAL)
-      && bfd_is_aarch64_special_symbol_name (sym->name,
-					     BFD_AARCH64_SPECIAL_SYM_TYPE_ANY))
-    return 0;
+  if (func == NULL)
+    return FALSE;
 
-  *code_off = sym->value;
-  size = 0;
-  if (!(sym->flags & BSF_SYNTHETIC))
-    size = ((elf_symbol_type *) sym)->internal_elf_sym.st_size;
-  if (size == 0)
-    size = 1;
-  return size;
+  if (filename_ptr)
+    *filename_ptr = filename;
+  if (functionname_ptr)
+    *functionname_ptr = bfd_asymbol_name (func);
+
+  return TRUE;
+}
+
+
+/* Find the nearest line to a particular section and offset, for error
+   reporting.   This code is a duplicate of the code in elf.c, except
+   that it uses aarch64_elf_find_function.  */
+
+static bfd_boolean
+elfNN_aarch64_find_nearest_line (bfd *abfd,
+				 asymbol **symbols,
+				 asection *section,
+				 bfd_vma offset,
+				 const char **filename_ptr,
+				 const char **functionname_ptr,
+				 unsigned int *line_ptr,
+				 unsigned int *discriminator_ptr)
+{
+  bfd_boolean found = FALSE;
+
+  if (_bfd_dwarf2_find_nearest_line (abfd, symbols, NULL, section, offset,
+				     filename_ptr, functionname_ptr,
+				     line_ptr, discriminator_ptr,
+				     dwarf_debug_sections,
+				     &elf_tdata (abfd)->dwarf2_find_line_info))
+    {
+      if (!*functionname_ptr)
+	aarch64_elf_find_function (abfd, symbols, section, offset,
+				   *filename_ptr ? NULL : filename_ptr,
+				   functionname_ptr);
+
+      return TRUE;
+    }
+
+  /* Skip _bfd_dwarf1_find_nearest_line since no known AArch64
+     toolchain uses DWARF1.  */
+
+  if (!_bfd_stab_section_find_nearest_line (abfd, symbols, section, offset,
+					    &found, filename_ptr,
+					    functionname_ptr, line_ptr,
+					    &elf_tdata (abfd)->line_info))
+    return FALSE;
+
+  if (found && (*functionname_ptr || *line_ptr))
+    return TRUE;
+
+  if (symbols == NULL)
+    return FALSE;
+
+  if (!aarch64_elf_find_function (abfd, symbols, section, offset,
+				  filename_ptr, functionname_ptr))
+    return FALSE;
+
+  *line_ptr = 0;
+  return TRUE;
 }
 
 static bfd_boolean
@@ -8052,17 +8131,16 @@ elfNN_aarch64_find_inliner_info (bfd *abfd,
 }
 
 
-static bfd_boolean
-elfNN_aarch64_init_file_header (bfd *abfd, struct bfd_link_info *link_info)
+static void
+elfNN_aarch64_post_process_headers (bfd *abfd,
+				    struct bfd_link_info *link_info)
 {
   Elf_Internal_Ehdr *i_ehdrp;	/* ELF file header, internal form.  */
 
-  if (!_bfd_elf_init_file_header (abfd, link_info))
-    return FALSE;
-
   i_ehdrp = elf_elfheader (abfd);
   i_ehdrp->e_ident[EI_ABIVERSION] = AARCH64_ELF_ABI_VERSION;
-  return TRUE;
+
+  _bfd_elf_post_process_headers (abfd, link_info);
 }
 
 static enum elf_reloc_type_class
@@ -9072,7 +9150,7 @@ elfNN_aarch64_size_dynamic_sections (bfd *output_bfd ATTRIBUTE_UNUSED,
 	  /* Strip this section if we don't need it; see the
 	     comment below.  */
 	}
-      else if (CONST_STRNEQ (bfd_section_name (s), ".rela"))
+      else if (CONST_STRNEQ (bfd_get_section_name (dynobj, s), ".rela"))
 	{
 	  if (s->size != 0 && s != htab->root.srelplt)
 	    relocs = TRUE;
@@ -10044,6 +10122,9 @@ const struct elf_size_info elfNN_aarch64_size_info =
 #define bfd_elfNN_find_inliner_info		\
   elfNN_aarch64_find_inliner_info
 
+#define bfd_elfNN_find_nearest_line		\
+  elfNN_aarch64_find_nearest_line
+
 #define bfd_elfNN_get_synthetic_symtab		\
   elfNN_aarch64_get_synthetic_symtab
 
@@ -10088,14 +10169,11 @@ const struct elf_size_info elfNN_aarch64_size_info =
 #define elf_backend_output_arch_local_syms	\
   elfNN_aarch64_output_arch_local_syms
 
-#define elf_backend_maybe_function_sym		\
-  elfNN_aarch64_maybe_function_sym
-
 #define elf_backend_plt_sym_val			\
   elfNN_aarch64_plt_sym_val
 
-#define elf_backend_init_file_header		\
-  elfNN_aarch64_init_file_header
+#define elf_backend_post_process_headers	\
+  elfNN_aarch64_post_process_headers
 
 #define elf_backend_relocate_section		\
   elfNN_aarch64_relocate_section

@@ -1,6 +1,6 @@
 #objdump: -dr --prefix-addresses --show-raw-insn
 #name: UDF
-#as: -march=armv8-a -mwarn-restrict-it
+#as: -march=armv8-a
 #warning_output: udf.l
 #skip: *-*-pe *-*-wince
 

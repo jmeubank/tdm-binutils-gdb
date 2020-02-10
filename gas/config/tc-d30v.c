@@ -1,5 +1,5 @@
 /* tc-d30v.c -- Assembler code for the Mitsubishi D30V
-   Copyright (C) 1997-2020 Free Software Foundation, Inc.
+   Copyright (C) 1997-2019 Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
@@ -302,7 +302,7 @@ md_convert_frag (bfd *abfd ATTRIBUTE_UNUSED,
 valueT
 md_section_align (asection *seg, valueT addr)
 {
-  int align = bfd_section_alignment (seg);
+  int align = bfd_get_section_alignment (stdoutput, seg);
   return ((addr + (1 << align) - 1) & -(1 << align));
 }
 
@@ -1490,7 +1490,7 @@ d30v_align (int n, char *pfill, symbolS *label)
   if (pfill == NULL)
     {
       if (n > 2
-	  && (bfd_section_flags (now_seg) & SEC_CODE) != 0)
+	  && (bfd_get_section_flags (stdoutput, now_seg) & SEC_CODE) != 0)
 	{
 	  static char const nop[4] = { 0x00, 0xf0, 0x00, 0x00 };
 

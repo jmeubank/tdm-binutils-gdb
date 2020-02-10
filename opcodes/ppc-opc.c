@@ -1,5 +1,5 @@
 /* ppc-opc.c -- PowerPC opcode list
-   Copyright (C) 1994-2020 Free Software Foundation, Inc.
+   Copyright (C) 1994-2019 Free Software Foundation, Inc.
    Written by Ian Lance Taylor, Cygnus Support
 
    This file is part of the GNU opcodes library.
@@ -2147,17 +2147,17 @@ const struct powerpc_operand powerpc_operands[] =
      off a register, and implies that the next operand is a register in
      parentheses.  */
 #define D34 DS + 1
-  { UINT64_C(0x3ffffffff), PPC_OPSHIFT_INV, insert_d34, extract_d34,
+  { 0x3ffffffff, PPC_OPSHIFT_INV, insert_d34, extract_d34,
     PPC_OPERAND_PARENS | PPC_OPERAND_SIGNED },
 
   /* The SI field in an 8-byte D form prefix instruction.  */
 #define SI34 D34 + 1
-  { UINT64_C(0x3ffffffff), PPC_OPSHIFT_INV, insert_d34, extract_d34, PPC_OPERAND_SIGNED },
+  { 0x3ffffffff, PPC_OPSHIFT_INV, insert_d34, extract_d34, PPC_OPERAND_SIGNED },
 
   /* The NSI field in an 8-byte D form prefix instruction.  This is the
      same as the SI34 field, only negated.  */
 #define NSI34 SI34 + 1
-  { UINT64_C(0x3ffffffff), PPC_OPSHIFT_INV, insert_nsi34, extract_nsi34,
+  { 0x3ffffffff, PPC_OPSHIFT_INV, insert_nsi34, extract_nsi34,
     PPC_OPERAND_NEGATIVE | PPC_OPERAND_SIGNED },
 
   /* The DUIS or BHRBE fields in a XFX form instruction, 10 bits
@@ -2967,7 +2967,7 @@ const unsigned int num_powerpc_operands = (sizeof (powerpc_operands)
 
 /* A BD15 form instruction for extended conditional branch mnemonics.  */
 #define EBD15(op, aa, bo, lk)			\
-  (((op) & 0x3fu) << 26)			\
+  (((op) & 0x3f) << 26)				\
   | (((aa) & 0xf) << 22)			\
   | (((bo) & 0x3) << 20)			\
   | ((lk) & 1)
@@ -2976,7 +2976,7 @@ const unsigned int num_powerpc_operands = (sizeof (powerpc_operands)
 /* A BD15 form instruction for extended conditional branch mnemonics
    with BI.  */
 #define EBD15BI(op, aa, bo, bi, lk)		\
-  ((((op) & 0x3fu) << 26)			\
+  ((((op) & 0x3f) << 26)			\
    | (((aa) & 0xf) << 22)			\
    | (((bo) & 0x3) << 20)			\
    | (((bi) & 0x3) << 16)			\

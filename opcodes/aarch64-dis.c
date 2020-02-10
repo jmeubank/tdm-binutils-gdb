@@ -1,5 +1,5 @@
 /* aarch64-dis.c -- AArch64 disassembler.
-   Copyright (C) 2009-2020 Free Software Foundation, Inc.
+   Copyright (C) 2009-2019 Free Software Foundation, Inc.
    Contributed by ARM Ltd.
 
    This file is part of the GNU opcodes library.
@@ -178,15 +178,18 @@ extract_all_fields (const aarch64_operand *self, aarch64_insn code)
 }
 
 /* Sign-extend bit I of VALUE.  */
-static inline uint64_t
+static inline int32_t
 sign_extend (aarch64_insn value, unsigned i)
 {
-  uint64_t ret, sign;
+  uint32_t ret = value;
 
   assert (i < 32);
-  ret = value;
-  sign = (uint64_t) 1 << i;
-  return ((ret & (sign + sign - 1)) ^ sign) - sign;
+  if ((value >> i) & 0x1)
+    {
+      uint32_t val = (uint32_t)(-1) << i;
+      ret = ret | val;
+    }
+  return (int32_t) ret;
 }
 
 /* N.B. the following inline helpfer functions create a dependency on the
@@ -345,7 +348,6 @@ aarch64_ext_reglane (const aarch64_operand *self, aarch64_opnd_info *info,
       switch (info->qualifier)
 	{
 	case AARCH64_OPND_QLF_S_4B:
-	case AARCH64_OPND_QLF_S_2H:
 	  /* L:H */
 	  info->reglane.index = extract_fields (code, 0, 2, FLD_H, FLD_L);
 	  info->reglane.regno &= 0x1f;
@@ -655,7 +657,7 @@ aarch64_ext_imm (const aarch64_operand *self, aarch64_opnd_info *info,
 		 const aarch64_inst *inst ATTRIBUTE_UNUSED,
 		 aarch64_operand_error *errors ATTRIBUTE_UNUSED)
 {
-  uint64_t imm;
+  int64_t imm;
 
   imm = extract_all_fields (self, code);
 
@@ -2840,8 +2842,6 @@ aarch64_decode_variant_using_iclass (aarch64_inst *inst)
 
     case sve_size_tsz_bhs:
       i = extract_fields (inst->value, 0, 2, FLD_SVE_sz, FLD_SVE_tszl_19);
-      if (i == 0)
-	return FALSE;
       while (i != 1)
 	{
 	  if (i & 1)
