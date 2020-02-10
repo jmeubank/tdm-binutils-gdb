@@ -1,5 +1,5 @@
 /* ia64-opc.c -- Functions to access the compacted opcode table
-   Copyright (C) 1999-2020 Free Software Foundation, Inc.
+   Copyright (C) 1999-2019 Free Software Foundation, Inc.
    Written by Bob Manson of Cygnus Solutions, <manson@cygnus.com>
 
    This file is part of the GNU opcodes library.
@@ -372,16 +372,13 @@ locate_opcode_ent (ia64_insn opcode, enum ia64_insn_type type)
 
       bitpos[currstatenum] = currbitnum;
 
-      /* Skip opval[0] bits in the instruction.  */
+      /* Skip opval[0] bits in the instruction. */
       if (op & 0x40)
 	{
 	  currbitnum -= opval[0];
 	}
 
-      if (currbitnum < 0)
-	currbitnum = 0;
-
-      /* The value of the current bit being tested.  */
+      /* The value of the current bit being tested. */
       currbit = opcode & (((ia64_insn) 1) << currbitnum) ? 1 : 0;
       next_op = -1;
 
@@ -466,7 +463,7 @@ locate_opcode_ent (ia64_insn opcode, enum ia64_insn_type type)
 
 	  if (next_op > 65535)
 	    {
-	      return -1;
+	      abort ();
 	    }
 
 	  /* Run through the list of opcodes to check, trying to find

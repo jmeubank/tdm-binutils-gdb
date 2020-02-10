@@ -1,5 +1,5 @@
 /* symbols.c -symbol table-
-   Copyright (C) 1987-2020 Free Software Foundation, Inc.
+   Copyright (C) 1987-2019 Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
@@ -73,6 +73,10 @@ struct symbol_flags
      before.  It is cleared as soon as any direct reference to the
      symbol is present.  */
   unsigned int sy_weakrefd : 1;
+
+  /* This if set if the unit of the symbol value is "octets" instead
+     of "bytes".  */
+  unsigned int sy_octets : 1;
 };
 
 /* The information we keep for a symbol.  Note that the symbol table
@@ -846,7 +850,9 @@ symbol_temp_new_now (void)
 symbolS *
 symbol_temp_new_now_octets (void)
 {
-  return symbol_temp_new (now_seg, frag_now_fix_octets (), frag_now);
+  symbolS * symb = symbol_temp_new (now_seg, frag_now_fix_octets (), frag_now);
+  symb->sy_flags.sy_octets = 1;
+  return symb;
 }
 
 symbolS *
@@ -1217,13 +1223,7 @@ resolve_symbol_value (symbolS *symp)
       if (local_symbol_resolved_p (locsym))
 	return final_val;
 
-      /* Symbols whose section has SEC_ELF_OCTETS set,
-	 resolve to octets instead of target bytes. */
-      if (locsym->lsy_section->flags & SEC_OCTETS)
-	final_val += local_symbol_get_frag (locsym)->fr_address;
-      else
-	final_val += (local_symbol_get_frag (locsym)->fr_address
-		      / OCTETS_PER_BYTE);
+      final_val += local_symbol_get_frag (locsym)->fr_address / OCTETS_PER_BYTE;
 
       if (finalize_syms)
 	{
@@ -1336,9 +1336,7 @@ resolve_symbol_value (symbolS *symp)
 	  /* Fall through.  */
 
 	case O_constant:
-	  /* Symbols whose section has SEC_ELF_OCTETS set,
-	     resolve to octets instead of target bytes. */
-	  if (symp->bsym->section->flags & SEC_OCTETS)
+	  if (symp->sy_flags.sy_octets)
 	    final_val += symp->sy_frag->fr_address;
 	  else
 	    final_val += symp->sy_frag->fr_address / OCTETS_PER_BYTE;
@@ -2312,14 +2310,14 @@ S_IS_LOCAL (symbolS *s)
   if ((flags & BSF_LOCAL) && (flags & BSF_GLOBAL))
     abort ();
 
-  if (bfd_asymbol_section (s->bsym) == reg_section)
+  if (bfd_get_section (s->bsym) == reg_section)
     return 1;
 
   if (flag_strip_local_absolute
       /* Keep BSF_FILE symbols in order to allow debuggers to identify
 	 the source file even when the object file is stripped.  */
       && (flags & (BSF_GLOBAL | BSF_FILE)) == 0
-      && bfd_asymbol_section (s->bsym) == absolute_section)
+      && bfd_get_section (s->bsym) == absolute_section)
     return 1;
 
   name = S_GET_NAME (s);
@@ -2653,6 +2651,18 @@ symbol_set_value_now (symbolS *sym)
   symbol_set_frag (sym, frag_now);
 }
 
+/* Set the value of SYM to the current position in the current segment,
+   in octets.  */
+
+void
+symbol_set_value_now_octets (symbolS *sym)
+{
+  S_SET_SEGMENT (sym, now_seg);
+  S_SET_VALUE (sym, frag_now_fix_octets ());
+  symbol_set_frag (sym, frag_now);
+  sym->sy_flags.sy_octets = 1;
+}
+
 /* Set the frag of a symbol.  */
 
 void
@@ -2922,6 +2932,13 @@ symbol_set_bfdsym (symbolS *s, asymbol *bsym)
   if ((s->bsym->flags & BSF_SECTION_SYM) == 0)
     s->bsym = bsym;
   /* else XXX - What do we do now ?  */
+}
+
+/* Return whether symbol unit is "octets" (instead of "bytes").  */
+
+int symbol_octets_p (symbolS *s)
+{
+  return s->sy_flags.sy_octets;
 }
 
 #ifdef OBJ_SYMFIELD_TYPE

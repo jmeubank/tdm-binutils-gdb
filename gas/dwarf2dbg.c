@@ -1,5 +1,5 @@
 /* dwarf2dbg.c - DWARF2 debug support
-   Copyright (C) 1999-2020 Free Software Foundation, Inc.
+   Copyright (C) 1999-2019 Free Software Foundation, Inc.
    Contributed by David Mosberger-Tang <davidm@hpl.hp.com>
 
    This file is part of GAS, the GNU Assembler.
@@ -657,7 +657,7 @@ dwarf2_emit_label (symbolS *label)
     return;
   if (S_GET_SEGMENT (label) != now_seg)
     return;
-  if (!(bfd_section_flags (now_seg) & SEC_CODE))
+  if (!(bfd_get_section_flags (stdoutput, now_seg) & SEC_CODE))
     return;
   if (files_in_use == 0 && debug_type != DEBUG_DWARF2)
     return;
@@ -1137,15 +1137,27 @@ get_frag_fix (fragS *frag, segT seg)
 /* Set an absolute address (may result in a relocation entry).  */
 
 static void
+out_inc_line_addr (int line_delta, addressT addr_delta);
+
+static void
 out_set_addr (symbolS *sym)
 {
   expressionS exp;
+  addressT expr_addr, expr_addr_aligned;
 
   memset (&exp, 0, sizeof exp);
-  out_opcode (DW_LNS_extended_op);
-  out_uleb128 (sizeof_address + 1);
 
-  out_opcode (DW_LNE_set_address);
+  /* The expression at the bottom must be aligned to OCTETS_PER_BYTE.  The
+     statements after the for loop will contribute 3 more octets.  */
+  expr_addr = frag_now_fix_octets () + 3;
+  expr_addr_aligned = (expr_addr + OCTETS_PER_BYTE - 1) & -OCTETS_PER_BYTE;
+  for ( ; expr_addr != expr_addr_aligned; expr_addr++)
+    out_inc_line_addr (0, 0);  /* NOP */
+
+  out_opcode (DW_LNS_extended_op);   /* 1 octet */
+  out_uleb128 (sizeof_address + 1);  /* 1 octet */
+
+  out_opcode (DW_LNE_set_address);   /* 1 octet */
   exp.X_op = O_symbol;
   exp.X_add_symbol = sym;
   exp.X_add_number = 0;
@@ -1582,7 +1594,7 @@ process_entries (segT seg, struct line_entry *e)
 	 that all of the sub-sections are merged into a proper
 	 .debug_line section before a debugger sees them.  */
 
-      sec_name = bfd_section_name (seg);
+      sec_name = bfd_get_section_name (stdoutput, seg);
       if (strcmp (sec_name, ".text") != 0)
 	{
 	  name = concat (".debug_line", sec_name, (char *) NULL);
@@ -1815,6 +1827,7 @@ out_debug_line (segT line_seg)
   symbolS *line_end;
   struct line_seg *s;
   int sizeof_offset;
+  addressT section_end, section_end_aligned;
 
   memset (&exp, 0, sizeof exp);
   sizeof_offset = out_header (line_seg, &exp);
@@ -1831,7 +1844,7 @@ out_debug_line (segT line_seg)
   exp.X_op_symbol = prologue_start;
   exp.X_add_number = 0;
   emit_expr (&exp, sizeof_offset);
-  symbol_set_value_now (prologue_start);
+  symbol_set_value_now_octets (prologue_start);
 
   /* Parameters of the state machine.  */
   out_byte (DWARF2_LINE_MIN_INSN_LENGTH);
@@ -1856,7 +1869,7 @@ out_debug_line (segT line_seg)
 
   out_file_list ();
 
-  symbol_set_value_now (prologue_end);
+  symbol_set_value_now_octets (prologue_end);
 
   /* For each section, emit a statement program.  */
   for (s = all_segs; s; s = s->next)
@@ -1876,7 +1889,17 @@ out_debug_line (segT line_seg)
        in the DWARF Line Number header.  */
     subseg_set (subseg_get (".debug_line_end", FALSE), 0);
 
-  symbol_set_value_now (line_end);
+  /* Pad size of .debug_line section to a multiple of OCTETS_PER_BYTE.
+     Simply sizing the section in md_section_align() is not sufficient,
+     also the size field in the .debug_line header must be a multiple
+     of OCTETS_PER_BYTE.  Not doing so will introduce gaps within the
+     .debug_line sections after linking.  */
+  section_end = frag_now_fix_octets ();
+  section_end_aligned = (section_end + OCTETS_PER_BYTE - 1) & -OCTETS_PER_BYTE;
+  for ( ; section_end != section_end_aligned; section_end++)
+    out_inc_line_addr (0, 0);  /* NOP */
+
+  symbol_set_value_now_octets (line_end);
 }
 
 static void
@@ -1995,7 +2018,7 @@ out_debug_aranges (segT aranges_seg, segT info_seg)
   md_number_to_chars (p, 0, addr_size);
   md_number_to_chars (p + addr_size, 0, addr_size);
 
-  symbol_set_value_now (aranges_end);
+  symbol_set_value_now_octets (aranges_end);
 }
 
 /* Emit data for .debug_abbrev.  Note that this must be kept in
@@ -2110,7 +2133,7 @@ out_debug_info (segT info_seg, segT abbrev_seg, segT line_seg, segT ranges_seg,
      dwarf2 draft has no standard code for assembler.  */
   out_two (DW_LANG_Mips_Assembler);
 
-  symbol_set_value_now (info_end);
+  symbol_set_value_now_octets (info_end);
 }
 
 /* Emit the three debug strings needed in .debug_str and setup symbols
@@ -2171,17 +2194,6 @@ void
 dwarf2_init (void)
 {
   last_seg_ptr = &all_segs;
-
-  /* Select the default CIE version to produce here.  The global
-     starts with a value of -1 and will be modified to a valid value
-     either by the user providing a command line option, or some
-     targets will select their own default in md_after_parse_args.  If
-     we get here and the global still contains -1 then it is up to us
-     to pick a sane default.  The default we choose is 1, this is the
-     CIE version gas has produced for a long time, and there seems no
-     reason to change it yet.  */
-  if (flag_dwarf_cie_version == -1)
-    flag_dwarf_cie_version = 1;
 }
 
 
@@ -2226,7 +2238,7 @@ dwarf2_finish (void)
 
   /* Create and switch to the line number section.  */
   line_seg = subseg_new (".debug_line", 0);
-  bfd_set_section_flags (line_seg, SEC_READONLY | SEC_DEBUGGING | SEC_OCTETS);
+  bfd_set_section_flags (stdoutput, line_seg, SEC_READONLY | SEC_DEBUGGING);
 
   /* For each subsection, chain the debug entries together.  */
   for (s = all_segs; s; s = s->next)
@@ -2272,15 +2284,15 @@ dwarf2_finish (void)
       aranges_seg = subseg_new (".debug_aranges", 0);
       str_seg = subseg_new (".debug_str", 0);
 
-      bfd_set_section_flags (info_seg,
-			      SEC_READONLY | SEC_DEBUGGING | SEC_OCTETS);
-      bfd_set_section_flags (abbrev_seg,
-			      SEC_READONLY | SEC_DEBUGGING | SEC_OCTETS);
-      bfd_set_section_flags (aranges_seg,
-			      SEC_READONLY | SEC_DEBUGGING | SEC_OCTETS);
-      bfd_set_section_flags (str_seg,
-			      SEC_READONLY | SEC_DEBUGGING | SEC_OCTETS
-				       | SEC_MERGE | SEC_STRINGS);
+      bfd_set_section_flags (stdoutput, info_seg,
+			     SEC_READONLY | SEC_DEBUGGING);
+      bfd_set_section_flags (stdoutput, abbrev_seg,
+			     SEC_READONLY | SEC_DEBUGGING);
+      bfd_set_section_flags (stdoutput, aranges_seg,
+			     SEC_READONLY | SEC_DEBUGGING);
+      bfd_set_section_flags (stdoutput, str_seg,
+			     (SEC_READONLY | SEC_DEBUGGING
+			      | SEC_MERGE | SEC_STRINGS));
       str_seg->entsize = 1;
 
       record_alignment (aranges_seg, ffs (2 * sizeof_address) - 1);
@@ -2290,8 +2302,8 @@ dwarf2_finish (void)
       else
 	{
 	  ranges_seg = subseg_new (".debug_ranges", 0);
-	  bfd_set_section_flags (ranges_seg,
-				 SEC_READONLY | SEC_DEBUGGING | SEC_OCTETS);
+	  bfd_set_section_flags (stdoutput, ranges_seg,
+				 SEC_READONLY | SEC_DEBUGGING);
 	  record_alignment (ranges_seg, ffs (2 * sizeof_address) - 1);
 	  out_debug_ranges (ranges_seg);
 	}

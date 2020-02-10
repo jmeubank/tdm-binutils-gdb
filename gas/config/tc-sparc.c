@@ -1,5 +1,5 @@
 /* tc-sparc.c -- Assemble for the SPARC
-   Copyright (C) 1989-2020 Free Software Foundation, Inc.
+   Copyright (C) 1989-2019 Free Software Foundation, Inc.
    This file is part of GAS, the GNU Assembler.
 
    GAS is free software; you can redistribute it and/or modify
@@ -4001,7 +4001,7 @@ tc_gen_reloc (asection *section, fixS *fixp)
     }
 
   /* Nothing is aligned in DWARF debugging sections.  */
-  if (bfd_section_flags (section) & SEC_DEBUGGING)
+  if (bfd_get_section_flags (stdoutput, section) & SEC_DEBUGGING)
     switch (code)
       {
       case BFD_RELOC_16: code = BFD_RELOC_SPARC_UA16; break;

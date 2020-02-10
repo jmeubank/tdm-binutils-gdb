@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: bug-binutils@gnu.org\n"
-"POT-Creation-Date: 2020-01-18 14:04+0000\n"
+"POT-Creation-Date: 2019-09-30 11:00+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -135,8 +135,8 @@ msgstr ""
 msgid "cannot relocate %s in object file"
 msgstr ""
 
-#: aarch64.cc:7343 i386.cc:2987 i386.cc:3753 mips.cc:10076 powerpc.cc:11534
-#: s390.cc:3460 sparc.cc:3695 tilegx.cc:4726 x86_64.cc:4963
+#: aarch64.cc:7343 i386.cc:2988 i386.cc:3754 mips.cc:10076 powerpc.cc:11534
+#: s390.cc:3460 sparc.cc:3695 tilegx.cc:4726 x86_64.cc:4964
 #, c-format
 msgid "unexpected reloc %u in object file"
 msgstr ""
@@ -426,11 +426,11 @@ msgid ""
 "not support BX instruction"
 msgstr ""
 
-#: arm.cc:10247 i386.cc:3019 i386.cc:3101 i386.cc:3166 i386.cc:3202
-#: i386.cc:3274 mips.cc:12296 powerpc.cc:11648 s390.cc:3466 s390.cc:3537
+#: arm.cc:10247 i386.cc:3020 i386.cc:3102 i386.cc:3167 i386.cc:3203
+#: i386.cc:3275 mips.cc:12296 powerpc.cc:11648 s390.cc:3466 s390.cc:3537
 #: s390.cc:3574 s390.cc:3596 s390.cc:3621 sparc.cc:3701 sparc.cc:3892
-#: sparc.cc:3953 sparc.cc:4060 tilegx.cc:4732 x86_64.cc:4984 x86_64.cc:5110
-#: x86_64.cc:5182 x86_64.cc:5216
+#: sparc.cc:3953 sparc.cc:4060 tilegx.cc:4732 x86_64.cc:4985 x86_64.cc:5111
+#: x86_64.cc:5183 x86_64.cc:5217
 #, c-format
 msgid "unsupported reloc %u"
 msgstr ""
@@ -1106,16 +1106,16 @@ msgid ""
 "file when generating a position-independent output file"
 msgstr ""
 
-#: i386.cc:3174
+#: i386.cc:3175
 msgid "both SUN and GNU model TLS relocations"
 msgstr ""
 
-#: i386.cc:3767 mips.cc:10080
+#: i386.cc:3768 mips.cc:10080
 #, c-format
 msgid "unsupported reloc %u in object file"
 msgstr ""
 
-#: i386.cc:4036 powerpc.cc:9221 s390.cc:4877 x86_64.cc:6021
+#: i386.cc:4037 powerpc.cc:9221 s390.cc:4877 x86_64.cc:6022
 #, c-format
 msgid "failed to match split-stack sequence at section %u offset %0zx"
 msgstr ""
@@ -1173,7 +1173,7 @@ msgstr ""
 msgid "unsupported ELF machine number %d"
 msgstr ""
 
-#: incremental.cc:871 object.cc:3395
+#: incremental.cc:871 object.cc:3391
 #, c-format
 msgid "%s: incompatible target"
 msgstr ""
@@ -1243,108 +1243,108 @@ msgid ""
 "SECTIONS clause of the linker script"
 msgstr ""
 
-#: layout.cc:2115
+#: layout.cc:2114
 msgid ""
 "multiple '.interp' sections in input files may cause confusing PT_INTERP "
 "segment"
 msgstr ""
 
-#: layout.cc:2179
+#: layout.cc:2178
 #, c-format
 msgid "%s: missing .note.GNU-stack section implies executable stack"
 msgstr ""
 
-#: layout.cc:2190
+#: layout.cc:2189
 #, c-format
 msgid "%s: requires executable stack"
 msgstr ""
 
-#: layout.cc:2219
+#: layout.cc:2218
 #, c-format
 msgid "%s: in .note.gnu.property section, pr_datasz must be 4 or 8"
 msgstr ""
 
-#: layout.cc:2352
+#: layout.cc:2351
 #, c-format
 msgid "%s: unknown program property type %d in .note.gnu.property section"
 msgstr ""
 
-#: layout.cc:2921
+#: layout.cc:2920
 #, c-format
 msgid "unable to open --section-ordering-file file %s: %s"
 msgstr ""
 
-#: layout.cc:3361
+#: layout.cc:3360
 msgid ""
 "one or more inputs require executable stack, but -z noexecstack was given"
 msgstr ""
 
-#: layout.cc:3434
+#: layout.cc:3433
 #, c-format
 msgid "--build-id=uuid failed: could not open /dev/urandom: %s"
 msgstr ""
 
-#: layout.cc:3441
+#: layout.cc:3440
 #, c-format
 msgid "/dev/urandom: read failed: %s"
 msgstr ""
 
-#: layout.cc:3443
+#: layout.cc:3442
 #, c-format
 msgid "/dev/urandom: expected %zu bytes, got %zd bytes"
 msgstr ""
 
-#: layout.cc:3455
+#: layout.cc:3454
 msgid "--build-id=uuid failed: could not load rpcrt4.dll"
 msgstr ""
 
-#: layout.cc:3461
+#: layout.cc:3460
 msgid "--build-id=uuid failed: could not find UuidCreate"
 msgstr ""
 
-#: layout.cc:3463
+#: layout.cc:3462
 msgid "__build_id=uuid failed: call UuidCreate() failed"
 msgstr ""
 
-#: layout.cc:3485
+#: layout.cc:3484
 #, c-format
 msgid "--build-id argument '%s' not a valid hex number"
 msgstr ""
 
-#: layout.cc:3491
+#: layout.cc:3490
 #, c-format
 msgid "unrecognized --build-id argument '%s'"
 msgstr ""
 
-#: layout.cc:4064
+#: layout.cc:4063
 #, c-format
 msgid "load segment overlap [0x%llx -> 0x%llx] and [0x%llx -> 0x%llx]"
 msgstr ""
 
-#: layout.cc:4225 output.cc:4594
+#: layout.cc:4224 output.cc:4590
 #, c-format
 msgid "out of patch space for section %s; relink with --incremental-full"
 msgstr ""
 
-#: layout.cc:4234 output.cc:4602
+#: layout.cc:4233 output.cc:4598
 #, c-format
 msgid "%s: section changed size; relink with --incremental-full"
 msgstr ""
 
-#: layout.cc:4489
+#: layout.cc:4488
 msgid "out of patch space for symbol table; relink with --incremental-full"
 msgstr ""
 
-#: layout.cc:4560
+#: layout.cc:4559
 msgid ""
 "out of patch space for section header table; relink with --incremental-full"
 msgstr ""
 
-#: layout.cc:5306
+#: layout.cc:5305
 msgid "read-only segment has dynamic relocations"
 msgstr ""
 
-#: layout.cc:5309
+#: layout.cc:5308
 msgid "shared library text segment is not shareable"
 msgstr ""
 
@@ -1620,7 +1620,7 @@ msgstr ""
 msgid "unaligned PC-relative relocation"
 msgstr ""
 
-#: nacl.cc:43 object.cc:174 object.cc:3443 output.cc:5236
+#: nacl.cc:43 object.cc:174 object.cc:3439 output.cc:5232
 #, c-format
 msgid "%s: %s"
 msgstr ""
@@ -1728,41 +1728,41 @@ msgstr ""
 msgid "local symbol %u section index %u out of range"
 msgstr ""
 
-#: object.cc:3148 reloc.cc:833
+#: object.cc:3144 reloc.cc:833
 #, c-format
 msgid "could not decompress section %s"
 msgstr ""
 
-#: object.cc:3274
+#: object.cc:3270
 #, c-format
 msgid "%s is not supported but is required for %s in %s"
 msgstr ""
 
-#: object.cc:3351
+#: object.cc:3347
 msgid "function "
 msgstr ""
 
-#: object.cc:3385
+#: object.cc:3381
 #, c-format
 msgid "%s: unsupported ELF machine number %d"
 msgstr ""
 
-#: object.cc:3459 plugin.cc:2279
+#: object.cc:3455 plugin.cc:2279
 #, c-format
 msgid "%s: not configured to support 32-bit big-endian object"
 msgstr ""
 
-#: object.cc:3475 plugin.cc:2288
+#: object.cc:3471 plugin.cc:2288
 #, c-format
 msgid "%s: not configured to support 32-bit little-endian object"
 msgstr ""
 
-#: object.cc:3494 plugin.cc:2300
+#: object.cc:3490 plugin.cc:2300
 #, c-format
 msgid "%s: not configured to support 64-bit big-endian object"
 msgstr ""
 
-#: object.cc:3510 plugin.cc:2309
+#: object.cc:3506 plugin.cc:2309
 #, c-format
 msgid "%s: not configured to support 64-bit little-endian object"
 msgstr ""
@@ -3280,83 +3280,83 @@ msgstr ""
 msgid "invalid alignment %lu for section \"%s\""
 msgstr ""
 
-#: output.cc:4622
+#: output.cc:4618
 msgid ""
 "script places BSS section in the middle of a LOAD segment; space will be "
 "allocated in the file"
 msgstr ""
 
-#: output.cc:4644
+#: output.cc:4640
 #, c-format
 msgid "dot moves backward in linker script from 0x%llx to 0x%llx"
 msgstr ""
 
-#: output.cc:4647
+#: output.cc:4643
 #, c-format
 msgid "address of section '%s' moves backward from 0x%llx to 0x%llx"
 msgstr ""
 
-#: output.cc:5016
+#: output.cc:5012
 #, c-format
 msgid "%s: incremental base and output file name are the same"
 msgstr ""
 
-#: output.cc:5023
+#: output.cc:5019
 #, c-format
 msgid "%s: stat: %s"
 msgstr ""
 
-#: output.cc:5028
+#: output.cc:5024
 #, c-format
 msgid "%s: incremental base file is empty"
 msgstr ""
 
-#: output.cc:5040 output.cc:5138
+#: output.cc:5036 output.cc:5134
 #, c-format
 msgid "%s: open: %s"
 msgstr ""
 
-#: output.cc:5057
+#: output.cc:5053
 #, c-format
 msgid "%s: read failed: %s"
 msgstr ""
 
-#: output.cc:5062
+#: output.cc:5058
 #, c-format
 msgid "%s: file too short: read only %lld of %lld bytes"
 msgstr ""
 
-#: output.cc:5162
+#: output.cc:5158
 #, c-format
 msgid "%s: mremap: %s"
 msgstr ""
 
-#: output.cc:5181
+#: output.cc:5177
 #, c-format
 msgid "%s: mmap: %s"
 msgstr ""
 
-#: output.cc:5273
+#: output.cc:5269
 #, c-format
 msgid "%s: mmap: failed to allocate %lu bytes for output file: %s"
 msgstr ""
 
-#: output.cc:5291
+#: output.cc:5287
 #, c-format
 msgid "%s: munmap: %s"
 msgstr ""
 
-#: output.cc:5311
+#: output.cc:5307
 #, c-format
 msgid "%s: write: unexpected 0 return-value"
 msgstr ""
 
-#: output.cc:5313
+#: output.cc:5309
 #, c-format
 msgid "%s: write: %s"
 msgstr ""
 
-#: output.cc:5328
+#: output.cc:5324
 #, c-format
 msgid "%s: close: %s"
 msgstr ""
@@ -3744,7 +3744,7 @@ msgstr ""
 msgid "out of patch space (PLT); relink with --incremental-full"
 msgstr ""
 
-#: s390.cc:3672 s390.cc:3728 x86_64.cc:5304
+#: s390.cc:3672 s390.cc:3728 x86_64.cc:5305
 #, c-format
 msgid "unsupported reloc type %u"
 msgstr ""
@@ -4118,29 +4118,29 @@ msgstr ""
 msgid "versym for symbol %zu has no name: %u"
 msgstr ""
 
-#: symtab.cc:2639
+#: symtab.cc:2627
 #, c-format
 msgid ""
 "discarding version information for %s@%s, defined in unused shared library "
 "%s (linked with --as-needed)"
 msgstr ""
 
-#: symtab.cc:3001 symtab.cc:3147
+#: symtab.cc:2974 symtab.cc:3120
 #, c-format
 msgid "%s: unsupported symbol section 0x%x"
 msgstr ""
 
-#: symtab.cc:3479
+#: symtab.cc:3452
 #, c-format
 msgid "%s: symbol table entries: %zu; buckets: %zu\n"
 msgstr ""
 
-#: symtab.cc:3482
+#: symtab.cc:3455
 #, c-format
 msgid "%s: symbol table entries: %zu\n"
 msgstr ""
 
-#: symtab.cc:3639
+#: symtab.cc:3612
 #, c-format
 msgid ""
 "while linking %s: symbol '%s' defined in multiple places (possible ODR "
@@ -4151,7 +4151,7 @@ msgstr ""
 #. which may not be the location we expect to intersect
 #. with another definition.  We could print the whole
 #. set of locations, but that seems too verbose.
-#: symtab.cc:3646 symtab.cc:3649
+#: symtab.cc:3619 symtab.cc:3622
 #, c-format
 msgid "  %s from %s\n"
 msgstr ""
@@ -4231,7 +4231,7 @@ msgstr ""
 #. This output is intended to follow the GNU standards.
 #: version.cc:65
 #, c-format
-msgid "Copyright (C) 2020 Free Software Foundation, Inc.\n"
+msgid "Copyright (C) 2019 Free Software Foundation, Inc.\n"
 msgstr ""
 
 #: version.cc:66
@@ -4282,17 +4282,17 @@ msgid ""
 "recompile with -fPIC"
 msgstr ""
 
-#: x86_64.cc:4995
+#: x86_64.cc:4996
 #, c-format
 msgid "relocation overflow: reference to local symbol %u in %s"
 msgstr ""
 
-#: x86_64.cc:5002
+#: x86_64.cc:5003
 #, c-format
 msgid "relocation overflow: reference to '%s' defined in %s"
 msgstr ""
 
-#: x86_64.cc:5010
+#: x86_64.cc:5011
 #, c-format
 msgid "relocation overflow: reference to '%s'"
 msgstr ""

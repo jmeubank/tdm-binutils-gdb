@@ -1,5 +1,5 @@
 /* BFD back-end for IBM RS/6000 "XCOFF" files.
-   Copyright (C) 1990-2020 Free Software Foundation, Inc.
+   Copyright (C) 1990-2019 Free Software Foundation, Inc.
    Written by Metin G. Ozisik, Mimi Phuong-Thao Vo, and John Gilmore.
    Archive support from Damon A. Permezel.
    Contributed by IBM Corporation and Cygnus Support.
@@ -1169,6 +1169,20 @@ _bfd_xcoff_reloc_name_lookup (bfd *abfd ATTRIBUTE_UNUSED,
    to take care that we are not generating the new form of archives
    on AIX 4.2 or earlier systems.  */
 
+/* XCOFF archives use this as a magic string.  Note that both strings
+   have the same length.  */
+
+/* Set the magic for archive.  */
+
+bfd_boolean
+bfd_xcoff_ar_archive_set_magic (bfd *abfd ATTRIBUTE_UNUSED,
+				char *magic ATTRIBUTE_UNUSED)
+{
+  /* Not supported yet.  */
+  return FALSE;
+ /* bfd_xcoff_archive_set_magic (abfd, magic); */
+}
+
 /* PR 21786:  The PE/COFF standard does not require NUL termination for any of
    the ASCII fields in the archive headers.  So in order to be able to extract
    numerical values we provide our own versions of strtol and strtoll which
@@ -1229,7 +1243,7 @@ _bfd_xcoff_slurp_armap (bfd *abfd)
 
   if (xcoff_ardata (abfd) == NULL)
     {
-      abfd->has_armap = FALSE;
+      bfd_has_map (abfd) = FALSE;
       return TRUE;
     }
 
@@ -1241,7 +1255,7 @@ _bfd_xcoff_slurp_armap (bfd *abfd)
       GET_VALUE_IN_FIELD (off, xcoff_ardata (abfd)->symoff, 10);
       if (off == 0)
 	{
-	  abfd->has_armap = FALSE;
+	  bfd_has_map (abfd) = FALSE;
 	  return TRUE;
 	}
 
@@ -1260,27 +1274,18 @@ _bfd_xcoff_slurp_armap (bfd *abfd)
 	return FALSE;
 
       GET_VALUE_IN_FIELD (sz, hdr.size, 10);
-      if (sz == (bfd_size_type) -1)
-	{
-	  bfd_set_error (bfd_error_no_memory);
-	  return FALSE;
-	}
 
       /* Read in the entire symbol table.  */
-      contents = (bfd_byte *) bfd_alloc (abfd, sz + 1);
+      contents = (bfd_byte *) bfd_alloc (abfd, sz);
       if (contents == NULL)
 	return FALSE;
       if (bfd_bread (contents, sz, abfd) != sz)
 	return FALSE;
 
-      /* Ensure strings are NULL terminated so we don't wander off the
-	 end of the buffer.  */
-      contents[sz] = 0;
-
       /* The symbol table starts with a four byte count.  */
       c = H_GET_32 (abfd, contents);
 
-      if (c >= sz / 4)
+      if (c * 4 >= sz)
 	{
 	  bfd_set_error (bfd_error_bad_value);
 	  return FALSE;
@@ -1305,7 +1310,7 @@ _bfd_xcoff_slurp_armap (bfd *abfd)
       GET_VALUE_IN_FIELD (off, xcoff_ardata_big (abfd)->symoff, 10);
       if (off == 0)
 	{
-	  abfd->has_armap = FALSE;
+	  bfd_has_map (abfd) = FALSE;
 	  return TRUE;
 	}
 
@@ -1324,27 +1329,18 @@ _bfd_xcoff_slurp_armap (bfd *abfd)
 	return FALSE;
 
       GET_VALUE_IN_FIELD (sz, hdr.size, 10);
-      if (sz == (bfd_size_type) -1)
-	{
-	  bfd_set_error (bfd_error_no_memory);
-	  return FALSE;
-	}
 
       /* Read in the entire symbol table.  */
-      contents = (bfd_byte *) bfd_alloc (abfd, sz + 1);
+      contents = (bfd_byte *) bfd_alloc (abfd, sz);
       if (contents == NULL)
 	return FALSE;
       if (bfd_bread (contents, sz, abfd) != sz)
 	return FALSE;
 
-      /* Ensure strings are NULL terminated so we don't wander off the
-	 end of the buffer.  */
-      contents[sz] = 0;
-
       /* The symbol table starts with an eight byte count.  */
       c = H_GET_64 (abfd, contents);
 
-      if (c >= sz / 8)
+      if (c * 8 >= sz)
 	{
 	  bfd_set_error (bfd_error_bad_value);
 	  return FALSE;
@@ -1377,7 +1373,7 @@ _bfd_xcoff_slurp_armap (bfd *abfd)
     }
 
   bfd_ardata (abfd)->symdef_count = c;
-  abfd->has_armap = TRUE;
+  bfd_has_map (abfd) = TRUE;
 
   return TRUE;
 }
@@ -4061,7 +4057,6 @@ const struct xcoff_dwsect_name xcoff_dwsect_names[] = {
 #define _bfd_xcoff_bfd_lookup_section_flags bfd_generic_lookup_section_flags
 #define _bfd_xcoff_bfd_merge_sections bfd_generic_merge_sections
 #define _bfd_xcoff_bfd_is_group_section bfd_generic_is_group_section
-#define _bfd_xcoff_bfd_group_name bfd_generic_group_name
 #define _bfd_xcoff_bfd_discard_group bfd_generic_discard_group
 #define _bfd_xcoff_section_already_linked _bfd_generic_section_already_linked
 #define _bfd_xcoff_bfd_define_common_symbol _bfd_xcoff_define_common_symbol

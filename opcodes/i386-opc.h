@@ -1,5 +1,5 @@
 /* Declarations for Intel 80386 opcode table
-   Copyright (C) 2007-2020 Free Software Foundation, Inc.
+   Copyright (C) 2007-2019 Free Software Foundation, Inc.
 
    This file is part of the GNU opcodes library.
 
@@ -243,10 +243,6 @@ enum
   CpuMOVDIR64B,
   /* ENQCMD instruction required */
   CpuENQCMD,
-  /* RDPRU instruction required */
-  CpuRDPRU,
-  /* MCOMMIT instruction required */
-  CpuMCOMMIT,
   /* 64bit support required  */
   Cpu64,
   /* Not supported in the 64bit mode  */
@@ -376,8 +372,6 @@ typedef union i386_cpu_flags
       unsigned int cpumovdiri:1;
       unsigned int cpumovdir64b:1;
       unsigned int cpuenqcmd:1;
-      unsigned int cpurdpru:1;
-      unsigned int cpumcommit:1;
       unsigned int cpu64:1;
       unsigned int cpuno64:1;
 #ifdef CpuUnused
@@ -393,9 +387,7 @@ enum
 {
   /* has direction bit. */
   D = 0,
-  /* set if operands can be both bytes and words/dwords/qwords, encoded the
-     canonical way; the base_opcode field should hold the encoding for byte
-     operands  */
+  /* set if operands can be words or dwords encoded the canonical way */
   W,
   /* load form instruction. Must be placed before store form.  */
   Load,
@@ -403,17 +395,14 @@ enum
   Modrm,
   /* register is in low 3 bits of opcode */
   ShortForm,
-  /* special case for jump insns; value has to be 1 */
-#define JUMP 1
-  /* call and jump */
-#define JUMP_DWORD 2
-  /* loop and jecxz */
-#define JUMP_BYTE 3
-  /* special case for intersegment leaps/calls */
-#define JUMP_INTERSEGMENT 4
-  /* absolute address for jump */
-#define JUMP_ABSOLUTE 5
+  /* special case for jump insns.  */
   Jump,
+  /* call and jump */
+  JumpDword,
+  /* loop and jecxz */
+  JumpByte,
+  /* special case for intersegment leaps/calls */
+  JumpInterSegment,
   /* FP insn memory format bit, sized by 0x4 */
   FloatMF,
   /* src/dest swap for floats. */
@@ -432,8 +421,6 @@ enum
   IgnoreSize,
   /* default insn size depends on mode */
   DefaultSize,
-  /* any memory size */
-  Anysize,
   /* b suffix on instruction illegal */
   No_bSuf,
   /* w suffix on instruction illegal */
@@ -448,11 +435,7 @@ enum
   No_ldSuf,
   /* instruction needs FWAIT */
   FWait,
-  /* IsString provides for a quick test for string instructions, and
-     its actual value also indicates which of the operands (if any)
-     requires use of the %es segment.  */
-#define IS_STRING_ES_OP0 2
-#define IS_STRING_ES_OP1 3
+  /* quick test for string instructions */
   IsString,
   /* RegMem is for instructions with a modrm byte where the register
      destination operand should be encoded in the mod and regmem fields.
@@ -653,14 +636,16 @@ typedef struct i386_opcode_modifier
   unsigned int load:1;
   unsigned int modrm:1;
   unsigned int shortform:1;
-  unsigned int jump:3;
+  unsigned int jump:1;
+  unsigned int jumpdword:1;
+  unsigned int jumpbyte:1;
+  unsigned int jumpintersegment:1;
   unsigned int floatmf:1;
   unsigned int floatr:1;
   unsigned int size:2;
   unsigned int checkregsize:1;
   unsigned int ignoresize:1;
   unsigned int defaultsize:1;
-  unsigned int anysize:1;
   unsigned int no_bsuf:1;
   unsigned int no_wsuf:1;
   unsigned int no_lsuf:1;
@@ -668,7 +653,7 @@ typedef struct i386_opcode_modifier
   unsigned int no_qsuf:1;
   unsigned int no_ldsuf:1;
   unsigned int fwait:1;
-  unsigned int isstring:2;
+  unsigned int isstring:1;
   unsigned int regmem:1;
   unsigned int bndprefixok:1;
   unsigned int notrackprefixok:1;
@@ -709,41 +694,26 @@ typedef struct i386_opcode_modifier
   unsigned int intel64:1;
 } i386_opcode_modifier;
 
-/* Operand classes.  */
-
-#define CLASS_WIDTH 4
-enum operand_class
-{
-  ClassNone,
-  Reg, /* GPRs and FP regs, distinguished by operand size */
-  SReg, /* Segment register */
-  RegCR, /* Control register */
-  RegDR, /* Debug register */
-  RegTR, /* Test register */
-  RegMMX, /* MMX register */
-  RegSIMD, /* XMM/YMM/ZMM registers, distinguished by operand size */
-  RegMask, /* Vector Mask register */
-  RegBND, /* Bound register */
-};
-
-/* Special operand instances.  */
-
-#define INSTANCE_WIDTH 3
-enum operand_instance
-{
-  InstanceNone,
-  Accum, /* Accumulator %al/%ax/%eax/%rax/%st(0)/%xmm0 */
-  RegC,  /* %cl / %cx / %ecx / %rcx, e.g. register to hold shift count */
-  RegD,  /* %dl / %dx / %edx / %rdx, e.g. register to hold I/O port addr */
-  RegB,  /* %bl / %bx / %ebx / %rbx */
-};
-
 /* Position of operand_type bits.  */
 
 enum
 {
-  /* Class and Instance */
-  ClassInstance = CLASS_WIDTH + INSTANCE_WIDTH - 1,
+  /* Register (qualified by Byte, Word, etc) */
+  Reg = 0,
+  /* MMX register */
+  RegMMX,
+  /* Vector registers */
+  RegSIMD,
+  /* Vector Mask registers */
+  RegMask,
+  /* Control register */
+  Control,
+  /* Debug register */
+  Debug,
+  /* Test register */
+  Test,
+  /* Segment register */
+  SReg,
   /* 1 bit immediate */
   Imm1,
   /* 8 bit immediate */
@@ -775,8 +745,18 @@ enum
   Disp32S,
   /* 64 bit displacement */
   Disp64,
+  /* Accumulator %al/%ax/%eax/%rax/%st(0)/%xmm0 */
+  Acc,
   /* Register which can be used for base or index in memory operand.  */
   BaseIndex,
+  /* Register to hold in/out port addr = dx */
+  InOutPortReg,
+  /* Register to hold shift count = cl */
+  ShiftCount,
+  /* Absolute address for jump.  */
+  JumpAbsolute,
+  /* String insn operand with fixed es segment */
+  EsSeg,
   /* BYTE size. */
   Byte,
   /* WORD size. 2 byte */
@@ -797,8 +777,13 @@ enum
   Zmmword,
   /* Unspecified memory size.  */
   Unspecified,
+  /* Any memory size.  */
+  Anysize,
 
-  /* The number of bits in i386_operand_type.  */
+  /* Bound register.  */
+  RegBND,
+
+  /* The number of bitfields in i386_operand_type.  */
   OTNum
 };
 
@@ -815,8 +800,14 @@ typedef union i386_operand_type
 {
   struct
     {
-      unsigned int class:CLASS_WIDTH;
-      unsigned int instance:INSTANCE_WIDTH;
+      unsigned int reg:1;
+      unsigned int regmmx:1;
+      unsigned int regsimd:1;
+      unsigned int regmask:1;
+      unsigned int control:1;
+      unsigned int debug:1;
+      unsigned int test:1;
+      unsigned int sreg:1;
       unsigned int imm1:1;
       unsigned int imm8:1;
       unsigned int imm8s:1;
@@ -829,7 +820,12 @@ typedef union i386_operand_type
       unsigned int disp32:1;
       unsigned int disp32s:1;
       unsigned int disp64:1;
+      unsigned int acc:1;
       unsigned int baseindex:1;
+      unsigned int inoutportreg:1;
+      unsigned int shiftcount:1;
+      unsigned int jumpabsolute:1;
+      unsigned int esseg:1;
       unsigned int byte:1;
       unsigned int word:1;
       unsigned int dword:1;
@@ -840,6 +836,8 @@ typedef union i386_operand_type
       unsigned int ymmword:1;
       unsigned int zmmword:1;
       unsigned int unspecified:1;
+      unsigned int anysize:1;
+      unsigned int regbnd:1;
 #ifdef OTUnused
       unsigned int unused:(OTNumOfBits - OTUnused);
 #endif
@@ -851,6 +849,9 @@ typedef struct insn_template
 {
   /* instruction name sans width suffix ("mov" for movl insns) */
   char *name;
+
+  /* how many operands */
+  unsigned int operands;
 
   /* base_opcode is the fundamental opcode byte without optional
      prefix(es).  */
@@ -868,14 +869,11 @@ typedef struct insn_template
      AMD 3DNow! instructions.
      If this template has no extension opcode (the usual case) use None
      Instructions */
-  unsigned short extension_opcode;
+  unsigned int extension_opcode;
 #define None 0xffff		/* If no extension_opcode is possible.  */
 
   /* Opcode length.  */
   unsigned char opcode_length;
-
-  /* how many operands */
-  unsigned char operands;
 
   /* cpu feature flags */
   i386_cpu_flags cpu_flags;

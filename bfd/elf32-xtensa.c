@@ -1,5 +1,5 @@
 /* Xtensa-specific support for 32-bit ELF.
-   Copyright (C) 2003-2020 Free Software Foundation, Inc.
+   Copyright (C) 2003-2019 Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
@@ -31,9 +31,6 @@
 #include "splay-tree.h"
 #include "xtensa-isa.h"
 #include "xtensa-config.h"
-
-/* All users of this file have bfd_octets_per_byte (abfd, sec) == 1.  */
-#define OCTETS_PER_BYTE(ABFD, SEC) 1
 
 #define XTENSA_NO_NOP_REMOVAL 0
 
@@ -1323,21 +1320,21 @@ elf_xtensa_create_dynamic_sections (bfd *dynobj, struct bfd_link_info *info)
 
   /* Mark the ".got.plt" section READONLY.  */
   if (htab->elf.sgotplt == NULL
-      || !bfd_set_section_flags (htab->elf.sgotplt, flags))
+      || ! bfd_set_section_flags (dynobj, htab->elf.sgotplt, flags))
     return FALSE;
 
   /* Create ".got.loc" (literal tables for use by dynamic linker).  */
   htab->sgotloc = bfd_make_section_anyway_with_flags (dynobj, ".got.loc",
 						      flags);
   if (htab->sgotloc == NULL
-      || !bfd_set_section_alignment (htab->sgotloc, 2))
+      || ! bfd_set_section_alignment (dynobj, htab->sgotloc, 2))
     return FALSE;
 
   /* Create ".xt.lit.plt" (literal table for ".got.plt*").  */
   htab->spltlittbl = bfd_make_section_anyway_with_flags (dynobj, ".xt.lit.plt",
 							 noalloc_flags);
   if (htab->spltlittbl == NULL
-      || !bfd_set_section_alignment (htab->spltlittbl, 2))
+      || ! bfd_set_section_alignment (dynobj, htab->spltlittbl, 2))
     return FALSE;
 
   return TRUE;
@@ -1369,14 +1366,14 @@ add_extra_plt_sections (struct bfd_link_info *info, int count)
       sprintf (sname, ".plt.%u", chunk);
       s = bfd_make_section_anyway_with_flags (dynobj, sname, flags | SEC_CODE);
       if (s == NULL
-	  || !bfd_set_section_alignment (s, 2))
+	  || ! bfd_set_section_alignment (dynobj, s, 2))
 	return FALSE;
 
       sname = (char *) bfd_malloc (14);
       sprintf (sname, ".got.plt.%u", chunk);
       s = bfd_make_section_anyway_with_flags (dynobj, sname, flags);
       if (s == NULL
-	  || !bfd_set_section_alignment (s, 2))
+	  || ! bfd_set_section_alignment (dynobj, s, 2))
 	return FALSE;
     }
 
@@ -1629,7 +1626,7 @@ elf_xtensa_size_dynamic_sections (bfd *output_bfd ATTRIBUTE_UNUSED,
 
       /* It's OK to base decisions on the section name, because none
 	 of the dynobj section names depend upon the input files.  */
-      name = bfd_section_name (s);
+      name = bfd_get_section_name (dynobj, s);
 
       if (CONST_STRNEQ (name, ".rela"))
 	{
@@ -2106,8 +2103,7 @@ bfd_elf_xtensa_reloc (bfd *abfd,
 {
   bfd_vma relocation;
   bfd_reloc_status_type flag;
-  bfd_size_type octets = (reloc_entry->address
-			  * OCTETS_PER_BYTE (abfd, input_section));
+  bfd_size_type octets = reloc_entry->address * bfd_octets_per_byte (abfd);
   bfd_vma output_base = 0;
   reloc_howto_type *howto = reloc_entry->howto;
   asection *reloc_target_output_section;
@@ -2691,7 +2687,7 @@ elf_xtensa_relocate_section (bfd *output_bfd,
 	  name = (bfd_elf_string_from_elf_section
 		  (input_bfd, symtab_hdr->sh_link, sym->st_name));
 	  if (name == NULL || *name == '\0')
-	    name = bfd_section_name (sec);
+	    name = bfd_section_name (input_bfd, sec);
 	}
 
       if (r_symndx != STN_UNDEF
@@ -11248,7 +11244,7 @@ xtensa_make_property_section (asection *sec, const char *base_name)
   if (! prop_sec)
     {
       flagword flags = (SEC_RELOC | SEC_HAS_CONTENTS | SEC_READONLY);
-      flags |= (bfd_section_flags (sec)
+      flags |= (bfd_get_section_flags (sec->owner, sec)
 		& (SEC_LINK_ONCE | SEC_LINK_DUPLICATES));
 
       prop_sec = bfd_make_section_anyway_with_flags

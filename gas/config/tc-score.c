@@ -1,5 +1,5 @@
 /* tc-score.c -- Assembler for Score
-   Copyright (C) 2006-2020 Free Software Foundation, Inc.
+   Copyright (C) 2006-2019 Free Software Foundation, Inc.
    Contributed by:
    Brain.lin (brain.lin@sunplusct.com)
    Mei Ligang (ligang@sunnorth.com.cn)
@@ -5300,7 +5300,7 @@ s3_pic_need_relax (symbolS *sym, asection *segtype)
   linkonce = FALSE;
   if (symsec != segtype && ! S_IS_LOCAL (sym))
     {
-      if ((bfd_section_flags (symsec) & SEC_LINK_ONCE) != 0)
+      if ((bfd_get_section_flags (stdoutput, symsec) & SEC_LINK_ONCE) != 0)
 	linkonce = TRUE;
 
       /* The GNU toolchain uses an extension for ELF: a section
@@ -5546,7 +5546,7 @@ static void
 s3_score_s_section (int ignore)
 {
   obj_elf_section (ignore);
-  if ((bfd_section_flags (now_seg) & SEC_CODE) != 0)
+  if ((bfd_get_section_flags (stdoutput, now_seg) & SEC_CODE) != 0)
     record_alignment (now_seg, 2);
 
 }
@@ -5569,14 +5569,14 @@ s3_s_change_sec (int sec)
     {
     case 'r':
       seg = subseg_new (s3_RDATA_SECTION_NAME, (subsegT) get_absolute_expression ());
-      bfd_set_section_flags (seg, (SEC_ALLOC | SEC_LOAD | SEC_READONLY | SEC_RELOC | SEC_DATA));
+      bfd_set_section_flags (stdoutput, seg, (SEC_ALLOC | SEC_LOAD | SEC_READONLY | SEC_RELOC | SEC_DATA));
       if (strcmp (TARGET_OS, "elf") != 0)
         record_alignment (seg, 4);
       demand_empty_rest_of_line ();
       break;
     case 's':
       seg = subseg_new (".sdata", (subsegT) get_absolute_expression ());
-      bfd_set_section_flags (seg, SEC_ALLOC | SEC_LOAD | SEC_RELOC | SEC_DATA);
+      bfd_set_section_flags (stdoutput, seg, SEC_ALLOC | SEC_LOAD | SEC_RELOC | SEC_DATA);
       if (strcmp (TARGET_OS, "elf") != 0)
         record_alignment (seg, 4);
       demand_empty_rest_of_line ();
@@ -5686,7 +5686,7 @@ s3_s_score_ent (int aent)
     s3_get_number ();
 
 #ifdef BFD_ASSEMBLER
-  if ((bfd_section_flags (now_seg) & SEC_CODE) != 0)
+  if ((bfd_get_section_flags (stdoutput, now_seg) & SEC_CODE) != 0)
     maybe_text = 1;
   else
     maybe_text = 0;
@@ -5795,7 +5795,7 @@ s3_s_score_end (int x ATTRIBUTE_UNUSED)
     p = NULL;
 
 #ifdef BFD_ASSEMBLER
-  if ((bfd_section_flags (now_seg) & SEC_CODE) != 0)
+  if ((bfd_get_section_flags (stdoutput, now_seg) & SEC_CODE) != 0)
     maybe_text = 1;
   else
     maybe_text = 0;
@@ -6128,16 +6128,15 @@ s3_s_score_lcomm (int bytes_p)
   if (OUTPUT_FLAVOR == bfd_target_ecoff_flavour || OUTPUT_FLAVOR == bfd_target_elf_flavour)
     {
       /* For Score and Alpha ECOFF or ELF, small objects are put in .sbss.  */
-      if ((unsigned) temp <= bfd_get_gp_size (stdoutput))
-	{
-	  bss_seg = subseg_new (".sbss", 1);
-	  seg_info (bss_seg)->bss = 1;
+      if ((unsigned)temp <= bfd_get_gp_size (stdoutput))
+        {
+          bss_seg = subseg_new (".sbss", 1);
+          seg_info (bss_seg)->bss = 1;
 #ifdef BFD_ASSEMBLER
-	  if (!bfd_set_section_flags (bss_seg, SEC_ALLOC))
-	    as_warn (_("error setting flags for \".sbss\": %s"),
-		     bfd_errmsg (bfd_get_error ()));
+          if (!bfd_set_section_flags (stdoutput, bss_seg, SEC_ALLOC))
+            as_warn (_("error setting flags for \".sbss\": %s"), bfd_errmsg (bfd_get_error ()));
 #endif
-	}
+        }
     }
 #endif
 
@@ -6539,8 +6538,8 @@ s3_begin (void)
   seg = now_seg;
   subseg = now_subseg;
   s3_pdr_seg = subseg_new (".pdr", (subsegT) 0);
-  bfd_set_section_flags (s3_pdr_seg, SEC_READONLY | SEC_RELOC | SEC_DEBUGGING);
-  bfd_set_section_alignment (s3_pdr_seg, 2);
+  (void)bfd_set_section_flags (stdoutput, s3_pdr_seg, SEC_READONLY | SEC_RELOC | SEC_DEBUGGING);
+  (void)bfd_set_section_alignment (stdoutput, s3_pdr_seg, 2);
   subseg_set (seg, subseg);
 
   if (s3_USE_GLOBAL_POINTER_OPT)
@@ -7077,7 +7076,7 @@ s3_pcrel_from (fixS * fixP)
 static valueT
 s3_section_align (segT segment ATTRIBUTE_UNUSED, valueT size)
 {
-  int align = bfd_section_alignment (segment);
+  int align = bfd_get_section_alignment (stdoutput, segment);
   return ((size + (1 << align) - 1) & -(1 << align));
 }
 

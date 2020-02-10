@@ -1,5 +1,5 @@
 /* NDS32-specific support for 32-bit ELF.
-   Copyright (C) 2012-2020 Free Software Foundation, Inc.
+   Copyright (C) 2012-2019 Free Software Foundation, Inc.
    Contributed by Andes Technology Corporation.
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -72,13 +72,28 @@ extern struct nds32_opcode nds32_opcodes[];
 extern const field_t operand_fields[];
 extern keyword_t *keywords[];
 extern const keyword_t keyword_gpr[];
-
+static void print_insn16 (bfd_vma pc, disassemble_info *info,
+			  uint32_t insn, uint32_t parse_mode);
+static void print_insn32 (bfd_vma pc, disassemble_info *info, uint32_t insn,
+			  uint32_t parse_mode);
 static uint32_t nds32_mask_opcode (uint32_t);
 static void nds32_special_opcode (uint32_t, struct nds32_opcode **);
 static int get_mapping_symbol_type (struct disassemble_info *, int,
 				    enum map_type *);
 static int is_mapping_symbol (struct disassemble_info *, int,
 			      enum map_type *);
+
+/* define in objdump.c.  */
+struct objdump_disasm_info
+{
+  bfd *              abfd;
+  asection *         sec;
+  bfd_boolean        require_sec;
+  arelent **         dynrelbuf;
+  long               dynrelcount;
+  disassembler_ftype disassemble_fn;
+  arelent *          reloc;
+};
 
 /* Hash function for disassemble.  */
 
@@ -113,8 +128,8 @@ nds32_parse_audio_ext (const field_t *pfd,
   if (pfd->hw_res == HW_INT || pfd->hw_res == HW_UINT)
     {
       if (pfd->hw_res == HW_INT)
-	int_value = (unsigned) N32_IMMS (insn >> pfd->bitpos,
-					 pfd->bitsize) << pfd->shift;
+	int_value =
+	  N32_IMMS ((insn >> pfd->bitpos), pfd->bitsize) << pfd->shift;
       else
 	int_value = __GF (insn, pfd->bitpos, pfd->bitsize) << pfd->shift;
 
@@ -306,9 +321,9 @@ nds32_parse_opcode (struct nds32_opcode *opc, bfd_vma pc ATTRIBUTE_UNUSED,
 	      else if ((pfd->hw_res == HW_INT) || (pfd->hw_res == HW_UINT))
 		{
 		  if (pfd->hw_res == HW_INT)
-		    int_value
-		      = (unsigned) N32_IMMS (insn >> pfd->bitpos,
-					     pfd->bitsize) << pfd->shift;
+		    int_value =
+		      N32_IMMS ((insn >> pfd->bitpos),
+			    pfd->bitsize) << pfd->shift;
 		  else
 		    int_value =
 		      __GF (insn, pfd->bitpos, pfd->bitsize) << pfd->shift;
@@ -396,8 +411,8 @@ nds32_parse_opcode (struct nds32_opcode *opc, bfd_vma pc ATTRIBUTE_UNUSED,
 	  else if ((pfd->hw_res == HW_INT) || (pfd->hw_res == HW_UINT))
 	    {
 	      if (pfd->hw_res == HW_INT)
-		int_value = (unsigned) N32_IMMS (insn >> pfd->bitpos,
-						 pfd->bitsize) << pfd->shift;
+		int_value =
+		  N32_IMMS ((insn >> pfd->bitpos), pfd->bitsize) << pfd->shift;
 	      else
 		int_value =
 		  __GF (insn, pfd->bitpos, pfd->bitsize) << pfd->shift;
@@ -877,7 +892,7 @@ nds32_mask_opcode (uint32_t insn)
 	}
       return MASK_OP (insn, 0x1f << 20);
     default:
-      return 1u << 31;
+      return (1 << 31);
     }
 }
 
@@ -976,8 +991,8 @@ print_insn_nds32 (bfd_vma pc, disassemble_info *info)
   int status;
   bfd_byte buf[4];
   bfd_byte buf_data[16];
-  uint64_t given;
-  uint64_t given1;
+  long long given;
+  long long given1;
   uint32_t insn;
   int n;
   int last_symbol_index = -1;
@@ -1129,25 +1144,24 @@ print_insn_nds32 (bfd_vma pc, disassemble_info *info)
       info->bytes_per_line = 4;
 
       if (size == 16)
-	info->fprintf_func (info->stream, ".qword\t0x%016" PRIx64 "%016" PRIx64,
+	info->fprintf_func (info->stream, ".qword\t0x%016llx%016llx",
 			    given, given1);
       else if (size == 8)
-	info->fprintf_func (info->stream, ".dword\t0x%016" PRIx64, given);
+	info->fprintf_func (info->stream, ".dword\t0x%016llx", given);
       else if (size == 4)
-	info->fprintf_func (info->stream, ".word\t0x%08" PRIx64, given);
+	info->fprintf_func (info->stream, ".word\t0x%08llx", given);
       else if (size == 2)
 	{
 	  /* short */
 	  if (mapping_type == MAP_DATA0)
-	    info->fprintf_func (info->stream, ".byte\t0x%02" PRIx64,
-				given & 0xFF);
+	    info->fprintf_func (info->stream, ".byte\t0x%02llx", given & 0xFF);
 	  else
-	    info->fprintf_func (info->stream, ".short\t0x%04" PRIx64, given);
+	    info->fprintf_func (info->stream, ".short\t0x%04llx", given);
 	}
       else
 	{
 	  /* byte */
-	  info->fprintf_func (info->stream, ".byte\t0x%02" PRIx64, given);
+	  info->fprintf_func (info->stream, ".byte\t0x%02llx", given);
 	}
 
       return size;

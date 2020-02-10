@@ -1,5 +1,5 @@
 /* ELF object file format
-   Copyright (C) 1992-2020 Free Software Foundation, Inc.
+   Copyright (C) 1992-2019 Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
@@ -33,7 +33,6 @@
 
 #ifdef NEED_ECOFF_DEBUG
 #include "ecoff.h"
-#include "bfd/ecoff-bfd.h"
 #endif
 
 #ifdef TC_ALPHA
@@ -738,7 +737,7 @@ obj_elf_change_section (const char *name,
       if (type == SHT_NOBITS)
 	seg_info (sec)->bss = 1;
 
-      bfd_set_section_flags (sec, flags);
+      bfd_set_section_flags (stdoutput, sec, flags);
       if (flags & SEC_MERGE)
 	sec->entsize = entsize;
       elf_group_name (sec) = group_name;
@@ -1039,18 +1038,6 @@ obj_elf_section (int push)
   name = obj_elf_section_name ();
   if (name == NULL)
     return;
-
-  symbolS * sym;
-  if ((sym = symbol_find (name)) != NULL
-      && ! symbol_section_p (sym)
-      && S_IS_DEFINED (sym)
-      && ! S_IS_VOLATILE (sym)
-      && ! S_CAN_BE_REDEFINED (sym))
-    {
-      as_bad (_("section name '%s' already defined as another symbol"), name);
-      ignore_rest_of_line ();
-      return;
-    }
   type = SHT_NULL;
   attr = 0;
   gnu_attr = 0;
@@ -1872,7 +1859,9 @@ obj_elf_version (int ignore ATTRIBUTE_UNUSED)
 
       /* Create the .note section.  */
       note_secp = subseg_new (".note", 0);
-      bfd_set_section_flags (note_secp, SEC_HAS_CONTENTS | SEC_READONLY);
+      bfd_set_section_flags (stdoutput,
+			     note_secp,
+			     SEC_HAS_CONTENTS | SEC_READONLY);
       record_alignment (note_secp, 2);
 
       /* Process the version string.  */
@@ -2151,8 +2140,9 @@ obj_elf_ident (int ignore ATTRIBUTE_UNUSED)
     {
       char *p;
       comment_section = subseg_new (".comment", 0);
-      bfd_set_section_flags (comment_section, (SEC_READONLY | SEC_HAS_CONTENTS
-					       | SEC_MERGE | SEC_STRINGS));
+      bfd_set_section_flags (stdoutput, comment_section,
+			     SEC_READONLY | SEC_HAS_CONTENTS
+			     | SEC_MERGE | SEC_STRINGS);
       comment_section->entsize = 1;
 #ifdef md_elf_section_change_hook
       md_elf_section_change_hook ();
@@ -2180,7 +2170,7 @@ obj_elf_init_stab_section (segT seg)
 
   /* Force the section to align to a longword boundary.  Without this,
      UnixWare ar crashes.  */
-  bfd_set_section_alignment (seg, 2);
+  bfd_set_section_alignment (stdoutput, seg, 2);
 
   /* Make space for this first symbol.  */
   p = frag_more (12);
@@ -2214,10 +2204,10 @@ adjust_stab_sections (bfd *abfd, asection *sec, void *xxx ATTRIBUTE_UNUSED)
   name = concat (sec->name, "str", NULL);
   strsec = bfd_get_section_by_name (abfd, name);
   if (strsec)
-    strsz = bfd_section_size (strsec);
+    strsz = bfd_section_size (abfd, strsec);
   else
     strsz = 0;
-  nsyms = bfd_section_size (sec) / 12 - 1;
+  nsyms = bfd_section_size (abfd, sec) / 12 - 1;
 
   p = seg_info (sec)->stabu.p;
   gas_assert (p != 0);
@@ -2500,8 +2490,8 @@ elf_adjust_symtab (void)
       sec_name = ".group";
       s = subseg_force_new (sec_name, 0);
       if (s == NULL
-	  || !bfd_set_section_flags (s, flags)
-	  || !bfd_set_section_alignment (s, 2))
+	  || !bfd_set_section_flags (stdoutput, s, flags)
+	  || !bfd_set_section_alignment (stdoutput, s, 2))
 	{
 	  as_fatal (_("can't create group: %s"),
 		    bfd_errmsg (bfd_get_error ()));
@@ -2608,7 +2598,7 @@ elf_frob_file_after_relocs (void)
 
       group = elf_sec_group (head);
       subseg_set (group, 0);
-      bfd_set_section_size (group, size);
+      bfd_set_section_size (stdoutput, group, size);
       group->contents = (unsigned char *) frag_more (size);
       frag_now->fr_fix = frag_now_fix_octets ();
       frag_wane (frag_now);
@@ -2666,8 +2656,8 @@ elf_frob_file_after_relocs (void)
 	 to force the ELF backend to allocate a file position, and then
 	 write out the data.  FIXME: Is this really the best way to do
 	 this?  */
-      bfd_set_section_size (sec, bfd_ecoff_debug_size (stdoutput, &debug,
-						       debug_swap));
+      bfd_set_section_size
+	(stdoutput, sec, bfd_ecoff_debug_size (stdoutput, &debug, debug_swap));
 
       /* Pass BUF to bfd_set_section_contents because this will
 	 eventually become a call to fwrite, and ISO C prohibits

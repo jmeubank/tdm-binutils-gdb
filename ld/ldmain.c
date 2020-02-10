@@ -1,5 +1,5 @@
 /* Main program of GNU linker.
-   Copyright (C) 1991-2020 Free Software Foundation, Inc.
+   Copyright (C) 1991-2019 Free Software Foundation, Inc.
    Written by Steve Chamberlain steve@cygnus.com
 
    This file is part of the GNU Binutils.
@@ -25,7 +25,6 @@
 #include "libiberty.h"
 #include "progress.h"
 #include "bfdlink.h"
-#include "ctf-api.h"
 #include "filenames.h"
 
 #include "ld.h"
@@ -149,9 +148,7 @@ static struct bfd_link_callbacks link_callbacks =
   einfo,
   info_msg,
   minfo,
-  ldlang_override_segment_assignment,
-  ldlang_ctf_apply_strsym,
-  ldlang_write_ctf_late
+  ldlang_override_segment_assignment
 };
 
 static bfd_assert_handler_type default_bfd_assert_handler;
@@ -819,7 +816,7 @@ add_archive_element (struct bfd_link_info *info,
   input->local_sym_name = abfd->filename;
   input->the_bfd = abfd;
 
-  parent = bfd_usrdata (abfd->my_archive);
+  parent = abfd->my_archive->usrdata;
   if (parent != NULL && !parent->flags.reload)
     parent->next = input;
 

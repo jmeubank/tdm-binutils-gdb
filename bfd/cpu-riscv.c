@@ -1,5 +1,5 @@
 /* BFD backend for RISC-V
-   Copyright (C) 2011-2020 Free Software Foundation, Inc.
+   Copyright (C) 2011-2019 Free Software Foundation, Inc.
 
    Contributed by Andrew Waterman (andrew@sifive.com).
    Based on MIPS target.
@@ -39,11 +39,11 @@ riscv_compatible (const bfd_arch_info_type *a, const bfd_arch_info_type *b)
   return a;
 }
 
-#define N(BITS, NUMBER, PRINT, DEFAULT, NEXT)			\
+#define N(BITS_WORD, BITS_ADDR, NUMBER, PRINT, DEFAULT, NEXT)	\
   {								\
-    BITS,      /* Bits in a word.  */				\
-    BITS,      /* Bits in an address.  */			\
-    8,	       /* Bits in a byte.  */				\
+    BITS_WORD, /*  bits in a word */				\
+    BITS_ADDR, /* bits in an address */				\
+    8,	/* 8 bits in a byte */					\
     bfd_arch_riscv,						\
     NUMBER,							\
     "riscv",							\
@@ -54,7 +54,6 @@ riscv_compatible (const bfd_arch_info_type *a, const bfd_arch_info_type *b)
     bfd_default_scan,						\
     bfd_arch_default_fill,					\
     NEXT,							\
-    0 /* Maximum offset of a reloc from the start of an insn.  */\
   }
 
 /* This enum must be kept in the same order as arch_info_struct.  */
@@ -70,11 +69,11 @@ enum
    and each entry except the last should end with NN (my enum value).  */
 static const bfd_arch_info_type arch_info_struct[] =
 {
-  N (64, bfd_mach_riscv64, "riscv:rv64", FALSE, NN (I_riscv64)),
-  N (32, bfd_mach_riscv32, "riscv:rv32", FALSE, NULL)
+  N (64, 64, bfd_mach_riscv64, "riscv:rv64", FALSE, NN (I_riscv64)),
+  N (32, 32, bfd_mach_riscv32, "riscv:rv32", FALSE, 0)
 };
 
 /* The default architecture is riscv:rv64.  */
 
 const bfd_arch_info_type bfd_riscv_arch =
-  N (64, 0, "riscv", TRUE, &arch_info_struct[0]);
+  N (64, 64, 0, "riscv", TRUE, &arch_info_struct[0]);

@@ -1,4 +1,4 @@
-# Copyright (C) 1993-2020 Free Software Foundation, Inc.
+# Copyright (C) 1993-2019 Free Software Foundation, Inc.
 #
 # This file is part of the GNU Binutils.
 #
@@ -95,17 +95,14 @@ proc is_aout_format {} {
 # True if the object format is known to be PE COFF.
 #
 proc is_pecoff_format {} {
-    if { [istarget *-*-beospe*]
-	 || [istarget *-*-cegcc*]
-	 || [istarget *-*-cygwin*]
-	 || [istarget *-*-interix*]
-	 || [istarget *-*-mingw*]
-	 || [istarget *-*-netbsdpe*]
-	 || [istarget *-*-pe*]
-	 || [istarget *-*-winnt*] } {
-	return 1
+    if { ![istarget *-*-mingw*]
+	 && ![istarget *-*-cygwin*]
+	 && ![istarget *-*-cegcc*]
+	 && ![istarget *-*-pe*] } {
+	return 0
     }
-    return 0
+
+    return 1
 }
 
 proc is_som_format {} {
@@ -286,10 +283,6 @@ proc check_shared_lib_support { } {
 #    REGEXP
 #        Skip all lines in FILE_1 until the first that matches REGEXP.
 #
-#    #?REGEXP
-#        Optionally match REGEXP against line from FILE_1.  If the REGEXP
-#        does not match then the next line from FILE_2 is tried.
-#
 # Other # lines are comments.  Regexp lines starting with the `!' character
 # specify inverse matching (use `\!' for literal matching against a leading
 # `!').  Skip empty lines in both files.
@@ -376,21 +369,6 @@ proc regexp_diff { file_1 file_2 args } {
 		    }
 		}
 		break
-	    } elseif { [string match "#\\?*" $line_b] } {
-		if { ! $end_1 } {
-		    set line_b [string replace $line_b 0 1]
-		    set negated [expr { [string index $line_b 0] == "!" }]
-		    set line_bx [string range $line_b $negated end]
-		    set n [expr { $negated ? "! " : "" }]
-		    # Substitute on the reference.
-		    foreach {name value} $ref_subst {
-			regsub -- $name $line_bx $value line_bx
-		    }
-		    verbose "optional match for $n\"^$line_bx$\"" 3
-		    if { [expr [regexp "^$line_bx$" "$line_a"] != $negated] } {
-			break
-		    }
-		}
 	    }
 	    if { [gets $file_b line_b] == $eof } {
 		set end_2 1

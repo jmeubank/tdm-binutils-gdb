@@ -1,5 +1,5 @@
 # Expect script for ld-i386 tests
-#   Copyright (C) 2002-2020 Free Software Foundation, Inc.
+#   Copyright (C) 2002-2019 Free Software Foundation, Inc.
 #
 # This file is part of the GNU Binutils.
 #
@@ -495,7 +495,6 @@ run_dump_test "pr23854"
 run_dump_test "pr23930"
 run_dump_test "pr24322a"
 run_dump_test "pr24322b"
-run_dump_test "align-branch-1"
 
 if { !([istarget "i?86-*-linux*"]
        || [istarget "i?86-*-gnu*"]

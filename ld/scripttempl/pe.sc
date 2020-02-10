@@ -1,6 +1,6 @@
 # Linker script for PE.
 #
-# Copyright (C) 2014-2020 Free Software Foundation, Inc.
+# Copyright (C) 2014-2019 Free Software Foundation, Inc.
 #
 # Copying and distribution of this file, with or without modification,
 # are permitted in any medium without royalty provided the copyright
@@ -70,7 +70,7 @@ else
 fi
 
 cat <<EOF
-/* Copyright (C) 2014-2020 Free Software Foundation, Inc.
+/* Copyright (C) 2014-2019 Free Software Foundation, Inc.
 
    Copying and distribution of this script, with or without modification,
    are permitted in any medium without royalty provided the copyright
@@ -104,7 +104,6 @@ SECTIONS
           expectation that they will be overridden by the definitions
 	  here.  If we PROVIDE the symbols then they will not be
 	  overridden and global constructors will not be run.
-	  See PR 22762 for more details.
 	  
 	  This does mean that it is not possible for a user to define
 	  their own __CTOR_LIST__ and __DTOR_LIST__ symbols; if they do,
@@ -114,9 +113,7 @@ SECTIONS
 	  (The custom script can just be a copy of this script with the
 	  PROVIDE() qualifiers added).
 
-	  In particular this means that ld -Ur does not work, because
-	  the proper __CTOR_LIST__ set by ld -Ur is overridden by a
-	  bogus __CTOR_LIST__ set by the final link.  See PR 46.  */
+	  See PR 22762 for more details.  */
        ___CTOR_LIST__ = .;
        __CTOR_LIST__ = .;
        LONG (-1);
@@ -137,7 +134,7 @@ SECTIONS
        LONG (0);
      }
     ${RELOCATING+KEEP (*(SORT_NONE(.fini)))}
-    ${RELOCATING+/* ??? Why is .gcc_exc here?  */}
+    /* ??? Why is .gcc_exc here?  */
     ${RELOCATING+ *(.gcc_exc)}
     ${RELOCATING+PROVIDE (etext = .);}
     ${RELOCATING+PROVIDE (_etext = .);}

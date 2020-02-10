@@ -1,5 +1,5 @@
 /* nm.c -- Describe symbol table of a rel file.
-   Copyright (C) 1991-2020 Free Software Foundation, Inc.
+   Copyright (C) 1991-2019 Free Software Foundation, Inc.
 
    This file is part of GNU Binutils.
 
@@ -593,8 +593,8 @@ numeric_forward (const void *P_x, const void *P_y)
   if (x == NULL || y == NULL)
     bfd_fatal (bfd_get_filename (sort_bfd));
 
-  xs = bfd_asymbol_section (x);
-  ys = bfd_asymbol_section (y);
+  xs = bfd_get_section (x);
+  ys = bfd_get_section (y);
 
   if (bfd_is_und_section (xs))
     {
@@ -646,8 +646,8 @@ size_forward1 (const void *P_x, const void *P_y)
   if (x == NULL || y == NULL)
     bfd_fatal (bfd_get_filename (sort_bfd));
 
-  xs = bfd_asymbol_section (x);
-  ys = bfd_asymbol_section (y);
+  xs = bfd_get_section (x);
+  ys = bfd_get_section (y);
 
   if (bfd_is_und_section (xs))
     abort ();
@@ -775,7 +775,7 @@ sort_symbols_by_size (bfd *abfd, bfd_boolean is_dynamic, void *minisyms,
       else
 	next = NULL;
 
-      sec = bfd_asymbol_section (sym);
+      sec = bfd_get_section (sym);
 
       /* Synthetic symbols don't have a full type set of data available, thus
 	 we can't rely on that information for the symbol size.  Ditto for
@@ -789,11 +789,11 @@ sort_symbols_by_size (bfd *abfd, bfd_boolean is_dynamic, void *minisyms,
       else
 	{
 	  if (from + size < fromend
-	      && sec == bfd_asymbol_section (next))
+	      && sec == bfd_get_section (next))
 	    sz = valueof (next) - valueof (sym);
 	  else
-	    sz = (bfd_section_vma (sec)
-		  + bfd_section_size (sec)
+	    sz = (bfd_get_section_vma (abfd, sec)
+		  + bfd_section_size (abfd, sec)
 		  - valueof (sym));
 	}
 
@@ -896,7 +896,7 @@ print_symbol (bfd *        abfd,
       if ((sym->flags & (BSF_SECTION_SYM | BSF_SYNTHETIC)) == 0)
 	version_string = bfd_get_symbol_version_string (abfd, sym, &hidden);
 
-      if (bfd_is_und_section (bfd_asymbol_section (sym)))
+      if (bfd_is_und_section (bfd_get_section (sym)))
 	hidden = TRUE;
 
       if (version_string && *version_string != '\0')
@@ -932,7 +932,7 @@ print_symbol (bfd *        abfd,
 	  lineno_cache_bfd = abfd;
 	}
 
-      if (bfd_is_und_section (bfd_asymbol_section (sym)))
+      if (bfd_is_und_section (bfd_get_section (sym)))
 	{
 	  static asection **secs;
 	  static arelent ***relocs;
@@ -1002,10 +1002,10 @@ print_symbol (bfd *        abfd,
 		}
 	    }
 	}
-      else if (bfd_asymbol_section (sym)->owner == abfd)
+      else if (bfd_get_section (sym)->owner == abfd)
 	{
 	  if ((bfd_find_line (abfd, syms, sym, &filename, &lineno)
-	       || bfd_find_nearest_line (abfd, bfd_asymbol_section (sym),
+	       || bfd_find_nearest_line (abfd, bfd_get_section (sym),
 					 syms, sym->value, &filename,
 					 &functionname, &lineno))
 	      && filename != NULL
@@ -1171,8 +1171,6 @@ display_rel_file (bfd *abfd, bfd *archive_bfd)
 	  *symp = 0;
 	  symcount += synth_count;
 	}
-      if (!dynamic && dyn_syms != NULL)
-	free (dyn_syms);
     }
 
   /* lto_slim_object is set to false when a bfd is loaded with a compiler

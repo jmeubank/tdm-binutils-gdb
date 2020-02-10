@@ -1,5 +1,5 @@
 /* Support for the generic parts of most COFF variants, for BFD.
-   Copyright (C) 1990-2020 Free Software Foundation, Inc.
+   Copyright (C) 1990-2019 Free Software Foundation, Inc.
    Written by Cygnus Support.
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -1696,7 +1696,7 @@ coff_set_custom_section_alignment (bfd *abfd ATTRIBUTE_UNUSED,
 
   for (i = 0; i < table_size; ++i)
     {
-      const char *secname = bfd_section_name (section);
+      const char *secname = bfd_get_section_name (abfd, section);
 
       if (alignment_table[i].comparison_length == (unsigned int) -1
 	  ? strcmp (alignment_table[i].name, secname) == 0
@@ -1759,17 +1759,17 @@ coff_new_section_hook (bfd * abfd, asection * section)
 
 #ifdef RS6000COFF_C
   if (bfd_xcoff_text_align_power (abfd) != 0
-      && strcmp (bfd_section_name (section), ".text") == 0)
+      && strcmp (bfd_get_section_name (abfd, section), ".text") == 0)
     section->alignment_power = bfd_xcoff_text_align_power (abfd);
   else if (bfd_xcoff_data_align_power (abfd) != 0
-      && strcmp (bfd_section_name (section), ".data") == 0)
+      && strcmp (bfd_get_section_name (abfd, section), ".data") == 0)
     section->alignment_power = bfd_xcoff_data_align_power (abfd);
   else
     {
       int i;
 
       for (i = 0; i < XCOFF_DWSECT_NBR_NAMES; i++)
-	if (strcmp (bfd_section_name (section),
+	if (strcmp (bfd_get_section_name (abfd, section),
 		    xcoff_dwsect_names[i].name) == 0)
 	  {
 	    section->alignment_power = 0;
@@ -2161,14 +2161,11 @@ coff_set_arch_mach_hook (bfd *abfd, void * filehdr)
       arch = bfd_arch_z80;
       switch (internal_f->f_flags & F_MACHMASK)
 	{
+	case 0:
 	case bfd_mach_z80strict << 12:
 	case bfd_mach_z80 << 12:
 	case bfd_mach_z80full << 12:
 	case bfd_mach_r800 << 12:
-	case bfd_mach_gbz80 << 12:
-	case bfd_mach_z180 << 12:
-	case bfd_mach_ez80_z80 << 12:
-	case bfd_mach_ez80_adl << 12:
 	  machine = ((unsigned)internal_f->f_flags & F_MACHMASK) >> 12;
 	  break;
 	default:
@@ -2330,6 +2327,12 @@ coff_set_arch_mach_hook (bfd *abfd, void * filehdr)
 	     internal_f->f_target_id);
 	  break;
 	}
+      break;
+#endif
+
+#ifdef TIC80_ARCH_MAGIC
+    case TIC80_ARCH_MAGIC:
+      arch = bfd_arch_tic80;
       break;
 #endif
 
@@ -2653,14 +2656,11 @@ coff_set_flags (bfd * abfd,
       *magicp = Z80MAGIC;
       switch (bfd_get_mach (abfd))
 	{
+	case 0:
 	case bfd_mach_z80strict:
 	case bfd_mach_z80:
 	case bfd_mach_z80full:
 	case bfd_mach_r800:
-	case bfd_mach_gbz80:
-	case bfd_mach_z180:
-	case bfd_mach_ez80_z80:
-	case bfd_mach_ez80_adl:
 	  *flagsp = bfd_get_mach (abfd) << 12;
 	  break;
 	default:
@@ -2712,6 +2712,12 @@ coff_set_flags (bfd * abfd,
 	    }
 	}
       TICOFF_TARGET_MACHINE_SET (flagsp, bfd_get_mach (abfd));
+      return TRUE;
+#endif
+
+#ifdef TIC80_ARCH_MAGIC
+    case bfd_arch_tic80:
+      *magicp = TIC80_ARCH_MAGIC;
       return TRUE;
 #endif
 
@@ -2877,7 +2883,7 @@ sort_by_secaddr (const void * arg1, const void * arg2)
 /* Calculate the file position for each section.  */
 
 #define ALIGN_SECTIONS_IN_FILE
-#ifdef TICOFF
+#if defined(TIC80COFF) || defined(TICOFF)
 #undef ALIGN_SECTIONS_IN_FILE
 #endif
 
@@ -3215,7 +3221,7 @@ coff_compute_section_file_positions (bfd * abfd)
 	 incremented in coff_set_section_contents.  This is right for
 	 SVR3.2.  */
       if (strcmp (current->name, _LIB) == 0)
-	bfd_set_section_vma (current, 0);
+	(void) bfd_set_section_vma (abfd, current, 0);
 #endif
 
 #ifdef ALIGN_SECTIONS_IN_FILE
@@ -3805,6 +3811,9 @@ coff_write_object_contents (bfd * abfd)
      but it doesn't hurt to set it internally.  */
   internal_f.f_target_id = TI_TARGET_ID;
 #endif
+#ifdef TIC80_TARGET_ID
+  internal_f.f_target_id = TIC80_TARGET_ID;
+#endif
 
   /* FIXME, should do something about the other byte orders and
      architectures.  */
@@ -3832,6 +3841,10 @@ coff_write_object_contents (bfd * abfd)
     internal_a.magic = TICOFF_AOUT_MAGIC;
 #define __A_MAGIC_SET__
 #endif
+#ifdef TIC80COFF
+    internal_a.magic = TIC80_ARCH_MAGIC;
+#define __A_MAGIC_SET__
+#endif /* TIC80 */
 
 #if defined(ARM)
 #define __A_MAGIC_SET__
@@ -3998,7 +4011,7 @@ coff_write_object_contents (bfd * abfd)
       if (text_sec != NULL)
 	{
 	  internal_a.o_sntext = text_sec->target_index;
-	  internal_a.o_algntext = bfd_section_alignment (text_sec);
+	  internal_a.o_algntext = bfd_get_section_alignment (abfd, text_sec);
 	}
       else
 	{
@@ -4008,7 +4021,7 @@ coff_write_object_contents (bfd * abfd)
       if (data_sec != NULL)
 	{
 	  internal_a.o_sndata = data_sec->target_index;
-	  internal_a.o_algndata = bfd_section_alignment (data_sec);
+	  internal_a.o_algndata = bfd_get_section_alignment (abfd, data_sec);
 	}
       else
 	{
@@ -4377,7 +4390,8 @@ coff_slurp_line_table (bfd *abfd, asection *asect)
 	   PR 17521: file: 078-10659-0.004.  */
 	continue;
       else
-	cache_ptr->u.offset = dst.l_addr.l_paddr - bfd_section_vma (asect);
+	cache_ptr->u.offset = (dst.l_addr.l_paddr
+			       - bfd_section_vma (abfd, asect));
       cache_ptr++;
     }
 
@@ -4762,7 +4776,7 @@ coff_slurp_symbol_table (bfd * abfd)
 	    case C_ALIAS:	/* Duplicate tag.  */
 #endif
 	      /* New storage classes for TI COFF.  */
-#ifdef TICOFF
+#if defined(TIC80COFF) || defined(TICOFF)
 	    case C_UEXT:	/* Tentative external definition.  */
 #endif
 	    case C_EXTLAB:	/* External load time label.  */
@@ -4795,7 +4809,7 @@ coff_slurp_symbol_table (bfd * abfd)
   obj_symbols (abfd) = cached_area;
   obj_raw_syments (abfd) = native_symbols;
 
-  abfd->symcount = number_of_symbols;
+  bfd_get_symcount (abfd) = number_of_symbols;
   obj_convert (abfd) = table_ptr;
   /* Slurp the line tables for each section too.  */
   {
@@ -4872,7 +4886,7 @@ coff_classify_symbol (bfd *abfd,
 	  name = _bfd_coff_internal_syment_name (abfd, syment, buf)
 	  sec = coff_section_from_bfd_index (abfd, syment->n_scnum);
 	  if (sec != NULL && name != NULL
-	      && (strcmp (bfd_section_name (sec), name) == 0))
+	      && (strcmp (bfd_get_section_name (abfd, sec), name) == 0))
 	    return COFF_SYMBOL_PE_SECTION;
 	}
 #endif
@@ -5648,7 +5662,7 @@ static bfd_coff_backend_data bigobj_swap_table =
 #endif /* COFF_WITH_PE_BIGOBJ */
 
 #ifndef coff_close_and_cleanup
-#define coff_close_and_cleanup		    _bfd_coff_close_and_cleanup
+#define coff_close_and_cleanup		    _bfd_generic_close_and_cleanup
 #endif
 
 #ifndef coff_bfd_free_cached_info
@@ -5735,10 +5749,6 @@ static bfd_coff_backend_data bigobj_swap_table =
 
 #ifndef coff_bfd_is_group_section
 #define coff_bfd_is_group_section	    bfd_generic_is_group_section
-#endif
-
-#ifndef coff_bfd_group_name
-#define coff_bfd_group_name		    bfd_coff_group_name
 #endif
 
 #ifndef coff_bfd_discard_group

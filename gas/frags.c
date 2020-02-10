@@ -1,5 +1,5 @@
 /* frags.c - manage frags -
-   Copyright (C) 1987-2020 Free Software Foundation, Inc.
+   Copyright (C) 1987-2019 Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
@@ -395,12 +395,7 @@ frag_now_fix_octets (void)
 addressT
 frag_now_fix (void)
 {
-  /* Symbols whose section has SEC_ELF_OCTETS set,
-     resolve to octets instead of target bytes.  */
-  if (now_seg->flags & SEC_OCTETS)
-    return frag_now_fix_octets ();
-  else
-    return frag_now_fix_octets () / OCTETS_PER_BYTE;
+  return frag_now_fix_octets () / OCTETS_PER_BYTE;
 }
 
 void

@@ -6,7 +6,7 @@
 /* libbfd.h -- Declarations used by bfd library *implementation*.
    (This include file is not for users of the library.)
 
-   Copyright (C) 1990-2020 Free Software Foundation, Inc.
+   Copyright (C) 1990-2019 Free Software Foundation, Inc.
 
    Written by Cygnus Support.
 
@@ -528,8 +528,6 @@ extern bfd_boolean _bfd_nolink_bfd_lookup_section_flags
 #define _bfd_nolink_bfd_merge_sections _bfd_bool_bfd_link_false_error
 extern bfd_boolean _bfd_nolink_bfd_is_group_section
   (bfd *, const asection *) ATTRIBUTE_HIDDEN;
-extern const char *_bfd_nolink_bfd_group_name
-  (bfd *, const asection *) ATTRIBUTE_HIDDEN;
 extern bfd_boolean _bfd_nolink_bfd_discard_group
   (bfd *, asection *) ATTRIBUTE_HIDDEN;
 extern struct bfd_link_hash_table *_bfd_nolink_bfd_link_hash_table_create
@@ -601,7 +599,7 @@ struct dwarf_debug_section
 extern const struct dwarf_debug_section dwarf_debug_sections[] ATTRIBUTE_HIDDEN;
 
 /* Find the nearest line using DWARF 2 debugging information.  */
-extern int _bfd_dwarf2_find_nearest_line
+extern bfd_boolean _bfd_dwarf2_find_nearest_line
   (bfd *, asymbol **, asymbol *, asection *, bfd_vma,
    const char **, const char **, unsigned int *, unsigned int *,
    const struct dwarf_debug_section *, void **) ATTRIBUTE_HIDDEN;
@@ -2579,6 +2577,46 @@ static const char *const bfd_reloc_code_real_names[] = { "@@uninitialized@@",
   "BFD_RELOC_M68HC12_LO8XG",
   "BFD_RELOC_M68HC12_HI8XG",
   "BFD_RELOC_S12Z_15_PCREL",
+  "BFD_RELOC_16C_NUM08",
+  "BFD_RELOC_16C_NUM08_C",
+  "BFD_RELOC_16C_NUM16",
+  "BFD_RELOC_16C_NUM16_C",
+  "BFD_RELOC_16C_NUM32",
+  "BFD_RELOC_16C_NUM32_C",
+  "BFD_RELOC_16C_DISP04",
+  "BFD_RELOC_16C_DISP04_C",
+  "BFD_RELOC_16C_DISP08",
+  "BFD_RELOC_16C_DISP08_C",
+  "BFD_RELOC_16C_DISP16",
+  "BFD_RELOC_16C_DISP16_C",
+  "BFD_RELOC_16C_DISP24",
+  "BFD_RELOC_16C_DISP24_C",
+  "BFD_RELOC_16C_DISP24a",
+  "BFD_RELOC_16C_DISP24a_C",
+  "BFD_RELOC_16C_REG04",
+  "BFD_RELOC_16C_REG04_C",
+  "BFD_RELOC_16C_REG04a",
+  "BFD_RELOC_16C_REG04a_C",
+  "BFD_RELOC_16C_REG14",
+  "BFD_RELOC_16C_REG14_C",
+  "BFD_RELOC_16C_REG16",
+  "BFD_RELOC_16C_REG16_C",
+  "BFD_RELOC_16C_REG20",
+  "BFD_RELOC_16C_REG20_C",
+  "BFD_RELOC_16C_ABS20",
+  "BFD_RELOC_16C_ABS20_C",
+  "BFD_RELOC_16C_ABS24",
+  "BFD_RELOC_16C_ABS24_C",
+  "BFD_RELOC_16C_IMM04",
+  "BFD_RELOC_16C_IMM04_C",
+  "BFD_RELOC_16C_IMM16",
+  "BFD_RELOC_16C_IMM16_C",
+  "BFD_RELOC_16C_IMM20",
+  "BFD_RELOC_16C_IMM20_C",
+  "BFD_RELOC_16C_IMM24",
+  "BFD_RELOC_16C_IMM24_C",
+  "BFD_RELOC_16C_IMM32",
+  "BFD_RELOC_16C_IMM32_C",
   "BFD_RELOC_CR16_NUM8",
   "BFD_RELOC_CR16_NUM16",
   "BFD_RELOC_CR16_NUM32",
@@ -2869,12 +2907,6 @@ static const char *const bfd_reloc_code_real_names[] = { "@@uninitialized@@",
   "BFD_RELOC_XTENSA_TLS_ARG",
   "BFD_RELOC_XTENSA_TLS_CALL",
   "BFD_RELOC_Z80_DISP8",
-  "BFD_RELOC_Z80_BYTE0",
-  "BFD_RELOC_Z80_BYTE1",
-  "BFD_RELOC_Z80_BYTE2",
-  "BFD_RELOC_Z80_BYTE3",
-  "BFD_RELOC_Z80_WORD0",
-  "BFD_RELOC_Z80_WORD1",
   "BFD_RELOC_Z8K_DISP7",
   "BFD_RELOC_Z8K_CALLR",
   "BFD_RELOC_Z8K_IMM4L",

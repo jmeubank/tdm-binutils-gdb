@@ -1,7 +1,7 @@
 /* Internal format of COFF object file data structures, for GNU BFD.
    This file is part of BFD, the Binary File Descriptor library.
 
-   Copyright (C) 1999-2020 Free Software Foundation, Inc.
+   Copyright (C) 1999-2019 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -54,7 +54,7 @@ struct internal_extra_pe_filehdr
   unsigned short e_oeminfo;	/* OEM information; e_oemid specific, 0x0 */
   unsigned short e_res2[10];	/* Reserved words, all 0x0 */
   bfd_vma  e_lfanew;		/* File address of new exe header, 0x80 */
-  unsigned int dos_message[16]; /* Text which always follows DOS header.  */
+  unsigned long dos_message[16]; /* text which always follows dos header */
   bfd_vma  nt_signature;   	/* required NT signature, 0x4550 */
 };
 
@@ -808,11 +808,5 @@ struct internal_reloc
 #define R_OFF8    0x32		/* 8 bit signed abs, for (i[xy]+d) */
 #define R_IMM24   0x33          /* 24 bit abs */
 /* R_JR, R_IMM8, R_IMM16, R_IMM32 - as for Z8k */
-#define R_BYTE0  0x34		/* first (lowest) 8 bits of multibyte value */
-#define R_BYTE1  0x35		/* second 8 bits of multibyte value */
-#define R_BYTE2  0x36		/* third 8 bits of multibyte value */
-#define R_BYTE3  0x37		/* fourth (highest) 8 bits of multibyte value */
-#define R_WORD0  0x38		/* lowest 16 bits of 32 or 24 bit value */
-#define R_WORD1  0x39		/* highest 16 bits of 32 or 24 bit value */
 
 #endif /* GNU_COFF_INTERNAL_H */

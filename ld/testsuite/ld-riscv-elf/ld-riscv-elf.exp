@@ -1,5 +1,5 @@
 # Expect script for RISC-V ELF linker tests
-#   Copyright (C) 2017-2020 Free Software Foundation, Inc.
+#   Copyright (C) 2017-2019 Free Software Foundation, Inc.
 #
 # This file is part of the GNU Binutils.
 #
@@ -20,7 +20,6 @@
 #
 
 if [istarget "riscv*-*-*"] {
-    run_dump_test "call-relax"
     run_dump_test "c-lui"
     run_dump_test "c-lui-2"
     run_dump_test "disas-jalr"
@@ -72,11 +71,4 @@ if [istarget "riscv*-*-*"] {
 				    [list "readelf --syms gp-test.sd"] \
 				    "gp-test-${abi}"]]
     }
-
-    run_ld_link_tests {
-	{ "Link non-pic code into a shared library (setup)"
-	    "-shared" "" "" {lib-nopic-01a.s}
-	    {} "lib-nopic-01a.so" }
-    }
-    run_dump_test "lib-nopic-01b"
 }

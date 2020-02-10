@@ -1,5 +1,5 @@
 /* Assemble V850 instructions.
-   Copyright (C) 1996-2020 Free Software Foundation, Inc.
+   Copyright (C) 1996-2019 Free Software Foundation, Inc.
 
    This file is part of the GNU opcodes library.
 
@@ -693,10 +693,14 @@ extract_WIDTH_L (unsigned long insn, int * invalid)
 static unsigned long
 insert_SELID (unsigned long insn, long selid, const char ** errmsg)
 {
-  if ((unsigned long) selid > 0x1f)
+  unsigned long ret;
+
+  if (selid > 0x1f || selid < 0)
     * errmsg = _(selid_out_of_range);
 
-  return insn | ((selid & 0x1fUL) << 27);
+  ret = (insn | ((selid & 0x1f) << 27));
+
+  return ret;
 }
 
 static unsigned long

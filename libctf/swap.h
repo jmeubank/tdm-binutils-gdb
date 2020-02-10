@@ -1,5 +1,5 @@
 /* Interface to byteswapping functions.
-   Copyright (C) 2006-2020 Free Software Foundation, Inc.
+   Copyright (C) 2006-2019 Free Software Foundation, Inc.
 
    This file is part of libctf.
 
@@ -28,13 +28,13 @@
 #else
 
 /* Provide our own versions of the byteswap functions.  */
-static inline uint16_t
+inline uint16_t
 bswap_16 (uint16_t v)
 {
   return ((v >> 8) & 0xff) | ((v & 0xff) << 8);
 }
 
-static inline uint32_t
+inline uint32_t
 bswap_32 (uint32_t v)
 {
   return (  ((v & 0xff000000) >> 24)
@@ -49,7 +49,7 @@ bswap_identity_64 (uint64_t v)
   return v;
 }
 
-static inline uint64_t
+inline uint64_t
 bswap_64 (uint64_t v)
 {
   return (  ((v & 0xff00000000000000ULL) >> 56)

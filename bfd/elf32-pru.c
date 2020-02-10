@@ -1,5 +1,5 @@
 /* 32-bit ELF support for TI PRU.
-   Copyright (C) 2014-2020 Free Software Foundation, Inc.
+   Copyright (C) 2014-2019 Free Software Foundation, Inc.
    Contributed by Dimitar Dimitrov <dimitar@dinux.eu>
    Based on elf32-nios2.c
 
@@ -31,9 +31,6 @@
 #include "elf/pru.h"
 #include "opcode/pru.h"
 #include "libiberty.h"
-
-/* All users of this file have bfd_octets_per_byte (abfd, sec) == 1.  */
-#define OCTETS_PER_BYTE(ABFD, SEC) 1
 
 #define SWAP_VALS(A,B)		      \
   do {				      \
@@ -540,7 +537,7 @@ pru_elf32_do_ldi32_relocate (bfd *abfd, reloc_howto_type *howto,
 			     bfd_vma symbol_value, bfd_vma addend)
 {
   bfd_signed_vma relocation;
-  bfd_size_type octets = offset * OCTETS_PER_BYTE (abfd, input_section);
+  bfd_size_type octets = offset * bfd_octets_per_byte (abfd);
   bfd_byte *location;
   unsigned long in1, in2;
 
@@ -560,7 +557,7 @@ pru_elf32_do_ldi32_relocate (bfd *abfd, reloc_howto_type *howto,
   BFD_ASSERT (!howto->pc_relative);
 
   /* A hacked-up version of _bfd_relocate_contents() follows.  */
-  location = data + octets;
+  location = data + offset * bfd_octets_per_byte (abfd);
 
   BFD_ASSERT (!howto->pc_relative);
 
@@ -908,7 +905,7 @@ pru_elf32_relocate_section (bfd *output_bfd,
 						      symtab_hdr->sh_link,
 						      sym->st_name);
 	      if (name == NULL || *name == '\0')
-		name = bfd_section_name (sec);
+		name = bfd_section_name (input_bfd, sec);
 	    }
 
 	  switch (r)

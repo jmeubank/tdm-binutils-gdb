@@ -10,6 +10,3 @@ Disassembly of section \.text:
 .*:	d503245f 	bti	c
 .*:	d503249f 	bti	j
 .*:	d50324df 	bti	jc
-.*:	d503245f 	bti	c
-.*:	d503249f 	bti	j
-.*:	d50324df 	bti	jc

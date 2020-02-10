@@ -1,5 +1,5 @@
 /* MIPS-specific support for ELF
-   Copyright (C) 1993-2020 Free Software Foundation, Inc.
+   Copyright (C) 1993-2019 Free Software Foundation, Inc.
 
    Most of the information added by Ian Lance Taylor, Cygnus Support,
    <ian@cygnus.com>.
@@ -33,7 +33,6 @@
 #include "libbfd.h"
 #include "libiberty.h"
 #include "elf-bfd.h"
-#include "ecoff-bfd.h"
 #include "elfxx-mips.h"
 #include "elf/mips.h"
 #include "elf-vxworks.h"
@@ -1727,7 +1726,7 @@ section_allows_mips16_refs_p (asection *section)
 {
   const char *name;
 
-  name = bfd_section_name (section);
+  name = bfd_get_section_name (section->owner, section);
   return (FN_STUB_P (name)
 	  || CALL_STUB_P (name)
 	  || CALL_FP_STUB_P (name)
@@ -1938,7 +1937,7 @@ mips_elf_add_la25_intro (struct mips_elf_la25_stub *stub,
 
   /* Make sure that any padding goes before the stub.  */
   align = input_section->alignment_power;
-  if (!bfd_set_section_alignment (s, align))
+  if (!bfd_set_section_alignment (s->owner, s, align))
     return FALSE;
   if (align > 3)
     s->size = (1 << align) - 8;
@@ -1975,7 +1974,7 @@ mips_elf_add_la25_trampoline (struct mips_elf_la25_stub *stub,
       asection *input_section = stub->h->root.root.u.def.section;
       s = htab->add_stub_section (".text", NULL,
 				  input_section->output_section);
-      if (s == NULL || !bfd_set_section_alignment (s, 4))
+      if (s == NULL || !bfd_set_section_alignment (s->owner, s, 4))
 	return FALSE;
       htab->strampoline = s;
     }
@@ -2532,8 +2531,8 @@ _bfd_mips_elf_got16_reloc (bfd *abfd, arelent *reloc_entry, asymbol *symbol,
 			   bfd *output_bfd, char **error_message)
 {
   if ((symbol->flags & (BSF_GLOBAL | BSF_WEAK)) != 0
-      || bfd_is_und_section (bfd_asymbol_section (symbol))
-      || bfd_is_com_section (bfd_asymbol_section (symbol)))
+      || bfd_is_und_section (bfd_get_section (symbol))
+      || bfd_is_com_section (bfd_get_section (symbol)))
     /* The relocation is against a global symbol.  */
     return _bfd_mips_elf_generic_reloc (abfd, reloc_entry, symbol, data,
 					input_section, output_bfd,
@@ -2993,7 +2992,7 @@ mips_elf_output_extsym (struct mips_elf_link_hash_entry *h, void *data)
 	    h->esym.asym.sc = scUndefined;
 	  else
 	    {
-	      name = bfd_section_name (output_section);
+	      name = bfd_section_name (output_section->owner, output_section);
 
 	      if (strcmp (name, ".text") == 0)
 		h->esym.asym.sc = scText;
@@ -3266,8 +3265,8 @@ mips_elf_rel_dyn_section (struct bfd_link_info *info, bfd_boolean create_p)
 						    | SEC_LINKER_CREATED
 						    | SEC_READONLY));
       if (sreloc == NULL
-	  || !bfd_set_section_alignment (sreloc,
-					 MIPS_ELF_LOG_FILE_ALIGN (dynobj)))
+	  || ! bfd_set_section_alignment (dynobj, sreloc,
+					  MIPS_ELF_LOG_FILE_ALIGN (dynobj)))
 	return NULL;
     }
   return sreloc;
@@ -5202,7 +5201,8 @@ mips_elf_create_compact_rel_section
 
       s = bfd_make_section_anyway_with_flags (abfd, ".compact_rel", flags);
       if (s == NULL
-	  || !bfd_set_section_alignment (s, MIPS_ELF_LOG_FILE_ALIGN (abfd)))
+	  || ! bfd_set_section_alignment (abfd, s,
+					  MIPS_ELF_LOG_FILE_ALIGN (abfd)))
 	return FALSE;
 
       s->size = sizeof (Elf32_External_compact_rel);
@@ -5236,7 +5236,7 @@ mips_elf_create_got_section (bfd *abfd, struct bfd_link_info *info)
      in the function stub generation and in the linker script.  */
   s = bfd_make_section_anyway_with_flags (abfd, ".got", flags);
   if (s == NULL
-      || !bfd_set_section_alignment (s, 4))
+      || ! bfd_set_section_alignment (abfd, s, 4))
     return FALSE;
   htab->root.sgot = s;
 
@@ -5537,7 +5537,7 @@ mips_elf_calculate_relocation (bfd *abfd, bfd *input_bfd,
 						symtab_hdr->sh_link,
 						sym->st_name);
       if (*namep == NULL || **namep == '\0')
-	*namep = bfd_section_name (sec);
+	*namep = bfd_section_name (input_bfd, sec);
 
       /* For relocations against a section symbol and ones against no
 	 symbol (absolute relocations) infer the ISA mode from the addend.  */
@@ -5735,7 +5735,7 @@ mips_elf_calculate_relocation (bfd *abfd, bfd *input_bfd,
 	      sec = NULL;
 	      for (o = input_bfd->sections; o != NULL; o = o->next)
 		{
-		  if (CALL_FP_STUB_P (bfd_section_name (o)))
+		  if (CALL_FP_STUB_P (bfd_get_section_name (input_bfd, o)))
 		    {
 		      sec = h->call_fp_stub;
 		      break;
@@ -6602,7 +6602,7 @@ mips_elf_perform_relocation (struct bfd_link_info *info,
 	}
 
       /* Make this the JALX opcode.  */
-      x = (x & ~(0x3fu << 26)) | (jalx_opcode << 26);
+      x = (x & ~(0x3f << 26)) | (jalx_opcode << 26);
     }
   else if (cross_mode_jump_p && b_reloc_p (r_type))
     {
@@ -7385,7 +7385,7 @@ _bfd_mips_elf_section_processing (bfd *abfd, Elf_Internal_Shdr *hdr)
 
   if (hdr->bfd_section != NULL)
     {
-      const char *name = bfd_section_name (hdr->bfd_section);
+      const char *name = bfd_get_section_name (abfd, hdr->bfd_section);
 
       /* .sbss is not handled specially here because the GNU/Linux
 	 prelinker can convert .sbss from NOBITS to PROGBITS and
@@ -7514,9 +7514,10 @@ _bfd_mips_elf_section_from_shdr (bfd *abfd,
 
   if (flags)
     {
-      if (!bfd_set_section_flags (hdr->bfd_section,
-				  (bfd_section_flags (hdr->bfd_section)
-				   | flags)))
+      if (! bfd_set_section_flags (abfd, hdr->bfd_section,
+				   (bfd_get_section_flags (abfd,
+							   hdr->bfd_section)
+				    | flags)))
 	return FALSE;
     }
 
@@ -7623,7 +7624,7 @@ _bfd_mips_elf_section_from_shdr (bfd *abfd,
 bfd_boolean
 _bfd_mips_elf_fake_sections (bfd *abfd, Elf_Internal_Shdr *hdr, asection *sec)
 {
-  const char *name = bfd_section_name (sec);
+  const char *name = bfd_get_section_name (abfd, sec);
 
   if (strcmp (name, ".liblist") == 0)
     {
@@ -7763,12 +7764,12 @@ bfd_boolean
 _bfd_mips_elf_section_from_bfd_section (bfd *abfd ATTRIBUTE_UNUSED,
 					asection *sec, int *retval)
 {
-  if (strcmp (bfd_section_name (sec), ".scommon") == 0)
+  if (strcmp (bfd_get_section_name (abfd, sec), ".scommon") == 0)
     {
       *retval = SHN_MIPS_SCOMMON;
       return TRUE;
     }
-  if (strcmp (bfd_section_name (sec), ".acommon") == 0)
+  if (strcmp (bfd_get_section_name (abfd, sec), ".acommon") == 0)
     {
       *retval = SHN_MIPS_ACOMMON;
       return TRUE;
@@ -7995,7 +7996,7 @@ _bfd_mips_elf_create_dynamic_sections (bfd *abfd, struct bfd_link_info *info)
       s = bfd_get_linker_section (abfd, ".dynamic");
       if (s != NULL)
 	{
-	  if (!bfd_set_section_flags (s, flags))
+	  if (! bfd_set_section_flags (abfd, s, flags))
 	    return FALSE;
 	}
     }
@@ -8012,7 +8013,8 @@ _bfd_mips_elf_create_dynamic_sections (bfd *abfd, struct bfd_link_info *info)
 					  MIPS_ELF_STUB_SECTION_NAME (abfd),
 					  flags | SEC_CODE);
   if (s == NULL
-      || !bfd_set_section_alignment (s, MIPS_ELF_LOG_FILE_ALIGN (abfd)))
+      || ! bfd_set_section_alignment (abfd, s,
+				      MIPS_ELF_LOG_FILE_ALIGN (abfd)))
     return FALSE;
   htab->sstubs = s;
 
@@ -8023,7 +8025,8 @@ _bfd_mips_elf_create_dynamic_sections (bfd *abfd, struct bfd_link_info *info)
       s = bfd_make_section_anyway_with_flags (abfd, ".rld_map",
 					      flags &~ (flagword) SEC_READONLY);
       if (s == NULL
-	  || !bfd_set_section_alignment (s, MIPS_ELF_LOG_FILE_ALIGN (abfd)))
+	  || ! bfd_set_section_alignment (abfd, s,
+					  MIPS_ELF_LOG_FILE_ALIGN (abfd)))
 	return FALSE;
     }
 
@@ -8066,24 +8069,24 @@ _bfd_mips_elf_create_dynamic_sections (bfd *abfd, struct bfd_link_info *info)
       /* Change alignments of some sections.  */
       s = bfd_get_linker_section (abfd, ".hash");
       if (s != NULL)
-	bfd_set_section_alignment (s, MIPS_ELF_LOG_FILE_ALIGN (abfd));
+	(void) bfd_set_section_alignment (abfd, s, MIPS_ELF_LOG_FILE_ALIGN (abfd));
 
       s = bfd_get_linker_section (abfd, ".dynsym");
       if (s != NULL)
-	bfd_set_section_alignment (s, MIPS_ELF_LOG_FILE_ALIGN (abfd));
+	(void) bfd_set_section_alignment (abfd, s, MIPS_ELF_LOG_FILE_ALIGN (abfd));
 
       s = bfd_get_linker_section (abfd, ".dynstr");
       if (s != NULL)
-	bfd_set_section_alignment (s, MIPS_ELF_LOG_FILE_ALIGN (abfd));
+	(void) bfd_set_section_alignment (abfd, s, MIPS_ELF_LOG_FILE_ALIGN (abfd));
 
       /* ??? */
       s = bfd_get_section_by_name (abfd, ".reginfo");
       if (s != NULL)
-	bfd_set_section_alignment (s, MIPS_ELF_LOG_FILE_ALIGN (abfd));
+	(void) bfd_set_section_alignment (abfd, s, MIPS_ELF_LOG_FILE_ALIGN (abfd));
 
       s = bfd_get_linker_section (abfd, ".dynamic");
       if (s != NULL)
-	bfd_set_section_alignment (s, MIPS_ELF_LOG_FILE_ALIGN (abfd));
+	(void) bfd_set_section_alignment (abfd, s, MIPS_ELF_LOG_FILE_ALIGN (abfd));
     }
 
   if (bfd_link_executable (info))
@@ -8375,7 +8378,7 @@ _bfd_mips_elf_check_relocs (bfd *abfd, struct bfd_link_info *info,
 
   /* Check for the mips16 stub sections.  */
 
-  name = bfd_section_name (sec);
+  name = bfd_get_section_name (abfd, sec);
   if (FN_STUB_P (name))
     {
       unsigned long r_symndx;
@@ -9372,12 +9375,12 @@ _bfd_mips_elf_adjust_dynamic_symbol (struct bfd_link_info *info,
 	     Encourage better cache usage by aligning.  We do this
 	     lazily to avoid pessimizing traditional objects.  */
 	  if (!htab->is_vxworks
-	      && !bfd_set_section_alignment (htab->root.splt, 5))
+	      && !bfd_set_section_alignment (dynobj, htab->root.splt, 5))
 	    return FALSE;
 
 	  /* Make sure that .got.plt is word-aligned.  We do this lazily
 	     for the same reason as above.  */
-	  if (!bfd_set_section_alignment (htab->root.sgotplt,
+	  if (!bfd_set_section_alignment (dynobj, htab->root.sgotplt,
 					  MIPS_ELF_LOG_FILE_ALIGN (dynobj)))
 	    return FALSE;
 
@@ -9585,7 +9588,7 @@ _bfd_mips_elf_always_size_sections (bfd *output_bfd,
   sect = bfd_get_section_by_name (output_bfd, ".reginfo");
   if (sect != NULL)
     {
-      bfd_set_section_size (sect, sizeof (Elf32_External_RegInfo));
+      bfd_set_section_size (output_bfd, sect, sizeof (Elf32_External_RegInfo));
       sect->flags |= SEC_FIXED_SIZE | SEC_HAS_CONTENTS;
     }
 
@@ -9593,7 +9596,8 @@ _bfd_mips_elf_always_size_sections (bfd *output_bfd,
   sect = bfd_get_section_by_name (output_bfd, ".MIPS.abiflags");
   if (sect != NULL)
     {
-      bfd_set_section_size (sect, sizeof (Elf_External_ABIFlags_v0));
+      bfd_set_section_size (output_bfd, sect,
+			    sizeof (Elf_External_ABIFlags_v0));
       sect->flags |= SEC_FIXED_SIZE | SEC_HAS_CONTENTS;
     }
 
@@ -10026,7 +10030,7 @@ _bfd_mips_elf_size_dynamic_sections (bfd *output_bfd,
 
       /* It's OK to base decisions on the section name, because none
 	 of the dynobj section names depend upon the input files.  */
-      name = bfd_section_name (s);
+      name = bfd_get_section_name (dynobj, s);
 
       if ((s->flags & SEC_LINKER_CREATED) == 0)
 	continue;
@@ -10044,7 +10048,8 @@ _bfd_mips_elf_size_dynamic_sections (bfd *output_bfd,
 		 assert a DT_TEXTREL entry rather than testing whether
 		 there exists a relocation to a read only section or
 		 not.  */
-	      outname = bfd_section_name (s->output_section);
+	      outname = bfd_get_section_name (output_bfd,
+					      s->output_section);
 	      target = bfd_get_section_by_name (output_bfd, outname + 4);
 	      if ((target != NULL
 		   && (target->flags & SEC_READONLY) != 0
@@ -12440,7 +12445,7 @@ _bfd_mips_final_write_processing (bfd *abfd)
 
 	case SHT_MIPS_GPTAB:
 	  BFD_ASSERT ((*hdrpp)->bfd_section != NULL);
-	  name = bfd_section_name ((*hdrpp)->bfd_section);
+	  name = bfd_get_section_name (abfd, (*hdrpp)->bfd_section);
 	  BFD_ASSERT (name != NULL
 		      && CONST_STRNEQ (name, ".gptab."));
 	  sec = bfd_get_section_by_name (abfd, name + sizeof ".gptab" - 1);
@@ -12450,7 +12455,7 @@ _bfd_mips_final_write_processing (bfd *abfd)
 
 	case SHT_MIPS_CONTENT:
 	  BFD_ASSERT ((*hdrpp)->bfd_section != NULL);
-	  name = bfd_section_name ((*hdrpp)->bfd_section);
+	  name = bfd_get_section_name (abfd, (*hdrpp)->bfd_section);
 	  BFD_ASSERT (name != NULL
 		      && CONST_STRNEQ (name, ".MIPS.content"));
 	  sec = bfd_get_section_by_name (abfd,
@@ -12470,7 +12475,7 @@ _bfd_mips_final_write_processing (bfd *abfd)
 
 	case SHT_MIPS_EVENTS:
 	  BFD_ASSERT ((*hdrpp)->bfd_section != NULL);
-	  name = bfd_section_name ((*hdrpp)->bfd_section);
+	  name = bfd_get_section_name (abfd, (*hdrpp)->bfd_section);
 	  BFD_ASSERT (name != NULL);
 	  if (CONST_STRNEQ (name, ".MIPS.events"))
 	    sec = bfd_get_section_by_name (abfd,
@@ -12856,7 +12861,8 @@ _bfd_mips_elf_gc_mark_extra_sections (struct bfd_link_info *info,
 
       for (o = sub->sections; o != NULL; o = o->next)
 	if (!o->gc_mark
-	    && MIPS_ELF_ABIFLAGS_SECTION_NAME_P (bfd_section_name (o)))
+	    && MIPS_ELF_ABIFLAGS_SECTION_NAME_P
+		 (bfd_get_section_name (sub, o)))
 	  {
 	    if (!_bfd_elf_gc_mark (info, o, gc_mark_hook))
 	      return FALSE;
@@ -13079,17 +13085,26 @@ _bfd_mips_elf_find_nearest_line (bfd *abfd, asymbol **symbols,
 				     line_ptr, discriminator_ptr,
 				     dwarf_debug_sections,
 				     &elf_tdata (abfd)->dwarf2_find_line_info)
-      == 1)
-    return TRUE;
-
-  if (_bfd_dwarf1_find_nearest_line (abfd, symbols, section, offset,
-				     filename_ptr, functionname_ptr,
-				     line_ptr))
+      || _bfd_dwarf1_find_nearest_line (abfd, symbols, section, offset,
+					filename_ptr, functionname_ptr,
+					line_ptr))
     {
-      if (!*functionname_ptr)
-	_bfd_elf_find_function (abfd, symbols, section, offset,
-				*filename_ptr ? NULL : filename_ptr,
-				functionname_ptr);
+      /* PR 22789: If the function name or filename was not found through
+	 the debug information, then try an ordinary lookup instead.  */
+      if ((functionname_ptr != NULL && *functionname_ptr == NULL)
+	  || (filename_ptr != NULL && *filename_ptr == NULL))
+	{
+	  /* Do not override already discovered names.  */
+	  if (functionname_ptr != NULL && *functionname_ptr != NULL)
+	    functionname_ptr = NULL;
+
+	  if (filename_ptr != NULL && *filename_ptr != NULL)
+	    filename_ptr = NULL;
+
+	  _bfd_elf_find_function (abfd, symbols, section, offset,
+				  filename_ptr, functionname_ptr);
+	}
+
       return TRUE;
     }
 
@@ -15009,7 +15024,7 @@ _bfd_mips_elf_final_link (bfd *abfd, struct bfd_link_info *info)
 								   ".rtproc",
 								   flags);
 		  if (rtproc_sec == NULL
-		      || !bfd_set_section_alignment (rtproc_sec, 4))
+		      || ! bfd_set_section_alignment (abfd, rtproc_sec, 4))
 		    return FALSE;
 		}
 
@@ -16636,14 +16651,11 @@ enum
   MIPS_LIBC_ABI_MAX
 };
 
-bfd_boolean
-_bfd_mips_init_file_header (bfd *abfd, struct bfd_link_info *link_info)
+void
+_bfd_mips_post_process_headers (bfd *abfd, struct bfd_link_info *link_info)
 {
   struct mips_elf_link_hash_table *htab = NULL;
   Elf_Internal_Ehdr *i_ehdrp;
-
-  if (!_bfd_elf_init_file_header (abfd, link_info))
-    return FALSE;
 
   i_ehdrp = elf_elfheader (abfd);
   if (link_info)
@@ -16667,7 +16679,8 @@ _bfd_mips_init_file_header (bfd *abfd, struct bfd_link_info *link_info)
      if it is the only hash section that will be created.  */
   if (link_info && link_info->emit_gnu_hash && !link_info->emit_hash)
     i_ehdrp->e_ident[EI_ABIVERSION] = MIPS_LIBC_ABI_XHASH;
-  return TRUE;
+
+  _bfd_elf_post_process_headers (abfd, link_info);
 }
 
 int

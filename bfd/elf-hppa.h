@@ -1,5 +1,5 @@
 /* Common code for PA ELF implementations.
-   Copyright (C) 1999-2020 Free Software Foundation, Inc.
+   Copyright (C) 1999-2019 Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
@@ -881,7 +881,7 @@ elf_hppa_fake_sections (bfd *abfd, Elf_Internal_Shdr *hdr, asection *sec)
 {
   const char *name;
 
-  name = bfd_section_name (sec);
+  name = bfd_get_section_name (abfd, sec);
 
   if (strcmp (name, ".PARISC.unwind") == 0)
     {

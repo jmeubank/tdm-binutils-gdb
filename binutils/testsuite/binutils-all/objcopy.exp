@@ -1,4 +1,4 @@
-#   Copyright (C) 1994-2020 Free Software Foundation, Inc.
+#   Copyright (C) 1994-2019 Free Software Foundation, Inc.
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -81,6 +81,7 @@ proc objcopy_test {testname srcfile} {
 	setup_xfail "m8*-*"
 	setup_xfail "sh-*-coff*"
 	setup_xfail "tic54x-*-*"
+	setup_xfail "tic80-*-*"
 
 	clear_xfail "hppa*64*-*-hpux*" "hppa*-*-linux*" "hppa*-*-lites*"
 	clear_xfail "hppa*-*-*n*bsd*" "hppa*-*-rtems*" "*-*-*elf*"
@@ -1107,12 +1108,10 @@ if [is_elf_format] {
 	run_dump_test "note-2-64"
 	run_dump_test "note-3-64"
 	run_dump_test "note-4-64"
-	run_dump_test "note-6-64"
     } else {
 	run_dump_test "note-2-32"
 	run_dump_test "note-3-32"
 	run_dump_test "note-4-32"
-	run_dump_test "note-6-32"
     }
     run_dump_test "note-5"
 }
@@ -1220,9 +1219,6 @@ if [is_elf_format] {
 
     run_dump_test "only-section-01"
     run_dump_test "remove-section-01"
-
-    run_dump_test "keep-section-1"
-    run_dump_test "keep-section-2"
 
     # Test the remove relocation functionality
     set test_list [lsort [glob -nocomplain $srcdir/$subdir/remove-relocs-*.d]]

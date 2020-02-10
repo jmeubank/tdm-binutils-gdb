@@ -1,6 +1,6 @@
 /* AArch64 assembler/disassembler support.
 
-   Copyright (C) 2009-2020 Free Software Foundation, Inc.
+   Copyright (C) 2009-2019 Free Software Foundation, Inc.
    Contributed by ARM Ltd.
 
    This file is part of GNU Binutils.
@@ -45,6 +45,7 @@ typedef uint32_t aarch64_insn;
 #define AARCH64_FEATURE_V8	0x00000001	/* All processors.  */
 #define AARCH64_FEATURE_V8_2	0x00000020      /* ARMv8.2 processors.  */
 #define AARCH64_FEATURE_V8_3	0x00000040      /* ARMv8.3 processors.  */
+#define AARCH64_FEATURE_CRYPTO	0x00010000	/* Crypto instructions.  */
 #define AARCH64_FEATURE_FP	0x00020000	/* FP instructions.  */
 #define AARCH64_FEATURE_SIMD	0x00040000	/* SIMD instructions.  */
 #define AARCH64_FEATURE_CRC	0x00080000	/* CRC instructions.  */
@@ -62,8 +63,6 @@ typedef uint32_t aarch64_insn;
 #define AARCH64_FEATURE_DOTPROD 0x080000000     /* Dot Product instructions.  */
 #define AARCH64_FEATURE_F16_FML	0x1000000000ULL	/* v8.2 FP16FML ins.  */
 #define AARCH64_FEATURE_V8_5	0x2000000000ULL	/* ARMv8.5 processors.  */
-#define AARCH64_FEATURE_V8_6	0x00000002	/* ARMv8.6 processors.  */
-#define AARCH64_FEATURE_BFLOAT16	0x00000004	/* Bfloat16 insns.  */
 
 /* Flag Manipulation insns.  */
 #define AARCH64_FEATURE_FLAGMANIP	0x4000000000ULL
@@ -90,20 +89,12 @@ typedef uint32_t aarch64_insn;
 /* Transactional Memory Extension.  */
 #define AARCH64_FEATURE_TME		0x2000000000000ULL
 
-/* Matrix Multiply instructions */
-#define AARCH64_FEATURE_I8MM		0x10000000000000ULL
-#define AARCH64_FEATURE_F32MM		0x20000000000000ULL
-#define AARCH64_FEATURE_F64MM		0x40000000000000ULL
-
 /* SVE2 instructions.  */
 #define AARCH64_FEATURE_SVE2		0x000000010
 #define AARCH64_FEATURE_SVE2_AES		0x000000080
 #define AARCH64_FEATURE_SVE2_BITPERM	0x000000100
 #define AARCH64_FEATURE_SVE2_SM4		0x000000200
 #define AARCH64_FEATURE_SVE2_SHA3	0x000000400
-
-/* Crypto instructions are the combination of AES and SHA2.  */
-#define AARCH64_FEATURE_CRYPTO	(AARCH64_FEATURE_SHA2 | AARCH64_FEATURE_AES)
 
 /* Architectures are the sum of the base and extensions.  */
 #define AARCH64_ARCH_V8		AARCH64_FEATURE (AARCH64_FEATURE_V8, \
@@ -138,10 +129,7 @@ typedef uint32_t aarch64_insn;
 						 | AARCH64_FEATURE_SCXTNUM \
 						 | AARCH64_FEATURE_ID_PFR2 \
 						 | AARCH64_FEATURE_SSBS)
-#define AARCH64_ARCH_V8_6	AARCH64_FEATURE (AARCH64_ARCH_V8_5,	\
-						 AARCH64_FEATURE_V8_6   \
-						 | AARCH64_FEATURE_BFLOAT16 \
-						 | AARCH64_FEATURE_I8MM)
+
 
 #define AARCH64_ARCH_NONE	AARCH64_FEATURE (0, 0)
 #define AARCH64_ANY		AARCH64_FEATURE (-1, 0)	/* Any basic core.  */
@@ -330,7 +318,6 @@ enum aarch64_opnd
   AARCH64_OPND_BTI_TARGET,	/* BTI {<target>}.  */
 
   AARCH64_OPND_SVE_ADDR_RI_S4x16,   /* SVE [<Xn|SP>, #<simm4>*16].  */
-  AARCH64_OPND_SVE_ADDR_RI_S4x32,   /* SVE [<Xn|SP>, #<simm4>*32].  */
   AARCH64_OPND_SVE_ADDR_RI_S4xVL,   /* SVE [<Xn|SP>, #<simm4>, MUL VL].  */
   AARCH64_OPND_SVE_ADDR_RI_S4x2xVL, /* SVE [<Xn|SP>, #<simm4>*2, MUL VL].  */
   AARCH64_OPND_SVE_ADDR_RI_S4x3xVL, /* SVE [<Xn|SP>, #<simm4>*3, MUL VL].  */
@@ -473,13 +460,11 @@ enum aarch64_opnd_qualifier
   AARCH64_OPND_QLF_S_S,
   AARCH64_OPND_QLF_S_D,
   AARCH64_OPND_QLF_S_Q,
-  /* These type qualifiers have a special meaning in that they mean 4 x 1 byte
-     or 2 x 2 byte are selected by the instruction.  Other than that they have
-     no difference with AARCH64_OPND_QLF_S_B in encoding.  They are here purely
-     for syntactical reasons and is an exception from normal AArch64
-     disassembly scheme.  */
+  /* This type qualifier has a special meaning in that it means that 4 x 1 byte
+     are selected by the instruction.  Other than that it has no difference
+     with AARCH64_OPND_QLF_S_B in encoding.  It is here purely for syntactical
+     reasons and is an exception from normal AArch64 disassembly scheme.  */
   AARCH64_OPND_QLF_S_4B,
-  AARCH64_OPND_QLF_S_2H,
 
   /* Qualifying an operand which is a SIMD vector register or a SIMD vector
      register list; indicating register shape.
@@ -529,7 +514,6 @@ enum aarch64_opnd_qualifier
 
 enum aarch64_insn_class
 {
-  aarch64_misc,
   addsub_carry,
   addsub_ext,
   addsub_imm,
@@ -623,7 +607,6 @@ enum aarch64_insn_class
   cryptosm3,
   cryptosm4,
   dotproduct,
-  bfloat16,
 };
 
 /* Opcode enumerators.  */

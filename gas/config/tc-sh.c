@@ -1,5 +1,5 @@
 /* tc-sh.c -- Assemble code for the Renesas / SuperH SH
-   Copyright (C) 1993-2020 Free Software Foundation, Inc.
+   Copyright (C) 1993-2019 Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
@@ -3162,8 +3162,8 @@ md_section_align (segT seg ATTRIBUTE_UNUSED, valueT size)
 #ifdef OBJ_ELF
   return size;
 #else /* ! OBJ_ELF */
-  return ((size + (1 << bfd_section_alignment (seg)) - 1)
-	  & -(1 << bfd_section_alignment (seg)));
+  return ((size + (1 << bfd_get_section_alignment (stdoutput, seg)) - 1)
+	  & -(1 << bfd_get_section_alignment (stdoutput, seg)));
 #endif /* ! OBJ_ELF */
 }
 

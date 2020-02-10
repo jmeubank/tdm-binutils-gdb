@@ -7,5 +7,4 @@
 
 	/* Statistical profiling.  */
 	psb csync
-	psb CSYNC
 	hint #0x11

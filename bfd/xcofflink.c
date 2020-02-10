@@ -1,5 +1,5 @@
 /* POWER/PowerPC XCOFF linker support.
-   Copyright (C) 1995-2020 Free Software Foundation, Inc.
+   Copyright (C) 1995-2019 Free Software Foundation, Inc.
    Written by Ian Lance Taylor <ian@cygnus.com>, Cygnus Support.
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -28,7 +28,6 @@
 #include "libcoff.h"
 #include "libxcoff.h"
 #include "libiberty.h"
-#include "xcofflink.h"
 
 /* This file holds the XCOFF linker code.  */
 
@@ -2081,14 +2080,14 @@ xcoff_link_add_symbols (bfd *abfd, struct bfd_link_info *info)
   for (o = abfd->sections; o != first_csect; o = o->next)
     {
       /* Debugging sections have no csects.  */
-      if (bfd_section_flags (o) & SEC_DEBUGGING)
+      if (bfd_get_section_flags (abfd, o) & SEC_DEBUGGING)
 	continue;
 
       /* Reset the section size and the line number count, since the
 	 data is now attached to the csects.  Don't reset the size of
 	 the .debug section, since we need to read it below in
 	 bfd_xcoff_size_dynamic_sections.  */
-      if (strcmp (bfd_section_name (o), ".debug") != 0)
+      if (strcmp (bfd_get_section_name (abfd, o), ".debug") != 0)
 	o->size = 0;
       o->lineno_count = 0;
 
@@ -3020,7 +3019,7 @@ xcoff_sweep (struct bfd_link_info *info)
 		  || o == xcoff_hash_table (info)->loader_section
 		  || o == xcoff_hash_table (info)->linkage_section
 		  || o == xcoff_hash_table (info)->descriptor_section
-		  || (bfd_section_flags (o) & SEC_DEBUGGING)
+		  || (bfd_get_section_flags (sub, o) & SEC_DEBUGGING)
 		  || strcmp (o->name, ".debug") == 0)
 		o->flags |= SEC_MARK;
 	      else
@@ -6413,9 +6412,9 @@ _bfd_xcoff_bfd_final_link (bfd *abfd, struct bfd_link_info *info)
 	goto error_return;
     }
 
-  /* Setting symcount to 0 will cause write_object_contents to
+  /* Setting bfd_get_symcount to 0 will cause write_object_contents to
      not try to write out the symbols.  */
-  abfd->symcount = 0;
+  bfd_get_symcount (abfd) = 0;
 
   return TRUE;
 

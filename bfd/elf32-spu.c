@@ -1,6 +1,6 @@
 /* SPU specific support for 32-bit ELF
 
-   Copyright (C) 2006-2020 Free Software Foundation, Inc.
+   Copyright (C) 2006-2019 Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
@@ -26,9 +26,6 @@
 #include "elf-bfd.h"
 #include "elf/spu.h"
 #include "elf32-spu.h"
-
-/* All users of this file have bfd_octets_per_byte (abfd, sec) == 1.  */
-#define OCTETS_PER_BYTE(ABFD, SEC) 1
 
 /* We use RELA style relocs.  Don't define USE_REL.  */
 
@@ -215,7 +212,7 @@ spu_elf_rel9 (bfd *abfd, arelent *reloc_entry, asymbol *symbol,
 
   if (reloc_entry->address > bfd_get_section_limit (abfd, input_section))
     return bfd_reloc_outofrange;
-  octets = reloc_entry->address * OCTETS_PER_BYTE (abfd, input_section);
+  octets = reloc_entry->address * bfd_octets_per_byte (abfd);
 
   /* Get symbol value.  */
   val = 0;
@@ -588,7 +585,7 @@ spu_elf_create_sections (struct bfd_link_info *info)
       flags = SEC_LOAD | SEC_READONLY | SEC_HAS_CONTENTS | SEC_IN_MEMORY;
       s = bfd_make_section_anyway_with_flags (ibfd, SPU_PTNOTE_SPUNAME, flags);
       if (s == NULL
-	  || !bfd_set_section_alignment (s, 4))
+	  || !bfd_set_section_alignment (ibfd, s, 4))
 	return FALSE;
       /* Because we didn't set SEC_LINKER_CREATED we need to set the
 	 proper section type.  */
@@ -598,7 +595,7 @@ spu_elf_create_sections (struct bfd_link_info *info)
       size = 12 + ((sizeof (SPU_PLUGIN_NAME) + 3) & -4);
       size += (name_len + 3) & -4;
 
-      if (!bfd_set_section_size (s, size))
+      if (!bfd_set_section_size (ibfd, s, size))
 	return FALSE;
 
       data = bfd_zalloc (ibfd, size);
@@ -625,7 +622,7 @@ spu_elf_create_sections (struct bfd_link_info *info)
       flags = (SEC_LOAD | SEC_ALLOC | SEC_READONLY | SEC_HAS_CONTENTS
 	       | SEC_IN_MEMORY | SEC_LINKER_CREATED);
       s = bfd_make_section_anyway_with_flags (ibfd, ".fixup", flags);
-      if (s == NULL || !bfd_set_section_alignment (s, 2))
+      if (s == NULL || !bfd_set_section_alignment (ibfd, s, 2))
 	return FALSE;
       htab->sfixup = s;
     }
@@ -1697,7 +1694,7 @@ spu_elf_size_stubs (struct bfd_link_info *info)
       stub = bfd_make_section_anyway_with_flags (ibfd, ".stub", flags);
       htab->stub_sec[0] = stub;
       if (stub == NULL
-	  || !bfd_set_section_alignment (stub,
+	  || !bfd_set_section_alignment (ibfd, stub,
 					 ovl_stub_size_log2 (htab->params)))
 	return 0;
       stub->size = htab->stub_count[0] * ovl_stub_size (htab->params);
@@ -1712,7 +1709,7 @@ spu_elf_size_stubs (struct bfd_link_info *info)
 	  stub = bfd_make_section_anyway_with_flags (ibfd, ".stub", flags);
 	  htab->stub_sec[ovl] = stub;
 	  if (stub == NULL
-	      || !bfd_set_section_alignment (stub,
+	      || !bfd_set_section_alignment (ibfd, stub,
 					     ovl_stub_size_log2 (htab->params)))
 	    return 0;
 	  stub->size = htab->stub_count[ovl] * ovl_stub_size (htab->params);
@@ -1730,7 +1727,7 @@ spu_elf_size_stubs (struct bfd_link_info *info)
       flags = SEC_ALLOC;
       htab->ovtab = bfd_make_section_anyway_with_flags (ibfd, ".ovtab", flags);
       if (htab->ovtab == NULL
-	  || !bfd_set_section_alignment (htab->ovtab, 4))
+	  || !bfd_set_section_alignment (ibfd, htab->ovtab, 4))
 	return 0;
 
       htab->ovtab->size = (16 + 16 + (16 << htab->fromelem_size_log2))
@@ -1739,7 +1736,7 @@ spu_elf_size_stubs (struct bfd_link_info *info)
       flags = SEC_ALLOC | SEC_LOAD | SEC_HAS_CONTENTS | SEC_IN_MEMORY;
       htab->init = bfd_make_section_anyway_with_flags (ibfd, ".ovini", flags);
       if (htab->init == NULL
-	  || !bfd_set_section_alignment (htab->init, 4))
+	  || !bfd_set_section_alignment (ibfd, htab->init, 4))
 	return 0;
 
       htab->init->size = 16;
@@ -1764,7 +1761,7 @@ spu_elf_size_stubs (struct bfd_link_info *info)
       flags = SEC_ALLOC | SEC_LOAD | SEC_HAS_CONTENTS | SEC_IN_MEMORY;
       htab->ovtab = bfd_make_section_anyway_with_flags (ibfd, ".ovtab", flags);
       if (htab->ovtab == NULL
-	  || !bfd_set_section_alignment (htab->ovtab, 4))
+	  || !bfd_set_section_alignment (ibfd, htab->ovtab, 4))
 	return 0;
 
       htab->ovtab->size = htab->num_overlays * 16 + 16 + htab->num_buf * 4;
@@ -1772,7 +1769,7 @@ spu_elf_size_stubs (struct bfd_link_info *info)
 
   htab->toe = bfd_make_section_anyway_with_flags (ibfd, ".toe", SEC_ALLOC);
   if (htab->toe == NULL
-      || !bfd_set_section_alignment (htab->toe, 4))
+      || !bfd_set_section_alignment (ibfd, htab->toe, 4))
     return 0;
   htab->toe->size = 16;
 
@@ -2131,7 +2128,7 @@ spu_elf_build_stubs (struct bfd_link_info *info)
 	      bfd_put_32 (htab->ovtab->owner, s->vma, p + off);
 	      bfd_put_32 (htab->ovtab->owner, (s->size + 15) & -16,
 			  p + off + 4);
-	      /* file_off written later in spu_elf_modify_headers.  */
+	      /* file_off written later in spu_elf_modify_program_headers.  */
 	      bfd_put_32 (htab->ovtab->owner, ovl_buf, p + off + 12);
 	    }
 	}
@@ -5052,7 +5049,7 @@ spu_elf_relocate_section (bfd *output_bfd,
 	    (_("%pB(%s+%#" PRIx64 "): "
 	       "unresolvable %s relocation against symbol `%s'"),
 	     input_bfd,
-	     bfd_section_name (input_section),
+	     bfd_get_section_name (input_bfd, input_section),
 	     (uint64_t) rel->r_offset,
 	     howto->name,
 	     sym_name);
@@ -5188,19 +5185,17 @@ spu_elf_plugin (int val)
 
 /* Set ELF header e_type for plugins.  */
 
-static bfd_boolean
-spu_elf_init_file_header (bfd *abfd, struct bfd_link_info *info)
+static void
+spu_elf_post_process_headers (bfd *abfd, struct bfd_link_info *info)
 {
-  if (!_bfd_elf_init_file_header (abfd, info))
-    return FALSE;
-
   if (spu_plugin)
     {
       Elf_Internal_Ehdr *i_ehdrp = elf_elfheader (abfd);
 
       i_ehdrp->e_type = ET_DYN;
     }
-  return TRUE;
+
+  _bfd_elf_post_process_headers (abfd, info);
 }
 
 /* We may add an extra PT_LOAD segment for .toe.  We also need extra
@@ -5307,7 +5302,6 @@ spu_elf_modify_segment_map (bfd *abfd, struct bfd_link_info *info)
 	      && spu_elf_section_data ((*p)->sections[0])->u.o.ovl_index != 0)
 	    {
 	      m = *p;
-	      m->no_sort_lma = 1;
 	      *p = m->next;
 	      *p_overlay = m;
 	      p_overlay = &m->next;
@@ -5349,103 +5343,100 @@ spu_elf_fake_sections (bfd *obfd ATTRIBUTE_UNUSED,
 /* Tweak phdrs before writing them out.  */
 
 static int
-spu_elf_modify_headers (bfd *abfd, struct bfd_link_info *info)
+spu_elf_modify_program_headers (bfd *abfd, struct bfd_link_info *info)
 {
-  if (info != NULL)
+  const struct elf_backend_data *bed;
+  struct elf_obj_tdata *tdata;
+  Elf_Internal_Phdr *phdr, *last;
+  struct spu_link_hash_table *htab;
+  unsigned int count;
+  unsigned int i;
+
+  if (info == NULL)
+    return TRUE;
+
+  bed = get_elf_backend_data (abfd);
+  tdata = elf_tdata (abfd);
+  phdr = tdata->phdr;
+  count = elf_program_header_size (abfd) / bed->s->sizeof_phdr;
+  htab = spu_hash_table (info);
+  if (htab->num_overlays != 0)
     {
-      const struct elf_backend_data *bed;
-      struct elf_obj_tdata *tdata;
-      Elf_Internal_Phdr *phdr, *last;
-      struct spu_link_hash_table *htab;
-      unsigned int count;
-      unsigned int i;
+      struct elf_segment_map *m;
+      unsigned int o;
 
-      bed = get_elf_backend_data (abfd);
-      tdata = elf_tdata (abfd);
-      phdr = tdata->phdr;
-      count = elf_program_header_size (abfd) / bed->s->sizeof_phdr;
-      htab = spu_hash_table (info);
-      if (htab->num_overlays != 0)
-	{
-	  struct elf_segment_map *m;
-	  unsigned int o;
-
-	  for (i = 0, m = elf_seg_map (abfd); m; ++i, m = m->next)
-	    if (m->count != 0
-		&& ((o = spu_elf_section_data (m->sections[0])->u.o.ovl_index)
-		    != 0))
-	      {
-		/* Mark this as an overlay header.  */
-		phdr[i].p_flags |= PF_OVERLAY;
-
-		if (htab->ovtab != NULL && htab->ovtab->size != 0
-		    && htab->params->ovly_flavour != ovly_soft_icache)
-		  {
-		    bfd_byte *p = htab->ovtab->contents;
-		    unsigned int off = o * 16 + 8;
-
-		    /* Write file_off into _ovly_table.  */
-		    bfd_put_32 (htab->ovtab->owner, phdr[i].p_offset, p + off);
-		  }
-	      }
-	  /* Soft-icache has its file offset put in .ovl.init.  */
-	  if (htab->init != NULL && htab->init->size != 0)
-	    {
-	      bfd_vma val
-		= elf_section_data (htab->ovl_sec[0])->this_hdr.sh_offset;
-
-	      bfd_put_32 (htab->init->owner, val, htab->init->contents + 4);
-	    }
-	}
-
-      /* Round up p_filesz and p_memsz of PT_LOAD segments to multiples
-	 of 16.  This should always be possible when using the standard
-	 linker scripts, but don't create overlapping segments if
-	 someone is playing games with linker scripts.  */
-      last = NULL;
-      for (i = count; i-- != 0; )
-	if (phdr[i].p_type == PT_LOAD)
+      for (i = 0, m = elf_seg_map (abfd); m; ++i, m = m->next)
+	if (m->count != 0
+	    && (o = spu_elf_section_data (m->sections[0])->u.o.ovl_index) != 0)
 	  {
-	    unsigned adjust;
+	    /* Mark this as an overlay header.  */
+	    phdr[i].p_flags |= PF_OVERLAY;
 
-	    adjust = -phdr[i].p_filesz & 15;
-	    if (adjust != 0
-		&& last != NULL
-		&& (phdr[i].p_offset + phdr[i].p_filesz
-		    > last->p_offset - adjust))
-	      break;
+	    if (htab->ovtab != NULL && htab->ovtab->size != 0
+		&& htab->params->ovly_flavour != ovly_soft_icache)
+	      {
+		bfd_byte *p = htab->ovtab->contents;
+		unsigned int off = o * 16 + 8;
 
-	    adjust = -phdr[i].p_memsz & 15;
-	    if (adjust != 0
-		&& last != NULL
-		&& phdr[i].p_filesz != 0
-		&& phdr[i].p_vaddr + phdr[i].p_memsz > last->p_vaddr - adjust
-		&& phdr[i].p_vaddr + phdr[i].p_memsz <= last->p_vaddr)
-	      break;
-
-	    if (phdr[i].p_filesz != 0)
-	      last = &phdr[i];
+		/* Write file_off into _ovly_table.  */
+		bfd_put_32 (htab->ovtab->owner, phdr[i].p_offset, p + off);
+	      }
 	  }
+      /* Soft-icache has its file offset put in .ovl.init.  */
+      if (htab->init != NULL && htab->init->size != 0)
+	{
+	  bfd_vma val = elf_section_data (htab->ovl_sec[0])->this_hdr.sh_offset;
 
-      if (i == (unsigned int) -1)
-	for (i = count; i-- != 0; )
-	  if (phdr[i].p_type == PT_LOAD)
-	    {
-	      unsigned adjust;
-
-	      adjust = -phdr[i].p_filesz & 15;
-	      phdr[i].p_filesz += adjust;
-
-	      adjust = -phdr[i].p_memsz & 15;
-	      phdr[i].p_memsz += adjust;
-	    }
+	  bfd_put_32 (htab->init->owner, val, htab->init->contents + 4);
+	}
     }
 
-  return _bfd_elf_modify_headers (abfd, info);
+  /* Round up p_filesz and p_memsz of PT_LOAD segments to multiples
+     of 16.  This should always be possible when using the standard
+     linker scripts, but don't create overlapping segments if
+     someone is playing games with linker scripts.  */
+  last = NULL;
+  for (i = count; i-- != 0; )
+    if (phdr[i].p_type == PT_LOAD)
+      {
+	unsigned adjust;
+
+	adjust = -phdr[i].p_filesz & 15;
+	if (adjust != 0
+	    && last != NULL
+	    && phdr[i].p_offset + phdr[i].p_filesz > last->p_offset - adjust)
+	  break;
+
+	adjust = -phdr[i].p_memsz & 15;
+	if (adjust != 0
+	    && last != NULL
+	    && phdr[i].p_filesz != 0
+	    && phdr[i].p_vaddr + phdr[i].p_memsz > last->p_vaddr - adjust
+	    && phdr[i].p_vaddr + phdr[i].p_memsz <= last->p_vaddr)
+	  break;
+
+	if (phdr[i].p_filesz != 0)
+	  last = &phdr[i];
+      }
+
+  if (i == (unsigned int) -1)
+    for (i = count; i-- != 0; )
+      if (phdr[i].p_type == PT_LOAD)
+	{
+	unsigned adjust;
+
+	adjust = -phdr[i].p_filesz & 15;
+	phdr[i].p_filesz += adjust;
+
+	adjust = -phdr[i].p_memsz & 15;
+	phdr[i].p_memsz += adjust;
+      }
+
+  return TRUE;
 }
 
 bfd_boolean
-spu_elf_size_sections (bfd *obfd ATTRIBUTE_UNUSED, struct bfd_link_info *info)
+spu_elf_size_sections (bfd * output_bfd, struct bfd_link_info *info)
 {
   struct spu_link_hash_table *htab = spu_hash_table (info);
   if (htab->params->emit_fixups)
@@ -5502,7 +5493,7 @@ spu_elf_size_sections (bfd *obfd ATTRIBUTE_UNUSED, struct bfd_link_info *info)
 
       /* We always have a NULL fixup as a sentinel */
       size = (fixup_count + 1) * FIXUP_RECORD_SIZE;
-      if (!bfd_set_section_size (sfixup, size))
+      if (!bfd_set_section_size (output_bfd, sfixup, size))
 	return FALSE;
       sfixup->contents = (bfd_byte *) bfd_zalloc (info->input_bfds, size);
       if (sfixup->contents == NULL)
@@ -5535,8 +5526,8 @@ spu_elf_size_sections (bfd *obfd ATTRIBUTE_UNUSED, struct bfd_link_info *info)
 
 #define elf_backend_additional_program_headers	spu_elf_additional_program_headers
 #define elf_backend_modify_segment_map		spu_elf_modify_segment_map
-#define elf_backend_modify_headers		spu_elf_modify_headers
-#define elf_backend_init_file_header		spu_elf_init_file_header
+#define elf_backend_modify_program_headers	spu_elf_modify_program_headers
+#define elf_backend_post_process_headers	spu_elf_post_process_headers
 #define elf_backend_fake_sections		spu_elf_fake_sections
 #define elf_backend_special_sections		spu_elf_special_sections
 #define bfd_elf32_bfd_final_link		spu_elf_final_link

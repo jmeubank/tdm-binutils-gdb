@@ -1,5 +1,5 @@
 /* BFD back-end for Renesas H8/300 ELF binaries.
-   Copyright (C) 1993-2020 Free Software Foundation, Inc.
+   Copyright (C) 1993-2019 Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
@@ -23,7 +23,6 @@
 #include "libbfd.h"
 #include "elf-bfd.h"
 #include "elf/h8.h"
-#include "cpu-h8300.h"
 
 static reloc_howto_type *elf32_h8_reloc_type_lookup
   (bfd *abfd, bfd_reloc_code_real_type code);
@@ -503,7 +502,7 @@ elf32_h8_relocate_section (bfd *output_bfd, struct bfd_link_info *info,
 	      name = (bfd_elf_string_from_elf_section
 		      (input_bfd, symtab_hdr->sh_link, sym->st_name));
 	      if (name == NULL || *name == '\0')
-		name = bfd_section_name (sec);
+		name = bfd_section_name (input_bfd, sec);
 	    }
 
 	  switch (r)

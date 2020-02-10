@@ -1,5 +1,5 @@
 /* Opening CTF files with BFD.
-   Copyright (C) 2019-2020 Free Software Foundation, Inc.
+   Copyright (C) 2019 Free Software Foundation, Inc.
 
    This file is part of libctf.
 
@@ -19,7 +19,6 @@
 
 #include <ctf-impl.h>
 #include <stddef.h>
-#include <assert.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <errno.h>
@@ -33,9 +32,8 @@
 #include "elf-bfd.h"
 
 /* Make a new struct ctf_archive_internal wrapper for a ctf_archive or a
-   ctf_file.  Closes ARC and/or FP on error.  Arrange to free the SYMSECT or
-   STRSECT, as needed, on close (though the STRSECT interior is bound to the bfd
-   * and is not actually freed by this machinery).  */
+   ctf_file.  Closes ARC and/or FP on error.  Arrange to free the SYMSECT and
+   STRSECT interior on close.  */
 
 static struct ctf_archive_internal *
 ctf_new_archive_internal (int is_archive, struct ctf_archive *arc,
@@ -66,7 +64,7 @@ ctf_new_archive_internal (int is_archive, struct ctf_archive *arc,
   return arci;
 }
 
-/* Free the BFD bits of a CTF file on ctf_arc_close().  */
+/* Free the BFD bits of a CTF file on ctf_file_close().  */
 
 static void
 ctf_bfdclose (struct ctf_archive_internal *arci)
@@ -102,7 +100,7 @@ ctf_bfdopen (struct bfd *abfd, int *errp)
 
   ctfsect.cts_name = _CTF_SECTION;
   ctfsect.cts_entsize = 1;
-  ctfsect.cts_size = bfd_section_size (ctf_asect);
+  ctfsect.cts_size = bfd_section_size (abfd, ctf_asect);
   ctfsect.cts_data = contents;
 
   if ((arc = ctf_bfdopen_ctfsect (abfd, &ctfsect, errp)) != NULL)
@@ -132,63 +130,50 @@ ctf_bfdopen_ctfsect (struct bfd *abfd _libctf_unused_,
   int is_archive;
 
 #ifdef HAVE_BFD_ELF
+  asection *sym_asect;
   ctf_sect_t symsect, strsect;
-  Elf_Internal_Shdr *strhdr;
-  Elf_Internal_Shdr *symhdr = &elf_symtab_hdr (abfd);
-  size_t symcount = symhdr->sh_size / symhdr->sh_entsize;
-  Elf_Internal_Sym *isymbuf;
-  bfd_byte *symtab;
-  const char *strtab = NULL;
   /* TODO: handle SYMTAB_SHNDX.  */
 
-  if ((symtab = malloc (symhdr->sh_size)) == NULL)
+  if ((sym_asect = bfd_section_from_elf_index (abfd,
+					       elf_onesymtab (abfd))) != NULL)
     {
-      bfderrstr = "Cannot malloc symbol table";
-      goto err;
-    }
+      Elf_Internal_Shdr *symhdr = &elf_symtab_hdr (abfd);
+      asection *str_asect = NULL;
+      bfd_byte *contents;
 
-  isymbuf = bfd_elf_get_elf_syms (abfd, symhdr, symcount, 0,
-				  NULL, symtab, NULL);
-  free (isymbuf);
-  if (isymbuf == NULL)
-    {
-      bfderrstr = "Cannot read symbol table";
-      goto err_free_sym;
-    }
+      if (symhdr->sh_link != SHN_UNDEF &&
+	  symhdr->sh_link <= elf_numsections (abfd))
+	str_asect = bfd_section_from_elf_index (abfd, symhdr->sh_link);
 
-  if (elf_elfsections (abfd) != NULL
-      && symhdr->sh_link < elf_numsections (abfd))
-    {
-      strhdr = elf_elfsections (abfd)[symhdr->sh_link];
-      if (strhdr->contents == NULL)
+      Elf_Internal_Shdr *strhdr = elf_elfsections (abfd)[symhdr->sh_link];
+
+      if (sym_asect && str_asect)
 	{
-	  if ((strtab = bfd_elf_get_str_section (abfd, symhdr->sh_link)) == NULL)
+	  if (!bfd_malloc_and_get_section (abfd, str_asect, &contents))
 	    {
-	      bfderrstr = "Cannot read string table";
-	      goto err_free_sym;
+	      bfderrstr = "Cannot malloc string table";
+	      free (contents);
+	      goto err;
 	    }
+	  strsect.cts_data = contents;
+	  strsect.cts_name = (char *) strsect.cts_data + strhdr->sh_name;
+	  strsect.cts_size = bfd_section_size (abfd, str_asect);
+	  strsect.cts_entsize = strhdr->sh_size;
+	  strsectp = &strsect;
+
+	  if (!bfd_malloc_and_get_section (abfd, sym_asect, &contents))
+	    {
+	      bfderrstr = "Cannot malloc symbol table";
+	      free (contents);
+	      goto err_free_str;
+	    }
+
+	  symsect.cts_name = (char *) strsect.cts_data + symhdr->sh_name;
+	  symsect.cts_entsize = symhdr->sh_size;
+	  symsect.cts_size = bfd_section_size (abfd, sym_asect);
+	  symsect.cts_data = contents;
+	  symsectp = &symsect;
 	}
-      else
-	strtab = (const char *) strhdr->contents;
-    }
-
-  if (strtab)
-    {
-      /* The names here are more or less arbitrary, but there is no point
-	 thrashing around digging the name out of the shstrtab given that we don't
-	 use it for anything but debugging.  */
-
-      strsect.cts_data = strtab;
-      strsect.cts_name = ".strtab";
-      strsect.cts_size = strhdr->sh_size;
-      strsectp = &strsect;
-
-      assert (symhdr->sh_entsize == get_elf_backend_data (abfd)->s->sizeof_sym);
-      symsect.cts_name = ".symtab";
-      symsect.cts_entsize = symhdr->sh_entsize;
-      symsect.cts_size = symhdr->sh_size;
-      symsect.cts_data = symtab;
-      symsectp = &symsect;
     }
 #endif
 
@@ -198,7 +183,7 @@ ctf_bfdopen_ctfsect (struct bfd *abfd _libctf_unused_,
       is_archive = 1;
       if ((arc = ctf_arc_bufopen ((void *) ctfsect->cts_data,
 				  ctfsect->cts_size, errp)) == NULL)
-	goto err_free_str;
+	goto err_free_sym;
     }
   else
     {
@@ -207,7 +192,7 @@ ctf_bfdopen_ctfsect (struct bfd *abfd _libctf_unused_,
 	{
 	  ctf_dprintf ("ctf_internal_open(): cannot open CTF: %s\n",
 		       ctf_errmsg (*errp));
-	  goto err_free_str;
+	  goto err_free_sym;
 	}
     }
   arci = ctf_new_archive_internal (is_archive, arc, fp, symsectp, strsectp,
@@ -215,10 +200,11 @@ ctf_bfdopen_ctfsect (struct bfd *abfd _libctf_unused_,
 
   if (arci)
     return arci;
- err_free_str: ;
-#ifdef HAVE_BFD_ELF
  err_free_sym:
-  free (symtab);
+#ifdef HAVE_BFD_ELF
+  free ((void *) symsect.cts_data);
+err_free_str:
+  free ((void *) strsect.cts_data);
 #endif
 err: _libctf_unused_;
   if (bfderrstr)
@@ -312,7 +298,6 @@ ctf_fdopen (int fd, const char *filename, const char *target, int *errp)
 		   bfd_errmsg (bfd_get_error()));
       return (ctf_set_open_errno (errp, ECTF_FMT));
     }
-  bfd_set_cacheable (abfd, 1);
 
   if (!bfd_check_format (abfd, bfd_object))
     {

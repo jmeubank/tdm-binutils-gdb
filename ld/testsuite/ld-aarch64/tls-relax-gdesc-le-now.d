@@ -1,5 +1,4 @@
 #source: tls-relax-gdesc-le.s
-#target: [check_shared_lib_support]
 #ld: -shared -z now
 #readelf: -dr
 #...

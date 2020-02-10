@@ -10,7 +10,7 @@
 
 @copying
 @c man begin COPYRIGHT
-Copyright @copyright{} 1991-2020 Free Software Foundation, Inc.
+Copyright @copyright{} 1991-2019 Free Software Foundation, Inc.
 
 Permission is granted to copy, distribute and/or modify this document
 under the terms of the GNU Free Documentation License, Version 1.3
@@ -154,7 +154,6 @@ in the section entitled ``GNU Free Documentation License''.
 * elfedit::                     Update ELF header and property of ELF files
 * Common Options::              Command-line options for all utilities
 * Selecting the Target System:: How these utilities determine the target
-* debuginfod::                  Using binutils with debuginfod
 * Reporting Bugs::              Reporting Bugs
 * GNU Free Documentation License::  GNU Free Documentation License
 * Binutils Index::              Binutils Index
@@ -170,7 +169,7 @@ in the section entitled ``GNU Free Documentation License''.
 @c man title ar create, modify, and extract from archives
 
 @smallexample
-ar [-]@var{p}[@var{mod}] [@option{--plugin} @var{name}] [@option{--target} @var{bfdname}] [@option{--output} @var{dirname}] [@var{relpos}] [@var{count}] @var{archive} [@var{member}@dots{}]
+ar [-]@var{p}[@var{mod}] [@option{--plugin} @var{name}] [@option{--target} @var{bfdname}] [@var{relpos}] [@var{count}] @var{archive} [@var{member}@dots{}]
 ar -M [ <mri-script ]
 @end smallexample
 
@@ -254,7 +253,7 @@ program.
 
 @smallexample
 @c man begin SYNOPSIS ar
-ar [@option{-X32_64}] [@option{-}]@var{p}[@var{mod}] [@option{--plugin} @var{name}] [@option{--target} @var{bfdname}] [@option{--output} @var{dirname}] [@var{relpos}] [@var{count}] @var{archive} [@var{member}@dots{}]
+ar [@option{-X32_64}] [@option{-}]@var{p}[@var{mod}] [@option{--plugin} @var{name}] [@option{--target} @var{bfdname}] [@var{relpos}] [@var{count}] @var{archive} [@var{member}@dots{}]
 @c man end
 @end smallexample
 
@@ -388,12 +387,7 @@ use the @samp{v} modifier with this operation, to request that
 If you do not specify a @var{member}, all files in the archive
 are extracted.
 
-Files cannot be extracted from a thin archive, and there are
-restrictions on extracting from archives created with @option{P}: The
-paths must not be absolute, may not contain @code{..}, and any
-subdirectories in the paths must exist.  If it is desired to avoid
-these restrictions then used the @option{--output} option to specify
-an output directory.
+Files cannot be extracted from a thin archive.
 @end table
 
 A number of modifiers (@var{mod}) may immediately follow the @var{p}
@@ -469,20 +463,12 @@ Display member offsets inside the archive. Use together with the @samp{t}
 option.
 
 @item P
-Use the full path name when matching or storing names in the archive.
-Archives created with full path names are not POSIX compliant, and
-thus may not work with tools other than up to date @sc{gnu} tools.
-Modifying such archives with @sc{gnu} @command{ar} without using
-@option{P} will remove the full path names unless the archive is a
-thin archive.  Note that @option{P} may be useful when adding files to
-a thin archive since @option{r} without @option{P} ignores the path
-when choosing which element to replace.  Thus
-@smallexample
-ar rcST archive.a subdir/file1 subdir/file2 file1
-@end smallexample
-will result in the first @code{subdir/file1} being replaced with
-@code{file1} from the current directory.  Adding @option{P} will
-prevent this replacement.
+Use the full path name when matching names in the archive.  @sc{gnu}
+@command{ar} can not create an archive with a full path name (such archives
+are not POSIX compliant), but other archive creators can.  This option
+will cause @sc{gnu} @command{ar} to match file names using a complete path
+name, which can be convenient when extracting a single file from an
+archive created by another tool.
 
 @item s
 @cindex writing archive index
@@ -547,7 +533,7 @@ and then exits.
 Displays the version information of @command{ar} and then exits.
 
 @item -X32_64
-@command{ar} ignores an initial option spelled @samp{-X32_64}, for
+@command{ar} ignores an initial option spelt @samp{-X32_64}, for
 compatibility with AIX.  The behaviour produced by this option is the
 default for @sc{gnu} @command{ar}.  @command{ar} does not support any
 of the other @samp{-X} options; in particular, it does not support
@@ -582,16 +568,6 @@ The optional command-line switch @option{--target @var{bfdname}}
 specifies that the archive members are in an object code format
 different from your system's default format.  See
 @xref{Target Selection}, for more information.
-
-@item --output @var{dirname}
-The @option{--output} option can be used to specify a path to a
-directory into which archive members should be extracted.  If this
-option is not specified then the current directory will be used.
-
-Note - although the presence of this option does imply a @option{x} 
-extraction operation that option must still be included on the command
-line.
-
 @end table
 @c man end
 
@@ -1184,7 +1160,6 @@ objcopy [@option{-F} @var{bfdname}|@option{--target=}@var{bfdname}]
         [@option{--interleave-width=}@var{width}]
         [@option{-j} @var{sectionpattern}|@option{--only-section=}@var{sectionpattern}]
         [@option{-R} @var{sectionpattern}|@option{--remove-section=}@var{sectionpattern}]
-        [@option{--keep-section=}@var{sectionpattern}]
         [@option{--remove-relocations=}@var{sectionpattern}]
         [@option{-p}|@option{--preserve-dates}]
         [@option{-D}|@option{--enable-deterministic-archives}]
@@ -1367,10 +1342,6 @@ would otherwise remove it.  For example:
 
 will remove all sections matching the pattern '.text.*', but will not
 remove the section '.text.foo'.
-
-@item --keep-section=@var{sectionpattern}
-When removing sections from the output file, keep sections that match
-@var{sectionpattern}.
 
 @item --remove-relocations=@var{sectionpattern}
 Remove non-dynamic relocations from the output file for any section
@@ -1653,7 +1624,7 @@ meaningful for all object file formats.
 @item --set-section-alignment @var{sectionpattern}=@var{align}
 Set the alignment for any sections matching @var{sectionpattern}.
 @var{align} specifies the alignment in bytes and must be a power of
-two, i.e. 1, 2, 4, 8@dots{}. 
+two, i.e. 1, 2, 4, 8@dots{}.
 
 @item --add-section @var{sectionname}=@var{filename}
 Add a new section named @var{sectionname} while copying the file.  The
@@ -2164,12 +2135,13 @@ objdump [@option{-a}|@option{--archive-headers}]
         [@option{--dwarf-depth=@var{n}}]
         [@option{--dwarf-start=@var{n}}]
         [@option{--ctf-parent=}@var{section}]
+        [@option{--ctf-symbols=}@var{section}]
+        [@option{--ctf-strings=}@var{section}]
         [@option{--no-recurse-limit}|@option{--recurse-limit}]
         [@option{--special-syms}]
         [@option{--prefix=}@var{prefix}]
         [@option{--prefix-strip=}@var{level}]
         [@option{--insn-width=}@var{width}]
-        [@option{--visualize-jumps[=color|=extended-color|=off]}
         [@option{-V}|@option{--version}]
         [@option{-H}|@option{--help}]
         @var{objfile}@dots{}
@@ -2681,17 +2653,6 @@ This is the default when @option{--prefix-addresses} is used.
 @cindex Instruction width
 Display @var{width} bytes on a single line when disassembling
 instructions.
-
-@item --visualize-jumps[=color|=extended-color|=off]
-Visualize jumps that stay inside a function by drawing ASCII art between
-the start and target addresses.  The optional @option{=color} argument
-adds color to the output using simple terminal colors.  Alternatively
-the @option{=extended-color} argument will add color using 8bit
-colors, but these might not work on all terminals.
-
-If it is necessary to disable the @option{visualize-jumps} option
-after it has previously been enabled then use
-@option{visualize-jumps=off}.
 
 @item -W[lLiaprmfFsoRtUuTgAckK]
 @itemx --dwarf[=rawline,=decodedline,=info,=abbrev,=pubnames,=aranges,=macro,=frames,=frames-interp,=str,=loc,=Ranges,=pubtypes,=trace_info,=trace_abbrev,=trace_aranges,=gdb_index,=addr,=cu_index,=links,=follow-links]
@@ -3257,7 +3218,6 @@ strip [@option{-F} @var{bfdname} |@option{--target=}@var{bfdname}]
       [@option{-w}|@option{--wildcard}]
       [@option{-x}|@option{--discard-all}] [@option{-X} |@option{--discard-locals}]
       [@option{-R} @var{sectionname} |@option{--remove-section=}@var{sectionname}]
-      [@option{--keep-section=}@var{sectionpattern}]
       [@option{--remove-relocations=}@var{sectionpattern}]
       [@option{-o} @var{file}] [@option{-p}|@option{--preserve-dates}]
       [@option{-D}|@option{--enable-deterministic-archives}]
@@ -3327,10 +3287,6 @@ would otherwise remove it.  For example:
 
 will remove all sections matching the pattern '.text.*', but will not
 remove the section '.text.foo'.
-
-@item --keep-section=@var{sectionpattern}
-When removing sections from the output file, keep sections that match
-@var{sectionpattern}.
 
 @item --remove-relocations=@var{sectionpattern}
 Remove relocations from the output file for any section matching
@@ -4894,8 +4850,7 @@ command to @command{ar}, but without using the BFD library.  @xref{ar}.
 @item --ctf-symbols=@var{section}
 @item --ctf-strings=@var{section}
 Specify the name of another section from which the CTF file can inherit
-strings and symbols.  By default, the @code{.symtab} and its linked
-string table are used.
+strings and symbols.
 
 If either of @option{--ctf-symbols} or @option{--ctf-strings} is specified, the
 other must be specified as well.
@@ -5213,23 +5168,6 @@ Ways to specify:
 @item
 deduced from the input file
 @end enumerate
-
-@node debuginfod
-@chapter debuginfod
-@cindex separate debug files
-
-debuginfod is a web service that indexes ELF/DWARF debugging resources
-by build-id and serves them over HTTP.
-
-Binutils can be built with the debuginfod client library
-@code{libdebuginfod} using the @option{--with-debuginfod} configure option.
-This option is enabled by default if @code{libdebuginfod} is installed
-and found at configure time. This allows @command{objdump} and
-@command{readelf} to automatically query debuginfod servers for
-separate debug files when the files are otherwise not found.
-
-debuginfod is packaged with elfutils, starting with version 0.178.
-You can get the latest version from `https://sourceware.org/elfutils/'.
 
 @node Reporting Bugs
 @chapter Reporting Bugs

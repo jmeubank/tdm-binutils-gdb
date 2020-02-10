@@ -1,6 +1,6 @@
 /* tc-msp430.c -- Assembler code for the Texas Instruments MSP430
 
-  Copyright (C) 2002-2020 Free Software Foundation, Inc.
+  Copyright (C) 2002-2019 Free Software Foundation, Inc.
   Contributed by Dmitry Diky <diwil@mail.ru>
 
   This file is part of GAS, the GNU Assembler.
@@ -275,21 +275,21 @@ target_is_430xv2 (void)
   return selected_isa == MSP_ISA_430Xv2;
 }
 
-/* Generate an absolute 16-bit relocation, for 430 (!extended_op) instructions
-   only.
-   For the 430X we generate a 430 relocation only for the case where part of an
-   expression is being extracted (e.g. #hi(EXP), #lo(EXP). Otherwise generate
-   a 430X relocation.
+/* Generate an absolute 16-bit relocation.
+   For the 430X we generate a relocation without linker range checking
+    if the value is being used in an extended (ie 20-bit) instruction,
+    otherwise if have a shifted expression we use a HI reloc.
    For the 430 we generate a relocation without assembler range checking
-   if we are handling an immediate value or a byte-width instruction.  */
+    if we are handling an immediate value or a byte-width instruction.  */
 
 #undef  CHECK_RELOC_MSP430
 #define CHECK_RELOC_MSP430(OP)				\
   (target_is_430x ()					\
-   ? ((OP).expp == MSP_EXPP_ALL				\
-       ? BFD_RELOC_MSP430X_ABS16			\
-       : ((OP).vshift == 1				\
-	  ? BFD_RELOC_MSP430_ABS_HI16 : BFD_RELOC_16))	\
+  ? (extended_op					\
+     ? BFD_RELOC_16					\
+     : ((OP).vshift == 1)				\
+     ? BFD_RELOC_MSP430_ABS_HI16			\
+     : BFD_RELOC_MSP430X_ABS16)				\
    : ((imm_op || byte_op)				\
       ? BFD_RELOC_MSP430_16_BYTE : BFD_RELOC_MSP430_16))
 
@@ -689,8 +689,6 @@ static bfd_boolean do_unknown_interrupt_nops = TRUE;
 static bfd_boolean move_data = FALSE;
 #define OPTION_DATA_REGION 'r'
 static bfd_boolean upper_data_region_in_use = FALSE;
-/* The default is to use the lower region only.  */
-static bfd_boolean lower_data_region_only = TRUE;
 
 enum
 {
@@ -1475,13 +1473,6 @@ md_parse_option (int c, const char * arg)
       if (strcmp (arg, "upper") == 0
 	  || strcmp (arg, "either") == 0)
 	upper_data_region_in_use = TRUE;
-      if (strcmp (arg, "upper") == 0
-	  || strcmp (arg, "either") == 0
-	  /* With data-region=none, the compiler has generated code assuming
-	     data could be in the upper region, but nothing has been explicitly
-	     placed there.  */
-	  || strcmp (arg, "none") == 0)
-	lower_data_region_only = FALSE;
       return 1;
     }
 
@@ -1607,120 +1598,6 @@ msp430_refsym (int arg ATTRIBUTE_UNUSED)
   (void) symbol_find_or_make (sym_name);
 }
 
-/* Handle a .mspabi_attribute or .gnu_attribute directive.
-   attr_type is 0 for .mspabi_attribute or 1 for .gnu_attribute.
-   This is only used for validating the attributes in the assembly file against
-   the options gas has been invoked with.  If the attributes and options are
-   compatible then we add the attributes to the assembly file in
-   msp430_md_end.  */
-static void
-msp430_object_attribute (int attr_type)
-{
-  char tag_name_s[32];
-  char tag_value_s[32];
-  int tag_name, tag_value;
-  /* First operand is the tag name, second is the tag value e.g.
-     ".mspabi_attribute 4, 2".  */
-  input_line_pointer = extract_operand (input_line_pointer, tag_name_s, 32);
-  input_line_pointer = extract_operand (input_line_pointer, tag_value_s, 32);
-  tag_name = atoi (tag_name_s);
-  tag_value = atoi (tag_value_s);
-  /* If the attribute directive is present, the tag_value should never be set
-     to 0.  */
-  if (tag_name == 0 || tag_value == 0)
-    as_bad (_("bad arguments \"%s\" and/or \"%s\" in %s directive"),
-	      tag_name_s, tag_value_s, (attr_type ? ".gnu_attribute"
-					: ".mspabi_attribute"));
-  else if (attr_type == 0)
-    /* Handle .mspabi_attribute.  */
-    switch (tag_name)
-      {
-      case OFBA_MSPABI_Tag_ISA:
-	switch (tag_value)
-	  {
-	  case OFBA_MSPABI_Val_ISA_MSP430:
-	    if (target_is_430x ())
-	      as_bad (_("file was compiled for the 430 ISA but the %s ISA is "
-			"selected"), (target_is_430xv2 () ? "430X" : "430Xv2"));
-	    break;
-	  case OFBA_MSPABI_Val_ISA_MSP430X:
-	    if (!target_is_430x ())
-	      as_bad (_("file was compiled for the 430X ISA but the 430 ISA is "
-			"selected"));
-	    break;
-	  default:
-	    as_bad (_("unknown MSPABI build attribute value '%d' for "
-		      "OFBA_MSPABI_Tag_ISA(%d) in .mspabi_attribute directive"),
-		    tag_value, OFBA_MSPABI_Tag_ISA);
-	    break;
-	  }
-	break;
-      case OFBA_MSPABI_Tag_Code_Model:
-	/* Fall through.  */
-      case OFBA_MSPABI_Tag_Data_Model:
-	/* FIXME: Might we want to set the memory model to large if the assembly
-	   file has the large model attribute, but -ml has not been passed?  */
-	switch (tag_value)
-	  {
-	  case OFBA_MSPABI_Val_Code_Model_SMALL:
-	    if (large_model)
-	      as_bad (_("file was compiled for the small memory model, but the "
-			"large memory model is selected"));
-	    break;
-	  case OFBA_MSPABI_Val_Code_Model_LARGE:
-	    if (!large_model)
-	      as_bad (_("file was compiled for the large memory model, "
-			"but the small memory model is selected"));
-	    break;
-	  default:
-	    as_bad (_("unknown MSPABI build attribute value '%d' for %s(%d) "
-		      "in .mspabi_attribute directive"), tag_value,
-		    (tag_name == OFBA_MSPABI_Tag_Code_Model
-		     ? "OFBA_MSPABI_Tag_Code_Model"
-		     : "OFBA_MSPABI_Tag_Data_Model"),
-		    (tag_name == OFBA_MSPABI_Tag_Code_Model
-		     ? OFBA_MSPABI_Tag_Code_Model
-		     : OFBA_MSPABI_Tag_Data_Model));
-	    break;
-	  }
-	break;
-      default:
-	as_bad (_("unknown MSPABI build attribute tag '%d' in "
-		  ".mspabi_attribute directive"), tag_name);
-	break;
-      }
-  else if (attr_type == 1)
-    /* Handle .gnu_attribute.  */
-    switch (tag_name)
-      {
-      case Tag_GNU_MSP430_Data_Region:
-	/* This attribute is only applicable in the large memory model.  */
-	if (!large_model)
-	  break;
-	switch (tag_value)
-	  {
-	  case Val_GNU_MSP430_Data_Region_Lower:
-	    if (!lower_data_region_only)
-	      as_bad (_("file was compiled assuming all data will be in the "
-			"lower memory region, but the upper region is in use"));
-	    break;
-	  case Val_GNU_MSP430_Data_Region_Any:
-	    if (lower_data_region_only)
-	      as_bad (_("file was compiled assuming data could be in the upper "
-			"memory region, but the lower data region is "
-			"exclusively in use"));
-	    break;
-	  default:
-	    as_bad (_("unknown GNU build attribute value '%d' for "
-		      "Tag_GNU_MSP430_Data_Region(%d) in .gnu_attribute "
-		      "directive"), tag_value, Tag_GNU_MSP430_Data_Region);
-	  }
-      }
-  else
-    as_bad (_("internal: unexpected argument '%d' to msp430_object_attribute"),
-	    attr_type);
-}
-
 const pseudo_typeS md_pseudo_table[] =
 {
   {"arch", msp430_set_arch, OPTION_MMCU},
@@ -1734,8 +1611,6 @@ const pseudo_typeS md_pseudo_table[] =
   {"refsym", msp430_refsym, 0},
   {"comm", msp430_comm, 0},
   {"lcomm", msp430_lcomm, 0},
-  {"mspabi_attribute", msp430_object_attribute, 0},
-  {"gnu_attribute", msp430_object_attribute, 1},
   {NULL, NULL, 0}
 };
 
@@ -1909,15 +1784,13 @@ msp430_srcoperand (struct msp430_operand_s * op,
       char *h = l;
       int vshift = -1;
       int rval = 0;
-      /* Use all parts of the constant expression by default.  */
-      enum msp430_expp_e expp = MSP_EXPP_ALL;
 
       /* Check if there is:
 	 llo(x) - least significant 16 bits, x &= 0xffff
 	 lhi(x) - x = (x >> 16) & 0xffff,
 	 hlo(x) - x = (x >> 32) & 0xffff,
 	 hhi(x) - x = (x >> 48) & 0xffff
-	 The value _MUST_ be an immediate expression: #hlo(1231231231).  */
+	 The value _MUST_ be constant expression: #hlo(1231231231).  */
 
       *imm_op = TRUE;
 
@@ -1925,37 +1798,31 @@ msp430_srcoperand (struct msp430_operand_s * op,
 	{
 	  vshift = 0;
 	  rval = 3;
-	  expp = MSP_EXPP_LLO;
 	}
       else if (strncasecmp (h, "#lhi(", 5) == 0)
 	{
 	  vshift = 1;
 	  rval = 3;
-	  expp = MSP_EXPP_LHI;
 	}
       else if (strncasecmp (h, "#hlo(", 5) == 0)
 	{
 	  vshift = 2;
 	  rval = 3;
-	  expp = MSP_EXPP_HLO;
 	}
       else if (strncasecmp (h, "#hhi(", 5) == 0)
 	{
 	  vshift = 3;
 	  rval = 3;
-	  expp = MSP_EXPP_HHI;
 	}
       else if (strncasecmp (h, "#lo(", 4) == 0)
 	{
 	  vshift = 0;
 	  rval = 2;
-	  expp = MSP_EXPP_LO;
 	}
       else if (strncasecmp (h, "#hi(", 4) == 0)
 	{
 	  vshift = 1;
 	  rval = 2;
-	  expp = MSP_EXPP_HI;
 	}
 
       op->reg = 0;		/* Reg PC.  */
@@ -1964,7 +1831,6 @@ msp430_srcoperand (struct msp430_operand_s * op,
       __tl = h + 1 + rval;
       op->mode = OP_EXP;
       op->vshift = vshift;
-      op->expp = expp;
 
       end = parse_exp (__tl, &(op->exp));
       if (end != NULL && *end != 0 && *end != ')' )
@@ -2176,7 +2042,6 @@ msp430_srcoperand (struct msp430_operand_s * op,
 	}
       op->mode = OP_EXP;
       op->vshift = 0;
-      op->expp = MSP_EXPP_ALL;
       if (op->exp.X_op == O_constant)
 	{
 	  int x = op->exp.X_add_number;
@@ -2285,7 +2150,6 @@ msp430_srcoperand (struct msp430_operand_s * op,
       *h = 0;
       op->mode = OP_EXP;
       op->vshift = 0;
-      op->expp = MSP_EXPP_ALL;
       end = parse_exp (__tl, &(op->exp));
       if (end != NULL && *end != 0)
 	{
@@ -2359,7 +2223,6 @@ msp430_srcoperand (struct msp430_operand_s * op,
   op->am = (*l == '-' ? 3 : 1);
   op->ol = 1;
   op->vshift = 0;
-  op->expp = MSP_EXPP_ALL;
   __tl = l;
   end = parse_exp (__tl, &(op->exp));
   if (end != NULL && * end != 0)
@@ -2394,7 +2257,6 @@ msp430_dstoperand (struct msp430_operand_s * op,
       op->am = 1;
       op->ol = 1;
       op->vshift = 0;
-      op->expp = MSP_EXPP_ALL;
       (void) parse_exp (__tl, &(op->exp));
 
       if (op->exp.X_op != O_constant || op->exp.X_add_number != 0)
@@ -4377,7 +4239,7 @@ md_assemble (char * str)
 valueT
 md_section_align (asection * seg, valueT addr)
 {
-  int align = bfd_section_alignment (seg);
+  int align = bfd_get_section_alignment (stdoutput, seg);
 
   return ((addr + (1 << align) - 1) & -(1 << align));
 }
@@ -5057,7 +4919,7 @@ msp430_fix_adjustable (struct fix *fixp ATTRIBUTE_UNUSED)
   return FALSE;
 }
 
-/* Set the contents of the .MSP430.attributes and .GNU.attributes sections.  */
+/* Set the contents of the .MSP430.attributes section.  */
 
 void
 msp430_md_end (void)
@@ -5074,27 +4936,14 @@ msp430_md_end (void)
 	as_warn (_(WARN_NOP_AT_EOF));
     }
 
-  /* We have already emitted an error if any of the following attributes
-     disagree with the attributes in the input assembly file.  See
-     msp430_object_attribute.  */
   bfd_elf_add_proc_attr_int (stdoutput, OFBA_MSPABI_Tag_ISA,
-			     target_is_430x () ? OFBA_MSPABI_Val_ISA_MSP430X
-			     : OFBA_MSPABI_Val_ISA_MSP430);
+			     target_is_430x () ? 2 : 1);
 
   bfd_elf_add_proc_attr_int (stdoutput, OFBA_MSPABI_Tag_Code_Model,
-			     large_model ? OFBA_MSPABI_Val_Code_Model_LARGE
-			     : OFBA_MSPABI_Val_Code_Model_SMALL);
+			     large_model ? 2 : 1);
 
   bfd_elf_add_proc_attr_int (stdoutput, OFBA_MSPABI_Tag_Data_Model,
-			     large_model ? OFBA_MSPABI_Val_Code_Model_LARGE
-			     : OFBA_MSPABI_Val_Code_Model_SMALL);
-
-  /* The data region GNU attribute is ignored for the small memory model.  */
-  if (large_model)
-    bfd_elf_add_obj_attr_int (stdoutput, OBJ_ATTR_GNU,
-			      Tag_GNU_MSP430_Data_Region, lower_data_region_only
-			      ? Val_GNU_MSP430_Data_Region_Lower
-			      : Val_GNU_MSP430_Data_Region_Any);
+			     large_model ? 2 : 1);
 }
 
 /* Returns FALSE if there is a msp430 specific reason why the

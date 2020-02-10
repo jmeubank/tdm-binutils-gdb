@@ -1,5 +1,5 @@
 /* BFD back-end for Intel 386 PE IMAGE COFF files.
-   Copyright (C) 2006-2020 Free Software Foundation, Inc.
+   Copyright (C) 2006-2019 Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
@@ -770,7 +770,7 @@ pex64_bfd_print_pdata_section (bfd *abfd, void *vfile, asection *pdata_section)
 	  if (PEX64_IS_RUNTIME_FUNCTION_CHAINED (&rf))
 	    {
 	      bfd_vma altent = PEX64_GET_UNWINDDATA_UNIFIED_RVA (&rf);
-	      bfd_vma pdata_vma = bfd_section_vma (pdata_section);
+	      bfd_vma pdata_vma = bfd_get_section_vma (abfd, pdata_section);
 	      struct pex64_runtime_function arf;
 
 	      fprintf (file, "\t shares information with ");

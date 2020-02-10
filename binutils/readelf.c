@@ -1,5 +1,5 @@
 /* readelf.c -- display contents of an ELF format file
-   Copyright (C) 1998-2020 Free Software Foundation, Inc.
+   Copyright (C) 1998-2019 Free Software Foundation, Inc.
 
    Originally developed by Eric Youngdale <eric@andante.jic.com>
    Modifications by Nick Clifton <nickc@redhat.com>
@@ -162,7 +162,6 @@
 #include "elf/xgate.h"
 #include "elf/xstormy16.h"
 #include "elf/xtensa.h"
-#include "elf/z80.h"
 
 #include "getopt.h"
 #include "libiberty.h"
@@ -185,7 +184,7 @@ typedef struct elf_section_list
 #define DEBUG_DUMP	(1 << 2)	/* The -w command line switch.  */
 #define STRING_DUMP     (1 << 3)	/* The -p command line switch.  */
 #define RELOC_DUMP      (1 << 4)	/* The -R command line switch.  */
-#define CTF_DUMP	(1 << 5)	/* The --ctf command line switch.  */
+#define CTF_DUMP        (1 << 5)        /* The --ctf command line switch.  */
 
 typedef unsigned char dump_type;
 
@@ -748,6 +747,17 @@ find_section_in_set (Filedata * filedata, const char * name, unsigned int * set)
     }
 
   return find_section (filedata, name);
+}
+
+/* Read an unsigned LEB128 encoded value from DATA.
+   Set *LENGTH_RETURN to the number of bytes read.  */
+
+static inline unsigned long
+read_uleb128 (unsigned char * data,
+	      unsigned int * length_return,
+	      const unsigned char * const end)
+{
+  return read_leb128 (data, length_return, FALSE, end);
 }
 
 /* Return TRUE if the current file is for IA-64 machine and OpenVMS ABI.
@@ -1586,10 +1596,6 @@ dump_relocations (Filedata *          filedata,
 	    rtype = elf_nfp3200_reloc_type (type);
 	  else
 	    rtype = elf_nfp_reloc_type (type);
-	  break;
-
-	case EM_Z80:
-	  rtype = elf_z80_reloc_type (type);
 	  break;
 	}
 
@@ -3756,21 +3762,6 @@ get_machine_flags (Filedata * filedata, unsigned e_flags, unsigned e_machine)
 
 	  if (e_flags & ~ EF_MSP430_MACH)
 	    strcat (buf, _(": unknown extra flag bits also present"));
-	  break;
-
-	case EM_Z80:
-	  switch (e_flags & EF_Z80_MACH_MSK)
-	    {
-	    case EF_Z80_MACH_Z80: strcat (buf, ", Z80"); break;
-	    case EF_Z80_MACH_Z180: strcat (buf, ", Z180"); break;
-	    case EF_Z80_MACH_R800: strcat (buf, ", R800"); break;
-	    case EF_Z80_MACH_EZ80_Z80: strcat (buf, ", EZ80"); break;
-	    case EF_Z80_MACH_EZ80_ADL: strcat (buf, ", EZ80, ADL"); break;
-	    case EF_Z80_MACH_GBZ80: strcat (buf, ", GBZ80"); break;
-	    default:
-	      strcat (buf, _(", unknown")); break;
-	    }
-	  break;
 	}
     }
 
@@ -4474,7 +4465,7 @@ static struct option options[] =
   {"dwarf-start",      required_argument, 0, OPTION_DWARF_START},
   {"dwarf-check",      no_argument, 0, OPTION_DWARF_CHECK},
 
-  {"ctf",	       required_argument, 0, OPTION_CTF_DUMP},
+  {"ctf",              required_argument, 0, OPTION_CTF_DUMP},
 
   {"ctf-symbols",      required_argument, 0, OPTION_CTF_SYMBOLS},
   {"ctf-strings",      required_argument, 0, OPTION_CTF_STRINGS},
@@ -4861,7 +4852,7 @@ process_file_header (Filedata * filedata)
       return FALSE;
     }
 
-  init_dwarf_regnames_by_elf_machine_code (header->e_machine);
+  init_dwarf_regnames (header->e_machine);
 
   if (do_header)
     {
@@ -5271,17 +5262,11 @@ process_program_headers (Filedata * filedata)
 	      unsigned int j;
 
 	      for (j = 1; j < filedata->file_header.e_phnum; j++)
-		{
-		  Elf_Internal_Phdr *load = filedata->program_headers + j;
-		  if (load->p_type == PT_LOAD
-		      && load->p_offset <= segment->p_offset
-		      && (load->p_offset + load->p_filesz
-			  >= segment->p_offset + segment->p_filesz)
-		      && load->p_vaddr <= segment->p_vaddr
-		      && (load->p_vaddr + load->p_filesz
-			  >= segment->p_vaddr + segment->p_filesz))
-		    break;
-		}
+		if (filedata->program_headers[j].p_vaddr <= segment->p_vaddr
+		    && (filedata->program_headers[j].p_vaddr
+			+ filedata->program_headers[j].p_memsz)
+		    >= (segment->p_vaddr + segment->p_filesz))
+		  break;
 	      if (j == filedata->file_header.e_phnum)
 		error (_("the PHDR segment is not covered by a LOAD segment\n"));
 	    }
@@ -8791,7 +8776,7 @@ decode_arm_unwind_bytecode (Filedata *                 filedata,
 	    }
 	  else
 	    {
-	      offset = read_leb128 (buf, buf + i + 1, FALSE, &len, NULL);
+	      offset = read_uleb128 (buf, &len, buf + i + 1);
 	      assert (len == i + 1);
 	      offset = offset * 4 + 0x204;
 	      printf ("vsp = vsp + %ld", offset);
@@ -9010,7 +8995,7 @@ decode_tic6x_unwind_bytecode (Filedata *                 filedata,
 	      return FALSE;
 	    }
 
-	  offset = read_leb128 (buf, buf + i + 1, FALSE, &len, NULL);
+	  offset = read_uleb128 (buf, &len, buf + i + 1);
 	  assert (len == i + 1);
 	  offset = offset * 8 + 0x408;
 	  printf (_("sp = sp + %ld"), offset);
@@ -12318,12 +12303,8 @@ process_syminfo (Filedata * filedata ATTRIBUTE_UNUSED)
   return TRUE;
 }
 
-/* A macro which evaluates to TRUE if the region ADDR .. ADDR + NELEM
-   is contained by the region START .. END.  The types of ADDR, START
-   and END should all be the same.  Note both ADDR + NELEM and END
-   point to just beyond the end of the regions that are being tested.  */
-#define IN_RANGE(START,END,ADDR,NELEM)		\
-  (((ADDR) >= (START)) && ((ADDR) < (END)) && ((ADDR) + (NELEM) <= (END)))
+#define IN_RANGE(START,END,ADDR,OFF)		\
+  (((ADDR) >= (START)) && ((ADDR) + (OFF) < (END)))
 
 /* Check to see if the given reloc needs to be handled in a target specific
    manner.  If so then process the reloc and return TRUE otherwise return
@@ -12742,8 +12723,6 @@ is_32bit_abs_reloc (Filedata * filedata, unsigned int reloc_type)
     case EM_XTENSA_OLD:
     case EM_XTENSA:
       return reloc_type == 1; /* R_XTENSA_32.  */
-    case EM_Z80:
-      return reloc_type == 6; /* R_Z80_32.  */
     default:
       {
 	static unsigned int prev_warn = 0;
@@ -12926,8 +12905,6 @@ is_24bit_abs_reloc (Filedata * filedata, unsigned int reloc_type)
       return reloc_type == 4; /* R_MN10200_24.  */
     case EM_FT32:
       return reloc_type == 5; /* R_FT32_20.  */
-    case EM_Z80:
-      return reloc_type == 5; /* R_Z80_24. */
     default:
       return FALSE;
     }
@@ -12999,8 +12976,6 @@ is_16bit_abs_reloc (Filedata * filedata, unsigned int reloc_type)
       return reloc_type == 2; /* R_XC16C_ABS_16.  */
     case EM_XGATE:
       return reloc_type == 3; /* R_XGATE_16.  */
-    case EM_Z80:
-      return reloc_type == 4; /* R_Z80_16.  */
     default:
       return FALSE;
     }
@@ -13016,8 +12991,6 @@ is_8bit_abs_reloc (Filedata * filedata, unsigned int reloc_type)
     {
     case EM_RISCV:
       return reloc_type == 54; /* R_RISCV_SET8.  */
-    case EM_Z80:
-      return reloc_type == 1;  /* R_Z80_8.  */
     default:
       return FALSE;
     }
@@ -13225,7 +13198,6 @@ is_none_reloc (Filedata * filedata, unsigned int reloc_type)
     case EM_TI_C6000:/* R_C6000_NONE.  */
     case EM_X86_64:  /* R_X86_64_NONE.  */
     case EM_XC16X:
-    case EM_Z80:     /* R_Z80_NONE. */
     case EM_WEBASSEMBLY: /* R_WASM32_NONE.  */
       return reloc_type == 0;
 
@@ -13333,11 +13305,6 @@ apply_relocations (Filedata *                 filedata,
 	  || relsec->sh_link >= filedata->file_header.e_shnum)
 	continue;
 
-      symsec = filedata->section_headers + relsec->sh_link;
-      if (symsec->sh_type != SHT_SYMTAB
-	  && symsec->sh_type != SHT_DYNSYM)
-	return FALSE;
-
       is_rela = relsec->sh_type == SHT_RELA;
 
       if (is_rela)
@@ -13357,6 +13324,10 @@ apply_relocations (Filedata *                 filedata,
       if (filedata->file_header.e_machine == EM_SH)
 	is_rela = FALSE;
 
+      symsec = filedata->section_headers + relsec->sh_link;
+      if (symsec->sh_type != SHT_SYMTAB
+	  && symsec->sh_type != SHT_DYNSYM)
+	return FALSE;
       symtab = GET_ELF_SYMBOLS (filedata, symsec, & num_syms);
 
       for (rp = relocs; rp < relocs + num_relocs; ++rp)
@@ -13434,7 +13405,7 @@ apply_relocations (Filedata *                 filedata,
 	    }
 
 	  rloc = start + rp->r_offset;
-	  if (!IN_RANGE (start, end, rloc, reloc_size))
+	  if (rloc >= end || (rloc + reloc_size) > end || (rloc < start))
 	    {
 	      warn (_("skipping invalid relocation offset 0x%lx in section %s\n"),
 		    (unsigned long) rp->r_offset,
@@ -13951,19 +13922,18 @@ dump_section_as_ctf (Elf_Internal_Shdr * section, Filedata * filedata)
   Elf_Internal_Shdr *  parent_sec = NULL;
   Elf_Internal_Shdr *  symtab_sec = NULL;
   Elf_Internal_Shdr *  strtab_sec = NULL;
-  void *	       data = NULL;
-  void *	       symdata = NULL;
-  void *	       strdata = NULL;
-  void *	       parentdata = NULL;
-  ctf_sect_t	       ctfsect, symsect, strsect, parentsect;
-  ctf_sect_t *	       symsectp = NULL;
-  ctf_sect_t *	       strsectp = NULL;
-  ctf_file_t *	       ctf = NULL;
-  ctf_file_t *	       parent = NULL;
+  void *      	       data = NULL;
+  void *      	       symdata = NULL;
+  void *      	       strdata = NULL;
+  void *      	       parentdata = NULL;
+  ctf_sect_t           ctfsect, symsect, strsect, parentsect;
+  ctf_sect_t *         symsectp = NULL;
+  ctf_sect_t *         strsectp = NULL;
+  ctf_file_t *         ctf = NULL;
+  ctf_file_t *         parent = NULL;
 
-  const char *things[] = {"Header", "Labels", "Data objects",
-			  "Function objects", "Variables", "Types", "Strings",
-			  ""};
+  const char *things[] = {"Labels", "Data objects", "Function objects",
+			  "Variables", "Types", "Strings", ""};
   const char **thing;
   int err;
   bfd_boolean ret = FALSE;
@@ -13973,13 +13943,7 @@ dump_section_as_ctf (Elf_Internal_Shdr * section, Filedata * filedata)
   data = get_section_contents (section, filedata);
   ctfsect.cts_data = data;
 
-  if (!dump_ctf_symtab_name)
-    dump_ctf_symtab_name = strdup (".symtab");
-
-  if (!dump_ctf_strtab_name)
-    dump_ctf_strtab_name = strdup (".strtab");
-
-  if (dump_ctf_symtab_name && dump_ctf_symtab_name[0] != 0)
+  if (dump_ctf_symtab_name)
     {
       if ((symtab_sec = find_section (filedata, dump_ctf_symtab_name)) == NULL)
 	{
@@ -13994,7 +13958,7 @@ dump_section_as_ctf (Elf_Internal_Shdr * section, Filedata * filedata)
       symsectp = shdr_to_ctf_sect (&symsect, symtab_sec, filedata);
       symsect.cts_data = symdata;
     }
-  if (dump_ctf_strtab_name && dump_ctf_symtab_name[0] != 0)
+  if (dump_ctf_strtab_name)
     {
       if ((strtab_sec = find_section (filedata, dump_ctf_strtab_name)) == NULL)
 	{
@@ -14050,7 +14014,7 @@ dump_section_as_ctf (Elf_Internal_Shdr * section, Filedata * filedata)
   printf (_("\nDump of CTF section '%s':\n"),
 	  printable_section_name (filedata, section));
 
-  for (i = 0, thing = things; *thing[0]; thing++, i++)
+  for (i = 1, thing = things; *thing[0]; thing++, i++)
     {
       ctf_dump_state_t *s = NULL;
       char *item;
@@ -14195,138 +14159,6 @@ load_specific_debug_section (enum dwarf_section_display_enum  debug,
   return TRUE;
 }
 
-#if HAVE_LIBDEBUGINFOD
-/* Return a hex string representation of the build-id.  */
-unsigned char *
-get_build_id (void * data)
-{
-  Filedata * filedata = (Filedata *)data;
-  Elf_Internal_Shdr * shdr;
-  unsigned long i;
-
-  /* Iterate through notes to find note.gnu.build-id.  */
-  for (i = 0, shdr = filedata->section_headers;
-       i < filedata->file_header.e_shnum && shdr != NULL;
-       i++, shdr++)
-    {
-      if (shdr->sh_type != SHT_NOTE)
-        continue;
-
-      char * next;
-      char * end;
-      size_t data_remaining;
-      size_t min_notesz;
-      Elf_External_Note * enote;
-      Elf_Internal_Note inote;
-
-      bfd_vma offset = shdr->sh_offset;
-      bfd_vma align = shdr->sh_addralign;
-      bfd_vma length = shdr->sh_size;
-
-      enote = (Elf_External_Note *) get_section_contents (shdr, filedata);
-      if (enote == NULL)
-        continue;
-
-      if (align < 4)
-        align = 4;
-      else if (align != 4 && align != 8)
-        continue;
-
-      end = (char *) enote + length;
-      data_remaining = end - (char *) enote;
-
-      if (!is_ia64_vms (filedata))
-        {
-          min_notesz = offsetof (Elf_External_Note, name);
-          if (data_remaining < min_notesz)
-            {
-              warn (ngettext ("debuginfod: Corrupt note: only %ld byte remains, "
-                              "not enough for a full note\n",
-                              "Corrupt note: only %ld bytes remain, "
-                              "not enough for a full note\n",
-                              data_remaining),
-                    (long) data_remaining);
-              break;
-            }
-          data_remaining -= min_notesz;
-
-          inote.type     = BYTE_GET (enote->type);
-          inote.namesz   = BYTE_GET (enote->namesz);
-          inote.namedata = enote->name;
-          inote.descsz   = BYTE_GET (enote->descsz);
-          inote.descdata = ((char *) enote
-                            + ELF_NOTE_DESC_OFFSET (inote.namesz, align));
-          inote.descpos  = offset + (inote.descdata - (char *) enote);
-          next = ((char *) enote
-                  + ELF_NOTE_NEXT_OFFSET (inote.namesz, inote.descsz, align));
-        }
-      else
-        {
-          Elf64_External_VMS_Note *vms_enote;
-
-          /* PR binutils/15191
-             Make sure that there is enough data to read.  */
-          min_notesz = offsetof (Elf64_External_VMS_Note, name);
-          if (data_remaining < min_notesz)
-            {
-              warn (ngettext ("debuginfod: Corrupt note: only %ld byte remains, "
-                              "not enough for a full note\n",
-                              "Corrupt note: only %ld bytes remain, "
-                              "not enough for a full note\n",
-                              data_remaining),
-                    (long) data_remaining);
-              break;
-            }
-          data_remaining -= min_notesz;
-
-          vms_enote = (Elf64_External_VMS_Note *) enote;
-          inote.type     = BYTE_GET (vms_enote->type);
-          inote.namesz   = BYTE_GET (vms_enote->namesz);
-          inote.namedata = vms_enote->name;
-          inote.descsz   = BYTE_GET (vms_enote->descsz);
-          inote.descdata = inote.namedata + align_power (inote.namesz, 3);
-          inote.descpos  = offset + (inote.descdata - (char *) enote);
-          next = inote.descdata + align_power (inote.descsz, 3);
-        }
-
-      /* Skip malformed notes.  */
-      if ((size_t) (inote.descdata - inote.namedata) < inote.namesz
-          || (size_t) (inote.descdata - inote.namedata) > data_remaining
-          || (size_t) (next - inote.descdata) < inote.descsz
-          || ((size_t) (next - inote.descdata)
-              > data_remaining - (size_t) (inote.descdata - inote.namedata)))
-        {
-          warn (_("debuginfod: note with invalid namesz and/or descsz found\n"));
-          warn (_(" type: 0x%lx, namesize: 0x%08lx, descsize: 0x%08lx, alignment: %u\n"),
-                inote.type, inote.namesz, inote.descsz, (int) align);
-          continue;
-        }
-
-      /* Check if this is the build-id note. If so then convert the build-id
-         bytes to a hex string.  */
-      if (inote.namesz > 0
-          && const_strneq (inote.namedata, "GNU")
-          && inote.type == NT_GNU_BUILD_ID)
-        {
-          unsigned long j;
-          char * build_id;
-
-          build_id = malloc (inote.descsz * 2 + 1);
-          if (build_id == NULL)
-              return NULL;
-
-          for (j = 0; j < inote.descsz; ++j)
-            sprintf (build_id + (j * 2), "%02x", inote.descdata[j] & 0xff);
-          build_id[inote.descsz * 2] = '\0';
-
-          return (unsigned char *)build_id;
-        }
-    }
-
-  return NULL;
-}
-#endif /* HAVE_LIBDEBUGINFOD */
-
 /* If this is not NULL, load_debug_section will only look for sections
    within the list of sections given here.  */
 static unsigned int * section_subset = NULL;
@@ -14396,13 +14228,6 @@ free_debug_section (enum dwarf_section_display_enum debug)
   section->start = NULL;
   section->address = 0;
   section->size = 0;
-
-  if (section->reloc_info != NULL)
-    {
-      free (section->reloc_info);
-      section->reloc_info = NULL;
-      section->num_relocs = 0;
-    }
 }
 
 static bfd_boolean
@@ -14650,7 +14475,10 @@ display_tag_value (signed int tag,
     }
   else
     {
-      READ_ULEB (val, p, end);
+      unsigned int len;
+
+      val = read_uleb128 (p, &len, end);
+      p += len;
       printf ("%ld (0x%lx)\n", val, val);
     }
 
@@ -14665,14 +14493,17 @@ display_arc_attribute (unsigned char * p,
 		       const unsigned char * const end)
 {
   unsigned int tag;
+  unsigned int len;
   unsigned int val;
 
-  READ_ULEB (tag, p, end);
+  tag = read_uleb128 (p, &len, end);
+  p += len;
 
   switch (tag)
     {
     case Tag_ARC_PCS_config:
-      READ_ULEB (val, p, end);
+      val = read_uleb128 (p, &len, end);
+      p += len;
       printf ("  Tag_ARC_PCS_config: ");
       switch (val)
 	{
@@ -14698,7 +14529,8 @@ display_arc_attribute (unsigned char * p,
       break;
 
     case Tag_ARC_CPU_base:
-      READ_ULEB (val, p, end);
+      val = read_uleb128 (p, &len, end);
+      p += len;
       printf ("  Tag_ARC_CPU_base: ");
       switch (val)
 	{
@@ -14722,7 +14554,8 @@ display_arc_attribute (unsigned char * p,
       break;
 
     case Tag_ARC_CPU_variation:
-      READ_ULEB (val, p, end);
+      val = read_uleb128 (p, &len, end);
+      p += len;
       printf ("  Tag_ARC_CPU_variation: ");
       switch (val)
 	{
@@ -14745,18 +14578,21 @@ display_arc_attribute (unsigned char * p,
       break;
 
     case Tag_ARC_ABI_rf16:
-      READ_ULEB (val, p, end);
+      val = read_uleb128 (p, &len, end);
+      p += len;
       printf ("  Tag_ARC_ABI_rf16: %s\n", val ? _("yes") : _("no"));
       break;
 
     case Tag_ARC_ABI_osver:
-      READ_ULEB (val, p, end);
+      val = read_uleb128 (p, &len, end);
+      p += len;
       printf ("  Tag_ARC_ABI_osver: v%d\n", val);
       break;
 
     case Tag_ARC_ABI_pic:
     case Tag_ARC_ABI_sda:
-      READ_ULEB (val, p, end);
+      val = read_uleb128 (p, &len, end);
+      p += len;
       printf (tag == Tag_ARC_ABI_sda ? "  Tag_ARC_ABI_sda: "
 	      : "  Tag_ARC_ABI_pic: ");
       switch (val)
@@ -14777,24 +14613,28 @@ display_arc_attribute (unsigned char * p,
       break;
 
     case Tag_ARC_ABI_tls:
-      READ_ULEB (val, p, end);
+      val = read_uleb128 (p, &len, end);
+      p += len;
       printf ("  Tag_ARC_ABI_tls: %s\n", val ? "r25": "none");
       break;
 
     case Tag_ARC_ABI_enumsize:
-      READ_ULEB (val, p, end);
+      val = read_uleb128 (p, &len, end);
+      p += len;
       printf ("  Tag_ARC_ABI_enumsize: %s\n", val ? _("default") :
 	      _("smallest"));
       break;
 
     case Tag_ARC_ABI_exceptions:
-      READ_ULEB (val, p, end);
+      val = read_uleb128 (p, &len, end);
+      p += len;
       printf ("  Tag_ARC_ABI_exceptions: %s\n", val ? _("OPTFP")
 	      : _("default"));
       break;
 
     case Tag_ARC_ABI_double_size:
-      READ_ULEB (val, p, end);
+      val = read_uleb128 (p, &len, end);
+      p += len;
       printf ("  Tag_ARC_ABI_double_size: %d\n", val);
       break;
 
@@ -14809,12 +14649,14 @@ display_arc_attribute (unsigned char * p,
       break;
 
     case Tag_ARC_ISA_mpy_option:
-      READ_ULEB (val, p, end);
+      val = read_uleb128 (p, &len, end);
+      p += len;
       printf ("  Tag_ARC_ISA_mpy_option: %d\n", val);
       break;
 
     case Tag_ARC_ATR_version:
-      READ_ULEB (val, p, end);
+      val = read_uleb128 (p, &len, end);
+      p += len;
       printf ("  Tag_ARC_ATR_version: %d\n", val);
       break;
 
@@ -14959,12 +14801,14 @@ display_arm_attribute (unsigned char * p,
 		       const unsigned char * const end)
 {
   unsigned int tag;
+  unsigned int len;
   unsigned int val;
   arm_attr_public_tag * attr;
   unsigned i;
   unsigned int type;
 
-  READ_ULEB (tag, p, end);
+  tag = read_uleb128 (p, &len, end);
+  p += len;
   attr = NULL;
   for (i = 0; i < ARRAY_SIZE (arm_attr_public_tags); i++)
     {
@@ -14984,7 +14828,8 @@ display_arm_attribute (unsigned char * p,
 	  switch (tag)
 	    {
 	    case 7: /* Tag_CPU_arch_profile.  */
-	      READ_ULEB (val, p, end);
+	      val = read_uleb128 (p, &len, end);
+	      p += len;
 	      switch (val)
 		{
 		case 0: printf (_("None\n")); break;
@@ -14997,7 +14842,8 @@ display_arm_attribute (unsigned char * p,
 	      break;
 
 	    case 24: /* Tag_align_needed.  */
-	      READ_ULEB (val, p, end);
+	      val = read_uleb128 (p, &len, end);
+	      p += len;
 	      switch (val)
 		{
 		case 0: printf (_("None\n")); break;
@@ -15015,7 +14861,8 @@ display_arm_attribute (unsigned char * p,
 	      break;
 
 	    case 25: /* Tag_align_preserved.  */
-	      READ_ULEB (val, p, end);
+	      val = read_uleb128 (p, &len, end);
+	      p += len;
 	      switch (val)
 		{
 		case 0: printf (_("None\n")); break;
@@ -15034,7 +14881,8 @@ display_arm_attribute (unsigned char * p,
 
 	    case 32: /* Tag_compatibility.  */
 	      {
-		READ_ULEB (val, p, end);
+		val = read_uleb128 (p, &len, end);
+		p += len;
 		printf (_("flag = %d, vendor = "), val);
 		if (p < end - 1)
 		  {
@@ -15060,10 +14908,12 @@ display_arm_attribute (unsigned char * p,
 	      break;
 
 	    case 65: /* Tag_also_compatible_with.  */
-	      READ_ULEB (val, p, end);
+	      val = read_uleb128 (p, &len, end);
+	      p += len;
 	      if (val == 6 /* Tag_CPU_arch.  */)
 		{
-		  READ_ULEB (val, p, end);
+		  val = read_uleb128 (p, &len, end);
+		  p += len;
 		  if ((unsigned int) val >= ARRAY_SIZE (arm_attr_tag_CPU_arch))
 		    printf ("??? (%d)\n", val);
 		  else
@@ -15088,7 +14938,8 @@ display_arm_attribute (unsigned char * p,
 
 	default:
 	  assert (attr->type & 0x80);
-	  READ_ULEB (val, p, end);
+	  val = read_uleb128 (p, &len, end);
+	  p += len;
 	  type = attr->type & 0x7f;
 	  if (val >= type)
 	    printf ("??? (%d)\n", val);
@@ -15106,16 +14957,19 @@ display_gnu_attribute (unsigned char * p,
 		       unsigned char * (* display_proc_gnu_attribute) (unsigned char *, unsigned int, const unsigned char * const),
 		       const unsigned char * const end)
 {
-  unsigned int tag;
+  int tag;
+  unsigned int len;
   unsigned int val;
 
-  READ_ULEB (tag, p, end);
+  tag = read_uleb128 (p, &len, end);
+  p += len;
 
   /* Tag_compatibility is the only generic GNU attribute defined at
      present.  */
   if (tag == 32)
     {
-      READ_ULEB (val, p, end);
+      val = read_uleb128 (p, &len, end);
+      p += len;
 
       printf (_("flag = %d, vendor = "), val);
       if (p == end)
@@ -15153,17 +15007,19 @@ display_power_gnu_attribute (unsigned char * p,
 			     unsigned int tag,
 			     const unsigned char * const end)
 {
+  unsigned int len;
   unsigned int val;
 
   if (tag == Tag_GNU_Power_ABI_FP)
     {
+      val = read_uleb128 (p, &len, end);
+      p += len;
       printf ("  Tag_GNU_Power_ABI_FP: ");
-      if (p == end)
+      if (len == 0)
 	{
 	  printf (_("<corrupt>\n"));
 	  return p;
 	}
-      READ_ULEB (val, p, end);
 
       if (val > 15)
 	printf ("(%#x), ", val);
@@ -15204,13 +15060,14 @@ display_power_gnu_attribute (unsigned char * p,
 
   if (tag == Tag_GNU_Power_ABI_Vector)
     {
+      val = read_uleb128 (p, &len, end);
+      p += len;
       printf ("  Tag_GNU_Power_ABI_Vector: ");
-      if (p == end)
+      if (len == 0)
 	{
 	  printf (_("<corrupt>\n"));
 	  return p;
 	}
-      READ_ULEB (val, p, end);
 
       if (val > 3)
 	printf ("(%#x), ", val);
@@ -15235,13 +15092,14 @@ display_power_gnu_attribute (unsigned char * p,
 
   if (tag == Tag_GNU_Power_ABI_Struct_Return)
     {
+      val = read_uleb128 (p, &len, end);
+      p += len;
       printf ("  Tag_GNU_Power_ABI_Struct_Return: ");
-      if (p == end)
+      if (len == 0)
 	{
 	  printf (_("<corrupt>\n"));
 	  return p;
 	}
-      READ_ULEB (val, p, end);
 
       if (val > 2)
 	printf ("(%#x), ", val);
@@ -15272,12 +15130,14 @@ display_s390_gnu_attribute (unsigned char * p,
 			    unsigned int tag,
 			    const unsigned char * const end)
 {
-  unsigned int val;
+  unsigned int len;
+  int val;
 
   if (tag == Tag_GNU_S390_ABI_Vector)
     {
+      val = read_uleb128 (p, &len, end);
+      p += len;
       printf ("  Tag_GNU_S390_ABI_Vector: ");
-      READ_ULEB (val, p, end);
 
       switch (val)
 	{
@@ -15385,18 +15245,21 @@ display_sparc_gnu_attribute (unsigned char * p,
 			     unsigned int tag,
 			     const unsigned char * const end)
 {
-  unsigned int val;
+  unsigned int len;
+  int val;
 
   if (tag == Tag_GNU_Sparc_HWCAPS)
     {
-      READ_ULEB (val, p, end);
+      val = read_uleb128 (p, &len, end);
+      p += len;
       printf ("  Tag_GNU_Sparc_HWCAPS: ");
       display_sparc_hwcaps (val);
       return p;
     }
   if (tag == Tag_GNU_Sparc_HWCAPS2)
     {
-      READ_ULEB (val, p, end);
+      val = read_uleb128 (p, &len, end);
+      p += len;
       printf ("  Tag_GNU_Sparc_HWCAPS2: ");
       display_sparc_hwcaps2 (val);
       return p;
@@ -15450,20 +15313,26 @@ display_mips_gnu_attribute (unsigned char * p,
 {
   if (tag == Tag_GNU_MIPS_ABI_FP)
     {
+      unsigned int len;
       unsigned int val;
 
+      val = read_uleb128 (p, &len, end);
+      p += len;
       printf ("  Tag_GNU_MIPS_ABI_FP: ");
-      READ_ULEB (val, p, end);
+
       print_mips_fp_abi_value (val);
+
       return p;
    }
 
   if (tag == Tag_GNU_MIPS_ABI_MSA)
     {
+      unsigned int len;
       unsigned int val;
 
+      val = read_uleb128 (p, &len, end);
+      p += len;
       printf ("  Tag_GNU_MIPS_ABI_MSA: ");
-      READ_ULEB (val, p, end);
 
       switch (val)
 	{
@@ -15488,15 +15357,18 @@ display_tic6x_attribute (unsigned char * p,
 			 const unsigned char * const end)
 {
   unsigned int tag;
-  unsigned int val;
+  unsigned int len;
+  int val;
 
-  READ_ULEB (tag, p, end);
+  tag = read_uleb128 (p, &len, end);
+  p += len;
 
   switch (tag)
     {
     case Tag_ISA:
+      val = read_uleb128 (p, &len, end);
+      p += len;
       printf ("  Tag_ISA: ");
-      READ_ULEB (val, p, end);
 
       switch (val)
 	{
@@ -15528,8 +15400,9 @@ display_tic6x_attribute (unsigned char * p,
       return p;
 
     case Tag_ABI_wchar_t:
+      val = read_uleb128 (p, &len, end);
+      p += len;
       printf ("  Tag_ABI_wchar_t: ");
-      READ_ULEB (val, p, end);
       switch (val)
 	{
 	case 0:
@@ -15548,8 +15421,9 @@ display_tic6x_attribute (unsigned char * p,
       return p;
 
     case Tag_ABI_stack_align_needed:
+      val = read_uleb128 (p, &len, end);
+      p += len;
       printf ("  Tag_ABI_stack_align_needed: ");
-      READ_ULEB (val, p, end);
       switch (val)
 	{
 	case 0:
@@ -15565,7 +15439,8 @@ display_tic6x_attribute (unsigned char * p,
       return p;
 
     case Tag_ABI_stack_align_preserved:
-      READ_ULEB (val, p, end);
+      val = read_uleb128 (p, &len, end);
+      p += len;
       printf ("  Tag_ABI_stack_align_preserved: ");
       switch (val)
 	{
@@ -15582,7 +15457,8 @@ display_tic6x_attribute (unsigned char * p,
       return p;
 
     case Tag_ABI_DSBT:
-      READ_ULEB (val, p, end);
+      val = read_uleb128 (p, &len, end);
+      p += len;
       printf ("  Tag_ABI_DSBT: ");
       switch (val)
 	{
@@ -15599,7 +15475,8 @@ display_tic6x_attribute (unsigned char * p,
       return p;
 
     case Tag_ABI_PID:
-      READ_ULEB (val, p, end);
+      val = read_uleb128 (p, &len, end);
+      p += len;
       printf ("  Tag_ABI_PID: ");
       switch (val)
 	{
@@ -15619,7 +15496,8 @@ display_tic6x_attribute (unsigned char * p,
       return p;
 
     case Tag_ABI_PIC:
-      READ_ULEB (val, p, end);
+      val = read_uleb128 (p, &len, end);
+      p += len;
       printf ("  Tag_ABI_PIC: ");
       switch (val)
 	{
@@ -15636,7 +15514,8 @@ display_tic6x_attribute (unsigned char * p,
       return p;
 
     case Tag_ABI_array_object_alignment:
-      READ_ULEB (val, p, end);
+      val = read_uleb128 (p, &len, end);
+      p += len;
       printf ("  Tag_ABI_array_object_alignment: ");
       switch (val)
 	{
@@ -15656,7 +15535,8 @@ display_tic6x_attribute (unsigned char * p,
       return p;
 
     case Tag_ABI_array_object_align_expected:
-      READ_ULEB (val, p, end);
+      val = read_uleb128 (p, &len, end);
+      p += len;
       printf ("  Tag_ABI_array_object_align_expected: ");
       switch (val)
 	{
@@ -15677,7 +15557,8 @@ display_tic6x_attribute (unsigned char * p,
 
     case Tag_ABI_compatibility:
       {
-	READ_ULEB (val, p, end);
+	val = read_uleb128 (p, &len, end);
+	p += len;
 	printf ("  Tag_ABI_compatibility: ");
 	printf (_("flag = %d, vendor = "), val);
 	if (p < end - 1)
@@ -15768,16 +15649,19 @@ static unsigned char *
 display_msp430x_attribute (unsigned char * p,
 			   const unsigned char * const end)
 {
+  unsigned int len;
   unsigned int val;
   unsigned int tag;
 
-  READ_ULEB (tag, p, end);
+  tag = read_uleb128 (p, & len, end);
+  p += len;
 
   switch (tag)
     {
     case OFBA_MSPABI_Tag_ISA:
+      val = read_uleb128 (p, &len, end);
+      p += len;
       printf ("  Tag_ISA: ");
-      READ_ULEB (val, p, end);
       switch (val)
 	{
 	case 0: printf (_("None\n")); break;
@@ -15788,8 +15672,9 @@ display_msp430x_attribute (unsigned char * p,
       break;
 
     case OFBA_MSPABI_Tag_Code_Model:
+      val = read_uleb128 (p, &len, end);
+      p += len;
       printf ("  Tag_Code_Model: ");
-      READ_ULEB (val, p, end);
       switch (val)
 	{
 	case 0: printf (_("None\n")); break;
@@ -15800,8 +15685,9 @@ display_msp430x_attribute (unsigned char * p,
       break;
 
     case OFBA_MSPABI_Tag_Data_Model:
+      val = read_uleb128 (p, &len, end);
+      p += len;
       printf ("  Tag_Data_Model: ");
-      READ_ULEB (val, p, end);
       switch (val)
 	{
 	case 0: printf (_("None\n")); break;
@@ -15834,7 +15720,8 @@ display_msp430x_attribute (unsigned char * p,
 	}
       else
 	{
-	  READ_ULEB (val, p, end);
+	  val = read_uleb128 (p, &len, end);
+	  p += len;
 	  printf ("%d (0x%x)\n", val, val);
 	}
       break;
@@ -15844,37 +15731,9 @@ display_msp430x_attribute (unsigned char * p,
   return p;
 }
 
-static unsigned char *
-display_msp430_gnu_attribute (unsigned char * p,
-			      unsigned int tag,
-			      const unsigned char * const end)
-{
-  if (tag == Tag_GNU_MSP430_Data_Region)
-    {
-      unsigned int val;
-
-      printf ("  Tag_GNU_MSP430_Data_Region: ");
-      READ_ULEB (val, p, end);
-
-      switch (val)
-	{
-	case Val_GNU_MSP430_Data_Region_Any:
-	  printf (_("Any Region\n"));
-	  break;
-	case Val_GNU_MSP430_Data_Region_Lower:
-	  printf (_("Lower Region Only\n"));
-	  break;
-	default:
-	  printf ("??? (%u)\n", val);
-	}
-      return p;
-    }
-  return display_tag_value (tag & 1, p, end);
-}
-
 struct riscv_attr_tag_t {
   const char *name;
-  unsigned int tag;
+  int tag;
 };
 
 static struct riscv_attr_tag_t riscv_attr_tag[] =
@@ -15893,12 +15752,14 @@ static unsigned char *
 display_riscv_attribute (unsigned char *p,
 			 const unsigned char * const end)
 {
-  unsigned int val;
-  unsigned int tag;
+  unsigned int len;
+  int val;
+  int tag;
   struct riscv_attr_tag_t *attr = NULL;
   unsigned i;
 
-  READ_ULEB (tag, p, end);
+  tag = read_uleb128 (p, &len, end);
+  p += len;
 
   /* Find the name of attribute. */
   for (i = 0; i < ARRAY_SIZE (riscv_attr_tag); i++)
@@ -15920,11 +15781,13 @@ display_riscv_attribute (unsigned char *p,
     case Tag_RISCV_priv_spec:
     case Tag_RISCV_priv_spec_minor:
     case Tag_RISCV_priv_spec_revision:
-      READ_ULEB (val, p, end);
-      printf (_("%u\n"), val);
+      val = read_uleb128 (p, &len, end);
+      p += len;
+      printf (_("%d\n"), val);
       break;
     case Tag_RISCV_unaligned_access:
-      READ_ULEB (val, p, end);
+      val = read_uleb128 (p, &len, end);
+      p += len;
       switch (val)
 	{
 	case 0:
@@ -15936,8 +15799,9 @@ display_riscv_attribute (unsigned char *p,
 	}
       break;
     case Tag_RISCV_stack_align:
-      READ_ULEB (val, p, end);
-      printf (_("%u-bytes\n"), val);
+      val = read_uleb128 (p, &len, end);
+      p += len;
+      printf (_("%d-bytes\n"), val);
       break;
     case Tag_RISCV_arch:
       p = display_tag_value (-1, p, end);
@@ -16056,7 +15920,7 @@ process_attributes (Filedata * filedata,
 	      while (attr_len > 0 && p < contents + sect->sh_size)
 		{
 		  int tag;
-		  unsigned int val;
+		  int val;
 		  bfd_vma size;
 		  unsigned char * end;
 
@@ -16107,7 +15971,10 @@ process_attributes (Filedata * filedata,
 		    do_numlist:
 		      for (;;)
 			{
-			  READ_ULEB (val, p, end);
+			  unsigned int j;
+
+			  val = read_uleb128 (p, &j, end);
+			  p += j;
 			  if (val == 0)
 			    break;
 			  printf (" %d", val);
@@ -19349,7 +19216,6 @@ process_notes_at (Filedata *           filedata,
     {
       warn (_("Corrupt note: alignment %ld, expecting 4 or 8\n"),
 	    (long) align);
-      free (pnotes);
       return FALSE;
     }
 
@@ -19689,7 +19555,7 @@ process_arch_specific (Filedata * filedata)
     case EM_MSP430:
      return process_attributes (filedata, "mspabi", SHT_MSP430_ATTRIBUTES,
 				display_msp430x_attribute,
-				display_msp430_gnu_attribute);
+				display_generic_attribute);
 
     case EM_RISCV:
      return process_attributes (filedata, "riscv", SHT_RISCV_ATTRIBUTES,
@@ -20020,13 +19886,6 @@ process_object (Filedata * filedata)
   filedata->string_table = NULL;
   filedata->string_table_length = 0;
 
-  if (filedata->dump_sects != NULL)
-    {
-      free (filedata->dump_sects);
-      filedata->dump_sects = NULL;
-      filedata->num_dump_sects = 0;
-    }
-
   if (dynamic_strings)
     {
       free (dynamic_strings);
@@ -20331,6 +20190,13 @@ process_archive (Filedata * filedata, bfd_boolean is_thin_archive)
           if (! process_object (filedata))
 	    ret = FALSE;
         }
+
+      if (filedata->dump_sects != NULL)
+	{
+	  free (filedata->dump_sects);
+	  filedata->dump_sects = NULL;
+	  filedata->num_dump_sects = 0;
+	}
 
       free (qualified_name);
     }

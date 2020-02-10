@@ -1,5 +1,5 @@
 # This shell script emits a C file. -*- C -*-
-#   Copyright (C) 2013-2020 Free Software Foundation, Inc.
+#   Copyright (C) 2013-2019 Free Software Foundation, Inc.
 #
 # This file is part of GNU Binutils.
 #
@@ -18,14 +18,13 @@
 # Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
-# This file is sourced from elf.em, and defines extra C-SKY ELF
+# This file is sourced from elf32.em, and defines extra C-SKY ELF
 # specific routines.
 #
 fragment <<EOF
 
 #include "ldctor.h"
 #include "elf/csky.h"
-#include "elf32-csky.h"
 
 /* To use branch stub or not.  */
 extern bfd_boolean use_branch_stub;
@@ -181,10 +180,10 @@ elf32_csky_add_stub_section (const char *stub_sec_name,
   if (stub_sec == NULL)
     goto err_ret;
 
-  bfd_set_section_alignment (stub_sec, 3);
+  bfd_set_section_alignment (stub_file->the_bfd, stub_sec, 3);
 
   output_section = input_section->output_section;
-  secname = bfd_section_name (output_section);
+  secname = bfd_get_section_name (output_section->owner, output_section);
   os = lang_output_section_find (secname);
 
   info.input_section = input_section;
@@ -209,7 +208,7 @@ gldcsky_layout_sections_again (void)
   /* If we have changed sizes of the stub sections, then we need
      to recalculate all the section offsets.  This may mean we need to
      add even more stubs.  */
-  ldelf_map_segments (TRUE);
+  gld${EMULATION_NAME}_map_segments (TRUE);
   need_laying_out = -1;
 }
 
@@ -270,7 +269,7 @@ gld${EMULATION_NAME}_after_allocation (void)
     }
 
   if (need_laying_out != -1)
-    ldelf_map_segments (need_laying_out);
+    gld${EMULATION_NAME}_map_segments (need_laying_out);
 }
 
 static void
@@ -283,6 +282,26 @@ gld${EMULATION_NAME}_finish (void)
     einfo (_("%X%P: cannot build stubs: %E\n"));
   finish_default ();
 }
+
+/* Avoid processing the fake stub_file in vercheck, stat_needed and
+   check_needed routines.  */
+
+static void (*real_func) (lang_input_statement_type *);
+
+static void csky_for_each_input_file_wrapper (lang_input_statement_type *l)
+{
+  if (l != stub_file)
+    (*real_func) (l);
+}
+
+static void
+csky_lang_for_each_input_file (void (*func) (lang_input_statement_type *))
+{
+  real_func = func;
+  lang_for_each_input_file (&csky_for_each_input_file_wrapper);
+}
+
+#define lang_for_each_input_file csky_lang_for_each_input_file
 
 EOF
 

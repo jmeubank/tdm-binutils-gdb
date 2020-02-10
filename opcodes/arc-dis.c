@@ -1,5 +1,5 @@
 /* Instruction printing code for the ARC.
-   Copyright (C) 1994-2020 Free Software Foundation, Inc.
+   Copyright (C) 1994-2019 Free Software Foundation, Inc.
 
    Contributed by Claudiu Zissulescu (claziss@synopsys.com)
 
@@ -90,7 +90,7 @@ static const char * const regnames[64] =
   "r32", "r33", "r34", "r35", "r36", "r37", "r38", "r39",
   "r40", "r41", "r42", "r43", "r44", "r45", "r46", "r47",
   "r48", "r49", "r50", "r51", "r52", "r53", "r54", "r55",
-  "r56", "r57", "r58", "r59", "lp_count", "reserved", "LIMM", "pcl"
+  "r56", "r57", "ACCL", "ACCH", "lp_count", "rezerved", "LIMM", "pcl"
 };
 
 static const char * const addrtypenames[ARC_NUM_ADDRTYPES] =
@@ -137,7 +137,8 @@ static bfd_boolean print_hex = FALSE;
   (info->endian == BFD_ENDIAN_LITTLE ? bfd_getm32 (bfd_getl32 (buf))	\
    : bfd_getb32 (buf))
 
-#define BITS(word,s,e)  (((word) >> (s)) & ((1ull << ((e) - (s)) << 1) - 1))
+#define BITS(word,s,e)  (((word) << (sizeof (word) * 8 - 1 - e)) >>	\
+			 (s + (sizeof (word) * 8 - 1 - e)))
 #define OPCODE_32BIT_INSN(word)	(BITS ((word), 27, 31))
 
 /* Functions implementation.  */
@@ -294,7 +295,7 @@ find_format_from_table (struct disassemble_info *info,
 	  if (operand->extract)
 	    value = (*operand->extract) (insn, &invalid);
 	  else
-	    value = (insn >> operand->shift) & ((1ull << operand->bits) - 1);
+	    value = (insn >> operand->shift) & ((1 << operand->bits) - 1);
 
 	  /* Check for LIMM indicator.  If it is there, then make sure
 	     we pick the right format.  */

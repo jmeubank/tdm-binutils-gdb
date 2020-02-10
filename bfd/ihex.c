@@ -1,5 +1,5 @@
 /* BFD back-end for Intel Hex objects.
-   Copyright (C) 1995-2020 Free Software Foundation, Inc.
+   Copyright (C) 1995-2019 Free Software Foundation, Inc.
    Written by Ian Lance Taylor of Cygnus Support <ian@cygnus.com>.
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -962,7 +962,6 @@ ihex_sizeof_headers (bfd *abfd ATTRIBUTE_UNUSED,
 #define ihex_bfd_lookup_section_flags		  bfd_generic_lookup_section_flags
 #define ihex_bfd_merge_sections			  bfd_generic_merge_sections
 #define ihex_bfd_is_group_section		  bfd_generic_is_group_section
-#define ihex_bfd_group_name			  bfd_generic_group_name
 #define ihex_bfd_discard_group			  bfd_generic_discard_group
 #define ihex_section_already_linked		  _bfd_generic_section_already_linked
 #define ihex_bfd_define_common_symbol		  bfd_generic_define_common_symbol

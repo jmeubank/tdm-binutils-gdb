@@ -23,7 +23,6 @@ m4_include(config/acx.m4)
 m4_include(config/override.m4)
 m4_include(config/proginstall.m4)
 m4_include(config/elf.m4)
-m4_include(config/debuginfod.m4)
 m4_include([libtool.m4])
 m4_include([ltoptions.m4])
 m4_include([ltsugar.m4])
@@ -1363,9 +1362,6 @@ _LT_CHECK_OBJDIR
 gmplibs="-lmpc -lmpfr -lgmp"
 gmpinc=
 have_gmp=no
-
-# Check for debuginfod
-AC_DEBUGINFOD
 
 # Specify a location for mpc
 # check for this first so it ends up on the link line before mpfr.
@@ -2730,12 +2726,12 @@ esac
 CONFIGURE_GDB_TK=`echo ${GDB_TK} | sed s/-all-/-configure-/g`
 INSTALL_GDB_TK=`echo ${GDB_TK} | sed s/-all-/-install-/g`
 
-# gdb depends on gnulib and gdbsupport, but as nothing else does, only
-# include them if gdb is built.
+# gdb depends on gnulib, but as nothing else does, only include it if
+# gdb is built.
 if echo " ${configdirs} " | grep " gdb " > /dev/null 2>&1 ; then
-  # The Makefile provides the ordering, so it's enough here to add to
-  # the list.
-  configdirs="${configdirs} gnulib gdbsupport"
+  # The Makefile provides the ordering, so it's enough here to add
+  # gnulib to the list.
+  configdirs="${configdirs} gnulib"
 fi
 
 # Strip out unwanted targets.

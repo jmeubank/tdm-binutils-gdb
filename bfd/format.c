@@ -1,5 +1,5 @@
 /* Generic BFD support for file formats.
-   Copyright (C) 1990-2020 Free Software Foundation, Inc.
+   Copyright (C) 1990-2019 Free Software Foundation, Inc.
    Written by Cygnus Support.
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -219,7 +219,7 @@ bfd_check_format_matches (bfd *abfd, bfd_format format, char ***matching)
   int match_count, best_count, best_match;
   int ar_match_index;
   unsigned int initial_section_id = _bfd_section_id;
-  struct bfd_preserve preserve, preserve_match;
+  struct bfd_preserve preserve;
 
   if (matching != NULL)
     *matching = NULL;
@@ -247,10 +247,7 @@ bfd_check_format_matches (bfd *abfd, bfd_format format, char ***matching)
   /* Presume the answer is yes.  */
   abfd->format = format;
   save_targ = abfd->xvec;
-
-  preserve_match.marker = NULL;
-  if (!bfd_preserve_save (abfd, &preserve))
-    goto err_ret;
+  preserve.marker = NULL;
 
   /* If the target type was explicitly specified, just check that target.  */
   if (!abfd->target_defaulted)
@@ -292,7 +289,6 @@ bfd_check_format_matches (bfd *abfd, bfd_format format, char ***matching)
   for (target = bfd_target_vector; *target != NULL; target++)
     {
       const bfd_target *temp;
-      void **high_water;
 
       /* The binary target matches anything, so don't return it when
 	 searching.  Don't match the plugin target if we have another
@@ -310,20 +306,18 @@ bfd_check_format_matches (bfd *abfd, bfd_format format, char ***matching)
 	 have sections attached, which will confuse the next
 	 _bfd_check_format call.  */
       bfd_reinit (abfd, initial_section_id);
-      /* Free bfd_alloc memory too.  If we have matched and preserved
-	 a target then the high water mark is that much higher.  */
-      if (preserve_match.marker)
-	high_water = &preserve_match.marker;
-      else
-	high_water = &preserve.marker;
-      bfd_release (abfd, *high_water);
-      *high_water = bfd_alloc (abfd, 1);
 
       /* Change BFD's target temporarily.  */
       abfd->xvec = *target;
 
       if (bfd_seek (abfd, (file_ptr) 0, SEEK_SET) != 0)
 	goto err_ret;
+
+      /* If _bfd_check_format neglects to set bfd_error, assume
+	 bfd_error_wrong_format.  We didn't used to even pay any
+	 attention to bfd_error, so I suspect that some
+	 _bfd_check_format might have this problem.  */
+      bfd_set_error (bfd_error_wrong_format);
 
       temp = BFD_SEND_FMT (abfd, _bfd_check_format, (abfd));
       if (temp)
@@ -337,6 +331,10 @@ bfd_check_format_matches (bfd *abfd, bfd_format format, char ***matching)
 	  if (*target == &plugin_vec)
 	    match_priority = (*target)->match_priority;
 #endif
+
+	  match_targ = temp;
+	  if (preserve.marker != NULL)
+	    bfd_preserve_finish (abfd, &preserve);
 
 	  if (abfd->format != bfd_archive
 	      || (bfd_has_map (abfd)
@@ -376,13 +374,11 @@ bfd_check_format_matches (bfd *abfd, bfd_format format, char ***matching)
 	      ar_match_index++;
 	    }
 
-	  if (preserve_match.marker == NULL)
-	    {
-	      match_targ = temp;
-	      if (!bfd_preserve_save (abfd, &preserve_match))
-		goto err_ret;
-	    }
+	  if (!bfd_preserve_save (abfd, &preserve))
+	    goto err_ret;
 	}
+      else if (bfd_get_error () != bfd_error_wrong_format)
+	goto err_ret;
     }
 
   if (best_count == 1)
@@ -452,23 +448,18 @@ bfd_check_format_matches (bfd *abfd, bfd_format format, char ***matching)
      really shouldn't iterate on live bfd's.  Note that saving the
      whole bfd and restoring it would be even worse; the first thing
      you notice is that the cached bfd file position gets out of sync.  */
-  if (preserve_match.marker != NULL)
-    bfd_preserve_restore (abfd, &preserve_match);
+  if (preserve.marker != NULL)
+    bfd_preserve_restore (abfd, &preserve);
 
   if (match_count == 1)
     {
       abfd->xvec = right_targ;
       /* If we come out of the loop knowing that the last target that
 	 matched is the one we want, then ABFD should still be in a usable
-	 state (except possibly for XVEC).  This is not just an
-	 optimisation.  In the case of plugins a match against the
-	 plugin target can result in the bfd being changed such that
-	 it no longer matches the plugin target, nor will it match
-	 RIGHT_TARG again.  */
+	 state (except possibly for XVEC).  */
       if (match_targ != right_targ)
 	{
 	  bfd_reinit (abfd, initial_section_id);
-	  bfd_release (abfd, preserve.marker);
 	  if (bfd_seek (abfd, (file_ptr) 0, SEEK_SET) != 0)
 	    goto err_ret;
 	  match_targ = BFD_SEND_FMT (abfd, _bfd_check_format, (abfd));
@@ -486,9 +477,6 @@ bfd_check_format_matches (bfd *abfd, bfd_format format, char ***matching)
 
       if (matching_vector)
 	free (matching_vector);
-      if (preserve_match.marker != NULL)
-	bfd_preserve_finish (abfd, &preserve_match);
-      bfd_preserve_finish (abfd, &preserve);
 
       /* File position has moved, BTW.  */
       return TRUE;
@@ -503,9 +491,8 @@ bfd_check_format_matches (bfd *abfd, bfd_format format, char ***matching)
       abfd->format = bfd_unknown;
       if (matching_vector)
 	free (matching_vector);
-      if (preserve_match.marker != NULL)
-	bfd_preserve_finish (abfd, &preserve_match);
-      bfd_preserve_restore (abfd, &preserve);
+      if (preserve.marker != NULL)
+	bfd_preserve_restore (abfd, &preserve);
       return FALSE;
     }
 
@@ -526,11 +513,6 @@ bfd_check_format_matches (bfd *abfd, bfd_format format, char ***matching)
 	  *(const char **) &matching_vector[match_count] = name;
 	}
     }
-  else if (matching_vector)
-    free (matching_vector);
-  if (preserve_match.marker != NULL)
-    bfd_preserve_finish (abfd, &preserve_match);
-  bfd_preserve_restore (abfd, &preserve);
   return FALSE;
 }
 

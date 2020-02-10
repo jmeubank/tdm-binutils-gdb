@@ -1,5 +1,5 @@
 /* Motorola 68k series support for 32-bit ELF
-   Copyright (C) 1993-2020 Free Software Foundation, Inc.
+   Copyright (C) 1993-2019 Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
@@ -25,8 +25,6 @@
 #include "elf-bfd.h"
 #include "elf/m68k.h"
 #include "opcode/m68k.h"
-#include "cpu-m68k.h"
-#include "elf32-m68k.h"
 
 static bfd_boolean
 elf_m68k_discard_copies (struct elf_link_hash_entry *, void *);
@@ -3106,7 +3104,7 @@ elf_m68k_size_dynamic_sections (bfd *output_bfd ATTRIBUTE_UNUSED,
 
       /* It's OK to base decisions on the section name, because none
 	 of the dynobj section names depend upon the input files.  */
-      name = bfd_section_name (s);
+      name = bfd_get_section_name (dynobj, s);
 
       if (strcmp (name, ".plt") == 0)
 	{
@@ -3940,7 +3938,7 @@ elf_m68k_relocate_section (bfd *output_bfd,
 		  name = (bfd_elf_string_from_elf_section
 			  (input_bfd, symtab_hdr->sh_link, sym->st_name));
 		  if (name == NULL || *name == '\0')
-		    name = bfd_section_name (sec);
+		    name = bfd_section_name (input_bfd, sec);
 		}
 
 	      _bfd_error_handler
@@ -3975,7 +3973,7 @@ elf_m68k_relocate_section (bfd *output_bfd,
 	      if (name == NULL)
 		return FALSE;
 	      if (*name == '\0')
-		name = bfd_section_name (sec);
+		name = bfd_section_name (input_bfd, sec);
 	    }
 
 	  if (r == bfd_reloc_overflow)

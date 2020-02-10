@@ -1,6 +1,6 @@
 // object.cc -- support for an object file for linking in gold
 
-// Copyright (C) 2006-2020 Free Software Foundation, Inc.
+// Copyright (C) 2006-2019 Free Software Foundation, Inc.
 // Written by Ian Lance Taylor <iant@google.com>.
 
 // This file is part of gold.
@@ -2646,10 +2646,6 @@ Sized_relobj_file<size, big_endian>::do_finalize_local_symbols(
 	      lv->set_output_symtab_index(index);
 	      ++index;
 	    }
-	  if (lv->is_ifunc_symbol()
-	      && (lv->has_output_symtab_entry()
-		  || lv->needs_output_dynsym_entry()))
-	    symtab->set_has_gnu_output();
 	  break;
 	case CFLV_DISCARDED:
 	case CFLV_ERROR:

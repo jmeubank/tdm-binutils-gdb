@@ -1,5 +1,5 @@
 /* TI PRU assembler.
-   Copyright (C) 2014-2020 Free Software Foundation, Inc.
+   Copyright (C) 2014-2019 Free Software Foundation, Inc.
    Contributed by Dimitar Dimitrov <dimitar@dinux.eu>
    Based on tc-nios2.c
 
@@ -642,6 +642,7 @@ md_apply_fix (fixS *fixP, valueT *valP, segT seg ATTRIBUTE_UNUSED)
 {
   unsigned char *where;
   valueT value = *valP;
+  long n;
 
   /* Assert that the fixup is one we can handle.  */
   gas_assert (fixP != NULL && valP != NULL
@@ -800,13 +801,11 @@ md_apply_fix (fixS *fixP, valueT *valP, segT seg ATTRIBUTE_UNUSED)
 	    pru_diagnose_overflow (fixup, howto, fixP, insn);
 
 	  /* Apply the right shift.  */
-	  fixup = (offsetT) fixup >> howto->rightshift;
+	  fixup = ((offsetT)fixup) >> howto->rightshift;
 
 	  /* Truncate the fixup to right size.  */
-	  if (howto->bitsize == 0)
-	    fixup = 0;
-	  else
-	    fixup &= ((valueT) 2 << (howto->bitsize - 1)) - 1;
+	  n = sizeof (fixup) * 8 - howto->bitsize;
+	  fixup = (fixup << n) >> n;
 
 	  /* Fix up the instruction.  Non-contiguous bitfields need
 	     special handling.  */
@@ -1746,7 +1745,7 @@ md_assemble (char *op_str)
 valueT
 md_section_align (asection *seg, valueT addr)
 {
-  int align = bfd_section_alignment (seg);
+  int align = bfd_get_section_alignment (stdoutput, seg);
   return ((addr + (1 << align) - 1) & (-((valueT) 1 << align)));
 }
 

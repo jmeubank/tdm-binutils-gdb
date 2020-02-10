@@ -1,5 +1,5 @@
 /* BFD back-end for IBM RS/6000 "XCOFF64" files.
-   Copyright (C) 2000-2020 Free Software Foundation, Inc.
+   Copyright (C) 2000-2019 Free Software Foundation, Inc.
    Written Clinton Popetz.
    Contributed by Cygnus Support.
 
@@ -959,7 +959,7 @@ xcoff64_write_object_contents (bfd *abfd)
       if (text_sec != NULL)
 	{
 	  internal_a.o_sntext = text_sec->target_index;
-	  internal_a.o_algntext = bfd_section_alignment (text_sec);
+	  internal_a.o_algntext = bfd_get_section_alignment (abfd, text_sec);
 	}
       else
 	{
@@ -970,7 +970,7 @@ xcoff64_write_object_contents (bfd *abfd)
       if (data_sec != NULL)
 	{
 	  internal_a.o_sndata = data_sec->target_index;
-	  internal_a.o_algndata = bfd_section_alignment (data_sec);
+	  internal_a.o_algndata = bfd_get_section_alignment (abfd, data_sec);
 	}
       else
 	{
@@ -1906,7 +1906,7 @@ xcoff64_slurp_armap (bfd *abfd)
 
   if (xcoff_ardata (abfd) == NULL)
     {
-      abfd->has_armap = FALSE;
+      bfd_has_map (abfd) = FALSE;
       return TRUE;
     }
 
@@ -1914,7 +1914,7 @@ xcoff64_slurp_armap (bfd *abfd)
 		      (const char **) NULL, 10);
   if (off == 0)
     {
-      abfd->has_armap = FALSE;
+      bfd_has_map (abfd) = FALSE;
       return TRUE;
     }
 
@@ -1933,27 +1933,18 @@ xcoff64_slurp_armap (bfd *abfd)
     return FALSE;
 
   sz = bfd_scan_vma (hdr.size, (const char **) NULL, 10);
-  if (sz == (bfd_size_type) -1)
-    {
-      bfd_set_error (bfd_error_no_memory);
-      return FALSE;
-    }
 
   /* Read in the entire symbol table.  */
-  contents = (bfd_byte *) bfd_alloc (abfd, sz + 1);
+  contents = (bfd_byte *) bfd_alloc (abfd, sz);
   if (contents == NULL)
     return FALSE;
   if (bfd_bread (contents, sz, abfd) != sz)
     return FALSE;
 
-  /* Ensure strings are NULL terminated so we don't wander off the end
-     of the buffer.  */
-  contents[sz] = 0;
-
   /* The symbol table starts with an eight byte count.  */
   c = H_GET_64 (abfd, contents);
 
-  if (c >= sz / 8)
+  if (c * 8 >= sz)
     {
       bfd_set_error (bfd_error_bad_value);
       return FALSE;
@@ -1985,7 +1976,7 @@ xcoff64_slurp_armap (bfd *abfd)
     }
 
   bfd_ardata (abfd)->symdef_count = c;
-  abfd->has_armap = TRUE;
+  bfd_has_map (abfd) = TRUE;
 
   return TRUE;
 }
@@ -2787,7 +2778,6 @@ const bfd_target rs6000_xcoff64_vec =
     bfd_generic_lookup_section_flags,
     bfd_generic_merge_sections,
     bfd_generic_is_group_section,
-    bfd_generic_group_name,
     bfd_generic_discard_group,
     _bfd_generic_section_already_linked,
     _bfd_xcoff_define_common_symbol,
@@ -3050,7 +3040,6 @@ const bfd_target rs6000_xcoff64_aix_vec =
     bfd_generic_lookup_section_flags,
     bfd_generic_merge_sections,
     bfd_generic_is_group_section,
-    bfd_generic_group_name,
     bfd_generic_discard_group,
     _bfd_generic_section_already_linked,
     _bfd_xcoff_define_common_symbol,

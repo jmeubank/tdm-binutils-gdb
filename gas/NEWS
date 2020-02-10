@@ -1,17 +1,5 @@
 -*- text -*-
 
-Changes in 2.34:
-
-* Add support for Zilog eZ80 and Zilog Z180 CPUs.
-
-* Add support for z80-elf target.
-
-* Add support for relocation of each byte or word of multibyte value to Z80
-  targets (just use right shift to 0, 8, 16, or 24 bits or AND operation
-  with 0xff/0xffff mask): ld a, label >> 16 \ ld hl, label & 0xffff
-
-* Add SDCC support for Z80 targets.
-
 Changes in 2.33:
 
 * Add support for the Arm Scalable Vector Extension version 2 (SVE2)
@@ -38,9 +26,6 @@ Changes in 2.33:
   floating point literals.  Add .float16_format directive and
   -mfp16-format=[ieee|alternative] option for Arm to control the format of the
   encoding.
-
-* Add --gdwarf-cie-version command line flag.  This allows control over which
-  version of DWARF CIE the assembler creates.
 
 Changes in 2.32:
 
@@ -809,7 +794,7 @@ Changes in 1.93.01:
   of new CPUs and formats, lots of bugs fixed.
 
 
-Copyright (C) 2012-2020 Free Software Foundation, Inc.
+Copyright (C) 2012-2019 Free Software Foundation, Inc.
 
 Copying and distribution of this file, with or without modification,
 are permitted in any medium without royalty provided the copyright
