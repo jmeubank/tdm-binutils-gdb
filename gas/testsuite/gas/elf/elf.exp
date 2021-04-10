@@ -1,4 +1,4 @@
-# Copyright (C) 2012-2019 Free Software Foundation, Inc.
+# Copyright (C) 2012-2021 Free Software Foundation, Inc.
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -54,7 +54,11 @@ proc run_elf_list_test { name suffix opts readelf_opts readelf_pipe } {
 
 # We're testing bits in obj-elf -- don't run on anything else.
 if { [is_elf_format] } then {
-    set target_machine ""
+    if { [is_elf_unused_section_symbols ] } {
+	set target_machine -unused
+    } else {
+	set target_machine ""
+    }
     set dump_opts ""
     if {[istarget "arc*-*-*"]} {
 	set target_machine -arc
@@ -64,6 +68,9 @@ if { [is_elf_format] } then {
     }
     if {[istarget "avr*-*-*"]} {
 	set dump_opts {{as -mno-link-relax}}
+    }
+    if {[istarget "csky*-*-*"]} {
+	set target_machine -csky
     }
     if {[istarget "m32r*-*-*"]} then {
 	set target_machine -m32r
@@ -112,14 +119,15 @@ if { [is_elf_format] } then {
 	&& ![istarget "am3*-*-*"]} then {
       run_dump_test "ehopt0"
     }
-    case $target_triplet in {
-	{ m68k-*-* m68[03]??-*-* } {
+    switch -glob $target_triplet {
+	m68k-*-* -
+	m68[03]??-*-* {
 	    run_dump_test "file" { { as "--defsym m68k=1" } }
 	}
-	{ mmix-*-* } {
+	mmix-*-* {
 	    run_dump_test "file" { { as "--defsym mmix=1" } }
 	}
-	{ xtensa*-*-* } {
+	xtensa*-*-* {
 	    run_dump_test "file" { { as "--rename-section file.s=file.c" } }
 	}
 	default {
@@ -135,37 +143,41 @@ if { [is_elf_format] } then {
     run_dump_test "group1b"
     run_dump_test "group2"
     run_dump_test "group3"
-    case $target_triplet in {
-	{ hppa64*-*-hpux* } { }
-	{ riscv*-*-* } { }
+
+    run_dump_test "attach-1"
+    run_dump_test "attach-err"
+
+    switch -glob $target_triplet {
+	hppa64*-*-hpux* { }
+	riscv*-*-* { }
 	default {
 	    run_dump_test "groupautoa"
 	}
     }
-    case $target_triplet in {
-	{ hppa64*-*-hpux* } { }
-	{ riscv*-*-* } { }
-	{ xtensa*-*-* } { }
+    switch -glob $target_triplet {
+	hppa64*-*-hpux* { }
+	riscv*-*-* { }
+	xtensa*-*-* { }
 	default {
 	    run_dump_test "groupautob"
 	}
     }
-    case $target_triplet in {
-	{ alpha*-*-* } { }
-	{ am3*-*-* } { }
-	{ *c54x*-*-* } { }
-	{ cr16*-*-* } { }
-	{ crx*-*-* } { }
-	{ h8300-*-* } { }
-	{ hppa*-*-* } { }
-	{ iq2000*-*-* } { }
-	{ mips*-*-* } { }
-	{ mn10200-*-* } { }
-	{ mn10300-*-* } { }
-	{ msp43*-*-* } { }
-	{ rl78-*-* } { }
-	{ riscv*-*-* } { }
-	{ rx-*-* } { }
+    switch -glob $target_triplet {
+	alpha*-*-* { }
+	am3*-*-* { }
+	*c54x*-*-* { }
+	cr16*-*-* { }
+	crx*-*-* { }
+	h8300-*-* { }
+	hppa*-*-* { }
+	iq2000*-*-* { }
+	mips*-*-* { }
+	mn10200-*-* { }
+	mn10300-*-* { }
+	msp43*-*-* { }
+	rl78-*-* { }
+	riscv*-*-* { }
+	rx-*-* { }
 	default {
 	    # The next test can fail if the target does not convert fixups
 	    # against ordinary symbols into relocations against section symbols.
@@ -183,11 +195,12 @@ if { [is_elf_format] } then {
     # new sections created without atrributes.
     if {! [istarget "h8300-*-*"]} then {
 	set as_flags "-al --generate-missing-build-notes=no"
-	case $target_triplet in {
-	    { i*86-*-* x86_64-*-* } {
+	switch -glob $target_triplet {
+	    i*86-*-* -
+	    x86_64-*-* {
 		set as_flags "$as_flags -mx86-used-note=no"
 	    }
-	    { riscv*-*-* } {
+	    riscv*-*-* {
 		set as_flags "$as_flags -march-attr"
 	    }
 	}
@@ -200,7 +213,7 @@ if { [is_elf_format] } then {
 	# new sections created without atrributes.
 	# The RX port does not complain about changing the attributes of the
 	# .data and .bss sections since it does not use those names.
-	run_elf_list_test "section5" "" "-al" "-SW" "| grep \" \\\\.test\\\[0-9\\\]\""
+	run_elf_list_test "section5" "" "-al -Z" "-SW" "| grep \" \\\\.test\\\[0-9\\\]\""
     }
     run_dump_test "struct"
     if { ![istarget "alpha*-*-*"] } then {
@@ -209,6 +222,7 @@ if { [is_elf_format] } then {
     }
     run_dump_test "symver"
     run_dump_test "pr21661"
+    run_dump_test "pr14891"
 
     # No indirect functions on non-GNU targets.
     # The Visium and MSP set the ELF header's OSABI field to ELFOSABI_STANDALONE.
@@ -217,8 +231,9 @@ if { [is_elf_format] } then {
     # in the symbol type test.
     # We also need to exclude targets that do not support unique objects.
     if {    [istarget "*-*-hpux*"]
-	 || [istarget "arm*-*-*"]
-	 || [istarget "msp*-*-*"]
+	 || [istarget "arm*-*-*"]	
+         || [istarget "mips*-*-*"]
+         || [istarget "msp*-*-*"]
 	 || [istarget "visium-*-*"]
 	 || ![supports_gnu_unique]
      } then {
@@ -242,6 +257,23 @@ if { [is_elf_format] } then {
     run_dump_test "section12b"
     run_dump_test "section13"
     run_dump_test "section14"
+    run_dump_test "section15"
+    run_dump_test "section16a"
+    run_dump_test "section16b"
+    run_dump_test "section17"
+    run_dump_test "section18"
+    run_dump_test "section19"
+    run_dump_test "section20"
+    run_dump_test "section21"
+    run_dump_test "section22"
+    run_dump_test "section23a"
+    run_dump_test "section23b"
+    run_dump_test "section24a"
+    run_dump_test "section24b"
+    run_dump_test "section25"
+    run_dump_test "section26"
+    run_dump_test "section27"
+    run_dump_test "sh-link-zero"
     run_dump_test "dwarf2-1" $dump_opts
     run_dump_test "dwarf2-2" $dump_opts
     run_dump_test "dwarf2-3" $dump_opts
@@ -261,6 +293,12 @@ if { [is_elf_format] } then {
     run_dump_test "dwarf2-17" $dump_opts
     run_dump_test "dwarf2-18" $dump_opts
     run_dump_test "dwarf2-19" $dump_opts
+    run_dump_test "dwarf2-20" $dump_opts
+    run_dump_test "dwarf-5-file0" $dump_opts
+    run_dump_test "dwarf-4-cu" $dump_opts
+    run_dump_test "dwarf-5-cu" $dump_opts
+    run_dump_test "dwarf-5-nop-for-line-table" $dump_opts
+    run_dump_test "pr25917"
     run_dump_test "bss"
     run_dump_test "bad-bss"
     run_dump_test "bad-section-flag"
@@ -289,9 +327,6 @@ if { [is_elf_format] } then {
     run_dump_test "strtab"
 
     run_dump_test "bignums"
-    
-    load_lib gas-dg.exp
-    dg-init
-    dg-runtest [lsort [glob -nocomplain $srcdir/$subdir/err-*.s $srcdir/$subdir/warn-*.s]] "" ""
-    dg-finish
+    run_dump_test "section-symbol-redef"
+    run_dump_test "pr27228"
 }

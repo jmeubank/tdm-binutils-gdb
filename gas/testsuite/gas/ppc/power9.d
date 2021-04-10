@@ -393,4 +393,14 @@ Disassembly of section \.text:
 .*:	(01 00 00 44|44 00 00 01) 	scv     0
 .*:	(e1 0f 00 44|44 00 0f e1) 	scv     127
 .*:	(a4 00 00 4c|4c 00 00 a4) 	rfscv
+.*:	(7c 00 18 ac|ac 18 00 7c) 	dcbf    0,r3
+.*:	(7c 00 18 ac|ac 18 00 7c) 	dcbf    0,r3
+.*:	(7c 20 20 ac|ac 20 20 7c) 	dcbfl   0,r4
+.*:	(7c 20 20 ac|ac 20 20 7c) 	dcbfl   0,r4
+.*:	(7c 60 28 ac|ac 28 60 7c) 	dcbflp  0,r5
+.*:	(7c 60 28 ac|ac 28 60 7c) 	dcbflp  0,r5
+.*:	(63 ff 00 00|00 00 ff 63) 	exser
+.*:	(63 ff 00 00|00 00 ff 63) 	exser
+.*:	(7c 00 18 9c|9c 18 00 7c) 	msgsndu r3
+.*:	(7c 00 d8 dc|dc d8 00 7c) 	msgclru r27
 #pass

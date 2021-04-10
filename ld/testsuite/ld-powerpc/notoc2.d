@@ -1,7 +1,7 @@
 #source: notoc2.s
-#as: -a64 -mfuture
+#as: -a64 -mpower10
 #ld: -shared -z norelro
-#objdump: -d -Mfuture
+#objdump: -d -Mpower10
 #target: powerpc64*-*-*
 
 .*
@@ -22,8 +22,8 @@ Disassembly of section \.text:
 .*:	(39 80 ff ff|ff ff 80 39) 
 .*:	(06 10 00 00|00 00 10 06) 	pla     r12,0
 .*:	(39 80 00 00|00 00 80 39) 
-.*:	(06 10 00 00|00 00 10 06) 	pla     r3,92
-.*:	(38 60 00 5c|5c 00 60 38) 
+.*:	(06 10 00 00|00 00 10 06) 	pla     r3,88
+.*:	(38 60 00 58|58 00 60 38) 
 .*:	(4b ff ff 99|99 ff ff 4b) 	bl      .* <.*\.plt_call\.puts>
 .*:	(60 00 00 00|00 00 00 60) 	nop
 #pass

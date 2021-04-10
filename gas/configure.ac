@@ -3,7 +3,7 @@ dnl
 dnl And be careful when changing it!  If you must add tests with square
 dnl brackets, be sure changequote invocations surround it.
 dnl
-dnl   Copyright (C) 2012-2019 Free Software Foundation, Inc.
+dnl   Copyright (C) 2012-2021 Free Software Foundation, Inc.
 dnl
 dnl This file is free software; you can redistribute it and/or modify
 dnl it under the terms of the GNU General Public License as published by
@@ -240,6 +240,13 @@ for this_target in $target $canon_targets ; do
       | i386-*-go32* \
       | i386-go32-rtems*)
 	AC_DEFINE(STRICTCOFF, 1, [Using strict COFF?])
+	;;
+
+      i386-*-linux-* | x86_64-*-linux-*)
+	if test ${this_target} = $target \
+	   && test ${ac_default_generate_x86_used_note} = unset; then
+	  ac_default_generate_x86_used_note=1
+	fi
 	;;
 
       i386-*-solaris2 \
@@ -569,11 +576,42 @@ changequote([,])dnl
 	AC_MSG_RESULT($enable_zol_ext)
 	;;
 
-      aarch64 | i386 | riscv | s390 | sparc)
+      aarch64 | i386 | s390 | sparc)
 	if test $this_target = $target ; then
 	  AC_DEFINE_UNQUOTED(DEFAULT_ARCH, "${arch}", [Default architecture.])
 	fi
 	;;
+
+      riscv)
+        # --target=riscv[32|64]-*-*.  */
+        if test $this_target = $target ; then
+          AC_DEFINE_UNQUOTED(DEFAULT_ARCH, "${arch}", [Default architecture.])
+        fi
+
+        # --with-arch=<value>.  The syntax of <value> is same as Gas option -march.
+        AC_MSG_CHECKING(for default configuration of --with-arch)
+        if test "x${with_arch}" != x; then
+        AC_DEFINE_UNQUOTED(DEFAULT_RISCV_ARCH_WITH_EXT, "$with_arch",
+                           [Define default value for RISC-V -march.])
+        fi
+        AC_MSG_RESULT($with_arch)
+
+        # --with-isa-spec=[2.2|20190608|20191213].
+        AC_MSG_CHECKING(for default configuration of --with-isa-spec)
+        if test "x${with_isa_spec}" != x; then
+          AC_DEFINE_UNQUOTED(DEFAULT_RISCV_ISA_SPEC, "$with_isa_spec",
+                             [Define default value for RISC-V -misa-spec.])
+        fi
+        AC_MSG_RESULT($with_isa_spec)
+
+        # --with-priv-spec=[1.9|1.9.1|1.10|1.11].
+        AC_MSG_CHECKING(for default configuration of --with-priv-spec)
+        if test "x${with_priv_spec}" != x; then
+          AC_DEFINE_UNQUOTED(DEFAULT_RISCV_PRIV_SPEC, "$with_priv_spec",
+                             [Define default value for RISC-V -mpriv-spec])
+        fi
+        AC_MSG_RESULT($with_priv_spec)
+        ;;
 
       rl78)
 	f=rl78-parse.o

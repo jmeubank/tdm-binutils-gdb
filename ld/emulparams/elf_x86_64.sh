@@ -4,6 +4,9 @@ source_sh ${srcdir}/emulparams/dynamic_undefined_weak.sh
 source_sh ${srcdir}/emulparams/reloc_overflow.sh
 source_sh ${srcdir}/emulparams/call_nop.sh
 source_sh ${srcdir}/emulparams/cet.sh
+source_sh ${srcdir}/emulparams/x86-64-level.sh
+source_sh ${srcdir}/emulparams/x86-64-lam.sh
+source_sh ${srcdir}/emulparams/static.sh
 SCRIPT_NAME=elf
 ELFSIZE=64
 OUTPUT_FORMAT="elf64-x86-64"
@@ -13,7 +16,7 @@ MAXPAGESIZE="CONSTANT (MAXPAGESIZE)"
 COMMONPAGESIZE="CONSTANT (COMMONPAGESIZE)"
 ARCH="i386:x86-64"
 MACHINE=
-TEMPLATE_NAME=elf32
+TEMPLATE_NAME=elf
 EXTRA_EM_FILE="elf-x86"
 GENERATE_SHLIB_SCRIPT=yes
 GENERATE_PIE_SCRIPT=yes

@@ -1,5 +1,5 @@
 # This shell script emits a C file. -*- C -*-
-#   Copyright (C) 2004-2019 Free Software Foundation, Inc.
+#   Copyright (C) 2004-2021 Free Software Foundation, Inc.
 #
 # This file is part of the GNU Binutils.
 #
@@ -168,7 +168,7 @@ mips_add_stub_section (const char *stub_sec_name, asection *input_section,
   /* Set the flags.  */
   flags = (SEC_ALLOC | SEC_LOAD | SEC_READONLY | SEC_CODE
 	   | SEC_HAS_CONTENTS | SEC_IN_MEMORY | SEC_KEEP);
-  if (!bfd_set_section_flags (stub_bfd, stub_sec, flags))
+  if (!bfd_set_section_flags (stub_sec, flags))
     goto err_ret;
 
   os = lang_output_section_get (output_section);
@@ -226,26 +226,6 @@ mips_before_allocation (void)
 
   gld${EMULATION_NAME}_before_allocation ();
 }
-
-/* Avoid processing the fake stub_file in vercheck, stat_needed and
-   check_needed routines.  */
-
-static void (*real_func) (lang_input_statement_type *);
-
-static void mips_for_each_input_file_wrapper (lang_input_statement_type *l)
-{
-  if (l != stub_file)
-    (*real_func) (l);
-}
-
-static void
-mips_lang_for_each_input_file (void (*func) (lang_input_statement_type *))
-{
-  real_func = func;
-  lang_for_each_input_file (&mips_for_each_input_file_wrapper);
-}
-
-#define lang_for_each_input_file mips_lang_for_each_input_file
 
 EOF
 

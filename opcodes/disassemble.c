@@ -1,5 +1,5 @@
 /* Select disassembly routine for specified architecture.
-   Copyright (C) 1994-2019 Free Software Foundation, Inc.
+   Copyright (C) 1994-2021 Free Software Foundation, Inc.
 
    This file is part of the GNU opcodes library.
 
@@ -21,7 +21,7 @@
 #include "sysdep.h"
 #include "disassemble.h"
 #include "safe-ctype.h"
-#include <assert.h>
+#include "opintl.h"
 
 #ifdef ARCH_all
 #define ARCH_aarch64
@@ -88,7 +88,6 @@
 #define ARCH_tic4x
 #define ARCH_tic54x
 #define ARCH_tic6x
-#define ARCH_tic80
 #define ARCH_tilegx
 #define ARCH_tilepro
 #define ARCH_v850
@@ -116,7 +115,7 @@
 # ifdef ARCH_m32c
 enum epbf_isa_attr
 {
- ISA_EBPFLE, ISA_EBPFBE, ISA_EBPFMAX
+  ISA_EBPFLE, ISA_EBPFBE, ISA_XBPFLE, ISA_XBPFBE, ISA_EBPFMAX
 };
 # else
 #  include "bpf-desc.h"
@@ -403,7 +402,7 @@ disassembler (enum bfd_architecture a,
 #endif
 #ifdef ARCH_riscv
     case bfd_arch_riscv:
-      disassemble = print_insn_riscv;
+      disassemble = riscv_get_disassembler (abfd);
       break;
 #endif
 #ifdef ARCH_rl78
@@ -462,11 +461,6 @@ disassembler (enum bfd_architecture a,
 #ifdef ARCH_tic6x
     case bfd_arch_tic6x:
       disassemble = print_insn_tic6x;
-      break;
-#endif
-#ifdef ARCH_tic80
-    case bfd_arch_tic80:
-      disassemble = print_insn_tic80;
       break;
 #endif
 #ifdef ARCH_ft32
@@ -654,26 +648,35 @@ disassemble_init_for_target (struct disassemble_info * info)
       /* This processor in fact is little endian.  The value set here
 	 reflects the way opcodes are written in the cgen description.  */
       info->endian = BFD_ENDIAN_BIG;
-      if (! info->insn_sets)
+      if (!info->private_data)
 	{
-	  info->insn_sets = cgen_bitset_create (ISA_MAX);
+	  info->private_data = cgen_bitset_create (ISA_MAX);
 	  if (info->mach == bfd_mach_m16c)
-	    cgen_bitset_set (info->insn_sets, ISA_M16C);
+	    cgen_bitset_set (info->private_data, ISA_M16C);
 	  else
-	    cgen_bitset_set (info->insn_sets, ISA_M32C);
+	    cgen_bitset_set (info->private_data, ISA_M32C);
 	}
       break;
 #endif
 #ifdef ARCH_bpf
     case bfd_arch_bpf:
-      if (!info->insn_sets)
-        {
-          info->insn_sets = cgen_bitset_create (ISA_EBPFMAX);
-          if (info->endian == BFD_ENDIAN_BIG)
-            cgen_bitset_set (info->insn_sets, ISA_EBPFBE);
-          else
-            cgen_bitset_set (info->insn_sets, ISA_EBPFLE);
-        }
+      info->endian_code = BFD_ENDIAN_LITTLE;
+      if (!info->private_data)
+	{
+	  info->private_data = cgen_bitset_create (ISA_MAX);
+	  if (info->endian == BFD_ENDIAN_BIG)
+	    {
+	      cgen_bitset_set (info->private_data, ISA_EBPFBE);
+	      if (info->mach == bfd_mach_xbpf)
+		cgen_bitset_set (info->private_data, ISA_XBPFBE);
+	    }
+	  else
+	    {
+	      cgen_bitset_set (info->private_data, ISA_EBPFLE);
+	      if (info->mach == bfd_mach_xbpf)
+		cgen_bitset_set (info->private_data, ISA_XBPFLE);
+	    }
+	}
       break;
 #endif
 #ifdef ARCH_pru
@@ -714,6 +717,65 @@ disassemble_init_for_target (struct disassemble_info * info)
     default:
       break;
     }
+}
+
+void
+disassemble_free_target (struct disassemble_info *info)
+{
+  if (info == NULL)
+    return;
+
+  switch (info->arch)
+    {
+    default:
+      return;
+
+#ifdef ARCH_bpf
+    case bfd_arch_bpf:
+#endif
+#ifdef ARCH_m32c
+    case bfd_arch_m32c:
+#endif
+#if defined ARCH_bpf || defined ARCH_m32c
+      if (info->private_data)
+	{
+	  CGEN_BITSET *mask = info->private_data;
+	  free (mask->bits);
+	}
+      break;
+#endif
+
+#ifdef ARCH_arc
+    case bfd_arch_arc:
+      break;
+#endif
+#ifdef ARCH_cris
+    case bfd_arch_cris:
+      break;
+#endif
+#ifdef ARCH_mmix
+    case bfd_arch_mmix:
+      break;
+#endif
+#ifdef ARCH_nfp
+    case bfd_arch_nfp:
+      break;
+#endif
+#ifdef ARCH_powerpc
+    case bfd_arch_powerpc:
+      break;
+#endif
+#ifdef ARCH_riscv
+    case bfd_arch_riscv:
+      break;
+#endif
+#ifdef ARCH_rs6000
+    case bfd_arch_rs6000:
+      break;
+#endif
+    }
+
+  free (info->private_data);
 }
 
 /* Remove whitespace and consecutive commas from OPTIONS.  */
@@ -778,4 +840,12 @@ disassembler_options_cmp (const char *s1, const char *s2)
   while (c1 == c2);
 
   return c1 - c2;
+}
+
+void
+opcodes_assert (const char *file, int line)
+{
+  opcodes_error_handler (_("assertion fail %s:%d"), file, line);
+  opcodes_error_handler (_("Please report this bug"));
+  abort ();
 }

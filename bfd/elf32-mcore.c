@@ -1,5 +1,5 @@
 /* Motorola MCore specific support for 32-bit ELF
-   Copyright (C) 1994-2019 Free Software Foundation, Inc.
+   Copyright (C) 1994-2021 Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
@@ -536,7 +536,7 @@ mcore_elf_relocate_section (bfd * output_bfd,
 		      break;
 
 		    if (* name == '\0')
-		      name = bfd_section_name (input_bfd, sec);
+		      name = bfd_section_name (sec);
 		  }
 
 		(*info->callbacks->reloc_overflow)

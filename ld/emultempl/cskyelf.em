@@ -1,5 +1,5 @@
 # This shell script emits a C file. -*- C -*-
-#   Copyright (C) 2013-2019 Free Software Foundation, Inc.
+#   Copyright (C) 2013-2021 Free Software Foundation, Inc.
 #
 # This file is part of GNU Binutils.
 #
@@ -18,13 +18,14 @@
 # Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
-# This file is sourced from elf32.em, and defines extra C-SKY ELF
+# This file is sourced from elf.em, and defines extra C-SKY ELF
 # specific routines.
 #
 fragment <<EOF
 
 #include "ldctor.h"
 #include "elf/csky.h"
+#include "elf32-csky.h"
 
 /* To use branch stub or not.  */
 extern bfd_boolean use_branch_stub;
@@ -180,10 +181,10 @@ elf32_csky_add_stub_section (const char *stub_sec_name,
   if (stub_sec == NULL)
     goto err_ret;
 
-  bfd_set_section_alignment (stub_file->the_bfd, stub_sec, 3);
+  bfd_set_section_alignment (stub_sec, 3);
 
   output_section = input_section->output_section;
-  secname = bfd_get_section_name (output_section->owner, output_section);
+  secname = bfd_section_name (output_section);
   os = lang_output_section_find (secname);
 
   info.input_section = input_section;
@@ -196,7 +197,7 @@ elf32_csky_add_stub_section (const char *stub_sec_name,
   if (hook_in_stub (&info, &os->children.head))
     return stub_sec;
 
-err_ret:
+ err_ret:
   einfo (_("%X%P: can not make stub section: %E\n"));
   return NULL;
 }
@@ -208,7 +209,7 @@ gldcsky_layout_sections_again (void)
   /* If we have changed sizes of the stub sections, then we need
      to recalculate all the section offsets.  This may mean we need to
      add even more stubs.  */
-  gld${EMULATION_NAME}_map_segments (TRUE);
+  ldelf_map_segments (TRUE);
   need_laying_out = -1;
 }
 
@@ -269,7 +270,7 @@ gld${EMULATION_NAME}_after_allocation (void)
     }
 
   if (need_laying_out != -1)
-    gld${EMULATION_NAME}_map_segments (need_laying_out);
+    ldelf_map_segments (need_laying_out);
 }
 
 static void
@@ -282,26 +283,6 @@ gld${EMULATION_NAME}_finish (void)
     einfo (_("%X%P: cannot build stubs: %E\n"));
   finish_default ();
 }
-
-/* Avoid processing the fake stub_file in vercheck, stat_needed and
-   check_needed routines.  */
-
-static void (*real_func) (lang_input_statement_type *);
-
-static void csky_for_each_input_file_wrapper (lang_input_statement_type *l)
-{
-  if (l != stub_file)
-    (*real_func) (l);
-}
-
-static void
-csky_lang_for_each_input_file (void (*func) (lang_input_statement_type *))
-{
-  real_func = func;
-  lang_for_each_input_file (&csky_for_each_input_file_wrapper);
-}
-
-#define lang_for_each_input_file csky_lang_for_each_input_file
 
 EOF
 
@@ -319,12 +300,14 @@ PARSE_AND_LIST_LONGOPTS='
   {"stub-group-size",	required_argument, NULL, OPTION_STUBGROUP_SIZE},
 '
 PARSE_AND_LIST_OPTIONS='
-  fprintf (file, _("  --[no-]branch-stub\n"));
-  fprintf (file, _("\t\t\tDisable/enable use of stubs to expand branch "
-		   "instructions that cannot reach the target.\n"));
-  fprintf (file, _("  --stub-group-size=N\n"));
-  fprintf (file, _("\t\t\tMaximum size of a group of input sections "
-		   "handled by one stub section."));
+  fprintf (file, _("  --[no-]branch-stub          "
+		   "Disable/enable use of stubs to expand branch\n"
+		   "                              "
+		   "  instructions that cannot reach the target.\n"));
+  fprintf (file, _("  --stub-group-size=N         "
+		   "Maximum size of a group of input sections\n"
+		   "                              "
+		   "  handled by one stub section.\n"));
 '
 
 PARSE_AND_LIST_ARGS_CASES='

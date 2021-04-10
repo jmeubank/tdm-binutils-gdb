@@ -3,11 +3,45 @@
 /* Define if building universal (internal helper macro) */
 #undef AC_APPLE_UNIVERSAL_BUILD
 
+/* Enable expensive debugging of CTF deduplication type hashing */
+#undef ENABLE_LIBCTF_HASH_DEBUGGING
+
+/* Define to 1 if translation of program messages to the user's native
+   language is requested. */
+#undef ENABLE_NLS
+
 /* Whether libbfd was configured for an ELF target. */
 #undef HAVE_BFD_ELF
 
 /* Define to 1 if you have the <byteswap.h> header file. */
 #undef HAVE_BYTESWAP_H
+
+/* Define to 1 if you have the declaration of `asprintf', and to 0 if you
+   don't. */
+#undef HAVE_DECL_ASPRINTF
+
+/* Define to 1 if you have the declaration of `bswap_16', and to 0 if you
+   don't. */
+#undef HAVE_DECL_BSWAP_16
+
+/* Define to 1 if you have the declaration of `bswap_32', and to 0 if you
+   don't. */
+#undef HAVE_DECL_BSWAP_32
+
+/* Define to 1 if you have the declaration of `bswap_64', and to 0 if you
+   don't. */
+#undef HAVE_DECL_BSWAP_64
+
+/* Define to 1 if you have the declaration of `stpcpy', and to 0 if you don't.
+   */
+#undef HAVE_DECL_STPCPY
+
+/* Define to 1 if you have the declaration of `vasprintf', and to 0 if you
+   don't. */
+#undef HAVE_DECL_VASPRINTF
+
+/* Define to 1 if you have the <dlfcn.h> header file. */
+#undef HAVE_DLFCN_H
 
 /* Define to 1 if you have the <endian.h> header file. */
 #undef HAVE_ENDIAN_H
@@ -62,6 +96,10 @@
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
+
+/* Define to the sub-directory in which libtool stores uninstalled libraries.
+   */
+#undef LT_OBJDIR
 
 /* Name of package */
 #undef PACKAGE

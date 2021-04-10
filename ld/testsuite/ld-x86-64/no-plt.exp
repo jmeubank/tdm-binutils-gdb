@@ -1,5 +1,5 @@
 # Expect script for x86-64 no-PLT tests.
-#   Copyright (C) 2016-2019 Free Software Foundation, Inc.
+#   Copyright (C) 2016-2021 Free Software Foundation, Inc.
 #
 # This file is part of the GNU Binutils.
 #
@@ -38,9 +38,6 @@ if ![istarget "x86_64-*-*"] {
 if { ![check_compiler_available] } {
     return
 }
-
-# Add $NOPIE_CFLAGS and $NOPIE_LDFLAGS if non-PIE is required.
-global NOPIE_CFLAGS NOPIE_LDFLAGS
 
 run_cc_link_tests [list \
     [list \

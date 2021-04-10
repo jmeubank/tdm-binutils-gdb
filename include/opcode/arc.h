@@ -1,5 +1,5 @@
 /* Opcode table for the ARC.
-   Copyright (C) 1994-2019 Free Software Foundation, Inc.
+   Copyright (C) 1994-2021 Free Software Foundation, Inc.
 
    Contributed by Claudiu Zissulescu (claziss@synopsys.com)
 
@@ -64,6 +64,7 @@ typedef enum
   JUMP,
   KERNEL,
   LEAVE,
+  LLOCK,
   LOAD,
   LOGICAL,
   LOOP,
@@ -76,6 +77,7 @@ typedef enum
   PMU,
   POP,
   PUSH,
+  SCOND,
   SJLI,
   STORE,
   SUB,

@@ -1,5 +1,5 @@
 /* strings -- print the strings of printable characters in files
-   Copyright (C) 1993-2019 Free Software Foundation, Inc.
+   Copyright (C) 1993-2021 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -332,7 +332,7 @@ strings_a_section (bfd *abfd, asection *sect, const char *filename,
   if ((sect->flags & DATA_FLAGS) != DATA_FLAGS)
     return;
 
-  sectsize = bfd_get_section_size (sect);
+  sectsize = bfd_section_size (sect);
   if (sectsize == 0)
     return;
 
@@ -613,7 +613,7 @@ print_strings (const char *filename, FILE *stream, file_ptr address,
 #ifdef HAVE_LONG_LONG
 	    if (sizeof (start) > sizeof (long))
 	      {
-#if !defined(__MSVCRT__) || defined(__USE_MINGW_ANSI_STDIO)
+# ifndef __MSVCRT__
 		printf ("%7llo ", (unsigned long long) start);
 # else
 		printf ("%7I64o ", (unsigned long long) start);
@@ -632,7 +632,7 @@ print_strings (const char *filename, FILE *stream, file_ptr address,
 #ifdef HAVE_LONG_LONG
 	    if (sizeof (start) > sizeof (long))
 	      {
-#if !defined(__MSVCRT__) || defined(__USE_MINGW_ANSI_STDIO)
+# ifndef __MSVCRT__
 		printf ("%7llu ", (unsigned long long) start);
 # else
 		printf ("%7I64d ", (unsigned long long) start);
@@ -651,7 +651,7 @@ print_strings (const char *filename, FILE *stream, file_ptr address,
 #ifdef HAVE_LONG_LONG
 	    if (sizeof (start) > sizeof (long))
 	      {
-#if !defined(__MSVCRT__) || defined(__USE_MINGW_ANSI_STDIO)
+# ifndef __MSVCRT__
 		printf ("%7llx ", (unsigned long long) start);
 # else
 		printf ("%7I64x ", (unsigned long long) start);

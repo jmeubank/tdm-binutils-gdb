@@ -1,5 +1,5 @@
 /* tc-ppc.h -- Header file for tc-ppc.c.
-   Copyright (C) 1994-2019 Free Software Foundation, Inc.
+   Copyright (C) 1994-2021 Free Software Foundation, Inc.
    Written by Ian Lance Taylor, Cygnus Support.
 
    This file is part of GAS, the GNU Assembler.
@@ -30,14 +30,9 @@ struct fix;
 #define TARGET_BYTES_BIG_ENDIAN 1
 #endif
 
-/* If OBJ_COFF is defined, and TE_PE is not defined, we are assembling
-   XCOFF for AIX or PowerMac.  If TE_PE is defined, we are assembling
-   COFF for Windows NT.  */
-
+/* If OBJ_COFF is defined we are assembling XCOFF for AIX or PowerMac.  */
 #ifdef OBJ_COFF
-#ifndef TE_PE
 #define OBJ_XCOFF
-#endif
 #endif
 
 /* The target BFD architecture.  */
@@ -61,7 +56,7 @@ extern const char *ppc_target_format (void);
 
 /* Strings do not use backslash escapes under COFF.  */
 #ifdef OBJ_COFF
-#define NO_STRING_ESCAPES
+#define TC_STRING_ESCAPES 0
 #endif
 
 #ifdef OBJ_ELF
@@ -107,17 +102,6 @@ extern ppc_cpu_t ppc_cpu;
 #define TC_INIT_FIX_DATA(FIXP) \
   do { (FIXP)->tc_fix_data.ppc_cpu = ppc_cpu; } while (0)
 
-#ifdef TE_PE
-
-/* Question marks are permitted in symbol names.  */
-#define LEX_QM 1
-
-/* Don't adjust TOC relocs.  */
-#define tc_fix_adjustable(FIX) ppc_pe_fix_adjustable (FIX)
-extern int ppc_pe_fix_adjustable (struct fix *);
-
-#endif
-
 #ifdef OBJ_XCOFF
 
 /* Declarations needed when generating XCOFF code.  XCOFF is an
@@ -297,7 +281,6 @@ extern void ppc_frob_label (symbolS *);
 
 /* call md_pcrel_from_section, not md_pcrel_from */
 #define MD_PCREL_FROM_SECTION(FIX, SEC) md_pcrel_from_section(FIX, SEC)
-extern long md_pcrel_from_section (struct fix *, segT);
 
 #define md_parse_name(name, exp, mode, c) ppc_parse_name (name, exp)
 extern int ppc_parse_name (const char *, struct expressionS *);

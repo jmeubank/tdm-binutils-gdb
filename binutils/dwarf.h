@@ -1,5 +1,5 @@
 /* dwarf.h - DWARF support header file
-   Copyright (C) 2005-2019 Free Software Foundation, Inc.
+   Copyright (C) 2005-2021 Free Software Foundation, Inc.
 
    This file is part of GNU Binutils.
 
@@ -29,6 +29,8 @@ typedef struct
 {
   dwarf_vma	 li_length;
   unsigned short li_version;
+  unsigned char  li_address_size;
+  unsigned char  li_segment_size;
   dwarf_vma      li_prologue_length;
   unsigned char  li_min_insn_length;
   unsigned char  li_max_ops_per_insn;
@@ -209,6 +211,7 @@ extern int do_debug_frames;
 extern int do_debug_frames_interp;
 extern int do_debug_macinfo;
 extern int do_debug_str;
+extern int do_debug_str_offsets;
 extern int do_debug_loc;
 extern int do_gdb_index;
 extern int do_trace_info;
@@ -219,19 +222,16 @@ extern int do_debug_cu_index;
 extern int do_wide;
 extern int do_debug_links;
 extern int do_follow_links;
+extern bfd_boolean do_checks;
 
 extern int dwarf_cutoff_level;
 extern unsigned long dwarf_start_die;
 
 extern int dwarf_check;
 
-extern void init_dwarf_regnames (unsigned int);
-extern void init_dwarf_regnames_i386 (void);
-extern void init_dwarf_regnames_iamcu (void);
-extern void init_dwarf_regnames_x86_64 (void);
-extern void init_dwarf_regnames_aarch64 (void);
-extern void init_dwarf_regnames_s390 (void);
-extern void init_dwarf_regnames_riscv (void);
+extern void init_dwarf_regnames_by_elf_machine_code (unsigned int);
+extern void init_dwarf_regnames_by_bfd_arch_and_mach (enum bfd_architecture arch,
+						      unsigned long mach);
 
 extern bfd_boolean  load_debug_section (enum dwarf_section_display_enum, void *);
 extern void         free_debug_section (enum dwarf_section_display_enum);
@@ -252,9 +252,73 @@ extern void * xcalloc2 (size_t, size_t);
 extern void * xcmalloc (size_t, size_t);
 extern void * xcrealloc (void *, size_t, size_t);
 
-extern dwarf_vma read_leb128 (unsigned char *, unsigned int *, bfd_boolean, const unsigned char * const);
-
 /* A callback into the client.  Returns TRUE if there is a
    relocation against the given debug section at the given
    offset.  */
 extern bfd_boolean reloc_at (struct dwarf_section *, dwarf_vma);
+
+extern dwarf_vma read_leb128 (unsigned char *, const unsigned char *const,
+			      bfd_boolean, unsigned int *, int *);
+
+#if HAVE_LIBDEBUGINFOD
+extern unsigned char * get_build_id (void *);
+#endif
+
+static inline void
+report_leb_status (int status, const char *file, unsigned long lnum)
+{
+  if ((status & 1) != 0)
+    error (_("%s:%lu: end of data encountered whilst reading LEB\n"), file, lnum);
+  else if ((status & 2) != 0)
+    error (_("%s:%lu: read LEB value is too large to store in destination variable\n"), file, lnum);
+}
+
+#define SKIP_ULEB(start, end)					\
+  do								\
+    {								\
+      unsigned int _len;					\
+      read_leb128 (start, end, FALSE, &_len, NULL);		\
+      start += _len;						\
+    }								\
+  while (0)
+
+#define SKIP_SLEB(start, end)					\
+  do								\
+    {								\
+      unsigned int _len;					\
+      read_leb128 (start, end, TRUE, &_len, NULL);		\
+      start += _len;						\
+    }								\
+  while (0)
+
+#define READ_ULEB(var, start, end)				\
+  do								\
+    {								\
+      dwarf_vma _val;						\
+      unsigned int _len;					\
+      int _status;						\
+								\
+      _val = read_leb128 (start, end, FALSE, &_len, &_status);	\
+      start += _len;						\
+      (var) = _val;						\
+      if ((var) != _val)					\
+	_status |= 2;						\
+      report_leb_status (_status, __FILE__, __LINE__);		\
+    }								\
+  while (0)
+
+#define READ_SLEB(var, start, end)				\
+  do								\
+    {								\
+      dwarf_signed_vma _val;					\
+      unsigned int _len;					\
+      int _status;						\
+								\
+      _val = read_leb128 (start, end, TRUE, &_len, &_status);	\
+      start += _len;						\
+      (var) = _val;						\
+      if ((var) != _val)					\
+	_status |= 2;						\
+      report_leb_status (_status, __FILE__, __LINE__);		\
+    }								\
+  while (0)

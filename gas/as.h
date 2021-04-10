@@ -1,5 +1,5 @@
 /* as.h - global header file
-   Copyright (C) 1987-2019 Free Software Foundation, Inc.
+   Copyright (C) 1987-2021 Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
@@ -226,7 +226,7 @@ COMMON subsegT now_subseg;
 /* Segment our instructions emit to.  */
 COMMON segT now_seg;
 
-#define segment_name(SEG)	bfd_get_section_name (stdoutput, SEG)
+#define segment_name(SEG)	bfd_section_name (SEG)
 
 extern segT reg_section, expr_section;
 /* Shouldn't these be eliminated someday?  */
@@ -412,6 +412,8 @@ enum debug_info_type
 extern enum debug_info_type debug_type;
 extern int use_gnu_debug_info_extensions;
 COMMON bfd_boolean flag_dwarf_sections;
+extern int flag_dwarf_cie_version;
+extern unsigned int dwarf_level;
 
 /* Maximum level of macro nesting.  */
 extern int max_macro_nest;
@@ -447,10 +449,10 @@ typedef struct _pseudo_type pseudo_typeS;
 
 #define PRINTF_LIKE(FCN) \
   void FCN (const char *format, ...) \
-    __attribute__ ((__format__ (gnu_printf, 1, 2)))
+    __attribute__ ((__format__ (__printf__, 1, 2)))
 #define PRINTF_WHERE_LIKE(FCN) \
   void FCN (const char *file, unsigned int line, const char *format, ...) \
-    __attribute__ ((__format__ (gnu_printf, 3, 4)))
+    __attribute__ ((__format__ (__printf__, 3, 4)))
 
 #else /* __GNUC__ < 2 || defined(VMS) */
 
@@ -484,6 +486,7 @@ char * app_push (void);
 #define MAX_LITTLENUMS 6
 
 char * atof_ieee (char *, int, LITTLENUM_TYPE *);
+char * atof_ieee_detail (char *, int, int, LITTLENUM_TYPE *, FLONUM_TYPE *);
 const char * ieee_md_atof (int, char *, int *, bfd_boolean);
 const char * vax_md_atof (int, char *, int *);
 char * input_scrub_include_file (const char *, char *);
@@ -562,6 +565,7 @@ int generic_force_reloc (struct fix *);
 
 #include "write.h"
 #include "frags.h"
+#include "hashtab.h"
 #include "hash.h"
 #include "read.h"
 #include "symbols.h"
@@ -584,6 +588,10 @@ COMMON int flag_m68k_mri;
 #define DOLLAR_AMBIGU flag_m68k_mri
 #else
 #define flag_m68k_mri 0
+#endif
+
+#ifndef TC_STRING_ESCAPES
+#define TC_STRING_ESCAPES 1
 #endif
 
 #ifdef WARN_COMMENTS
@@ -645,6 +653,13 @@ COMMON int flag_sectname_subst;
 #endif
 #if OCTETS_PER_BYTE != (1<<OCTETS_PER_BYTE_POWER)
  #error "Octets per byte conflicts with its power-of-two definition!"
+#endif
+
+#if defined OBJ_ELF || defined OBJ_MAYBE_ELF
+/* On ELF platforms, mark debug sections with SEC_ELF_OCTETS */
+#define SEC_OCTETS (IS_ELF ? SEC_ELF_OCTETS : 0)
+#else
+#define SEC_OCTETS 0
 #endif
 
 #endif /* GAS */

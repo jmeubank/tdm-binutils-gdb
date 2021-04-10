@@ -3,9 +3,11 @@
 #source: fill16_2.s
 #ld: -T fill.t
 #objdump: -s -j .text
-#skip: arm-*-coff i[3-7]86-*-coff
-#xfail: alpha*-*-*ecoff sh-*-pe sparc*-*-coff
+#notarget: [is_aout_format]
+#skip: arm-*-coff i[3-7]86-*-coff [is_xcoff_format]
+#xfail: alpha*-*-*ecoff sparc*-*-coff
 #xfail: tic30-*-coff tic4x-*-* tic54x-*-* z8k-*-*
+#xfail: z80-*-coff
 #
 # See also fill.d.  We use `skip' for configurations unsupported
 # here that are covered there, and `xfail' for configurations that work
@@ -21,6 +23,7 @@
 # tic4x has 4 octet bytes
 # tic54x doesn't support .p2align
 # z8k-coff aligns to 2 bytes
+# z80-coff aligns to 2 bytes
 
 .*:     file format .*
 

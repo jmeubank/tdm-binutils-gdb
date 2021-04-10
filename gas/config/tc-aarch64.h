@@ -1,5 +1,5 @@
 /* tc-aarch64.h -- Header file for tc-aarch64.c.
-   Copyright (C) 2009-2019 Free Software Foundation, Inc.
+   Copyright (C) 2009-2021 Free Software Foundation, Inc.
    Contributed by ARM Ltd.
 
    This file is part of GAS.
@@ -255,7 +255,6 @@ extern void aarch64_after_parse_args (void);
 
 #define MD_PCREL_FROM_SECTION(F,S) md_pcrel_from_section(F,S)
 
-extern long md_pcrel_from_section (struct fix *, segT);
 extern void aarch64_frag_align_code (int, int);
 extern const char * elf64_aarch64_target_format (void);
 extern int aarch64_force_relocation (struct fix *);

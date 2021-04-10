@@ -15,7 +15,7 @@
 @SET_MAKE@
 
 #
-#   Copyright (C) 2012-2019 Free Software Foundation, Inc.
+#   Copyright (C) 2012-2021 Free Software Foundation, Inc.
 #
 # This file is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -303,6 +303,7 @@ INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 INSTOBJEXT = @INSTOBJEXT@
+LARGEFILE_CPPFLAGS = @LARGEFILE_CPPFLAGS@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
 LEX = `if [ -f ../flex/flex ] ; then echo ../flex/flex ; else echo @LEX@ ; fi`
@@ -768,7 +769,7 @@ INCDIR = $(BASEDIR)/include
 # so that tm.h and config.h will be found in the compilation
 # subdirectory rather than in the source directory.
 AM_CPPFLAGS = -I. -I$(srcdir) -I../bfd -I$(srcdir)/config \
-	-I$(INCDIR) -I$(srcdir)/.. -I$(BFDDIR) @INCINTL@ \
+	-I$(INCDIR) -I$(srcdir)/.. -I$(BFDDIR) @INCINTL@ @LARGEFILE_CPPFLAGS@ \
 	-DLOCALEDIR="\"$(datadir)/locale\""
 
 
@@ -1569,7 +1570,7 @@ check-DEJAGNU: site.exp
 	fi
 
 development.exp: $(BFDDIR)/development.sh
-	$(EGREP) "[development|experimental]=" $(BFDDIR)/development.sh  \
+	$(EGREP) "(development|experimental)=" $(BFDDIR)/development.sh  \
 	  | $(AWK) -F= '{ print "set " $$1 " " $$2 }' > $@
 
 # If m68k-parse.y is in a different directory, then ylwrap will use an

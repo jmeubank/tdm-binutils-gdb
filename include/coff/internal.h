@@ -1,7 +1,7 @@
 /* Internal format of COFF object file data structures, for GNU BFD.
    This file is part of BFD, the Binary File Descriptor library.
 
-   Copyright (C) 1999-2019 Free Software Foundation, Inc.
+   Copyright (C) 1999-2021 Free Software Foundation, Inc.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -54,22 +54,13 @@ struct internal_extra_pe_filehdr
   unsigned short e_oeminfo;	/* OEM information; e_oemid specific, 0x0 */
   unsigned short e_res2[10];	/* Reserved words, all 0x0 */
   bfd_vma  e_lfanew;		/* File address of new exe header, 0x80 */
-  unsigned long dos_message[16]; /* text which always follows dos header */
+  unsigned int dos_message[16]; /* Text which always follows DOS header.  */
   bfd_vma  nt_signature;   	/* required NT signature, 0x4550 */
 };
-
-#define GO32_STUBSIZE 2048
 
 struct internal_filehdr
 {
   struct internal_extra_pe_filehdr pe;
-
-  /* coff-stgo32 EXE stub header before BFD tdata has been allocated.
-     Its data is kept in INTERNAL_FILEHDR.GO32STUB afterwards.
-
-     F_GO32STUB is set iff go32stub contains a valid data.  Artifical headers
-     created in BFD have no pre-set go32stub.  */
-  char go32stub[GO32_STUBSIZE];
 
   /* Standard coff internal info.  */
   unsigned short f_magic;	/* magic number			*/
@@ -93,8 +84,7 @@ struct internal_filehdr
  	F_AR32W		file is 32-bit big-endian
  	F_DYNLOAD	rs/6000 aix: dynamically loadable w/imports & exports
  	F_SHROBJ	rs/6000 aix: file is a shared object
-	F_DLL           PE format DLL
-	F_GO32STUB      Field go32stub contains valid data.  */
+	F_DLL           PE format DLL  */
 
 #define	F_RELFLG	(0x0001)
 #define	F_EXEC		(0x0002)
@@ -106,7 +96,6 @@ struct internal_filehdr
 #define	F_DYNLOAD	(0x1000)
 #define	F_SHROBJ	(0x2000)
 #define F_DLL           (0x2000)
-#define F_GO32STUB      (0x4000)
 
 /* Extra structure which is used in the optional header.  */
 typedef struct _IMAGE_DATA_DIRECTORY
@@ -157,6 +146,11 @@ struct internal_IMAGE_DEBUG_DIRECTORY
 #define PE_IMAGE_DEBUG_TYPE_BORLAND          9
 #define PE_IMAGE_DEBUG_TYPE_RESERVED10       10
 #define PE_IMAGE_DEBUG_TYPE_CLSID            11
+#define PE_IMAGE_DEBUG_TYPE_VC_FEATURE       12
+#define PE_IMAGE_DEBUG_TYPE_POGO             13
+#define PE_IMAGE_DEBUG_TYPE_ILTCG            14
+#define PE_IMAGE_DEBUG_TYPE_MPX              15
+#define PE_IMAGE_DEBUG_TYPE_REPRO            16
 
 /* Extra structure for a codeview debug record */
 #define CV_INFO_SIGNATURE_LENGTH 16
@@ -167,7 +161,7 @@ typedef struct _CODEVIEW_INFO
   char          Signature[CV_INFO_SIGNATURE_LENGTH];
   unsigned int  SignatureLength;
   unsigned long Age;
-  // char PdbFileName[];
+  /* char PdbFileName[];  */
 } CODEVIEW_INFO;
 
 /* Default image base for NT.  */
@@ -383,7 +377,7 @@ struct internal_aouthdr
 #define C_THUMBEXTFUNC  (C_THUMBEXT  + 20)	/* 150 */
 #define C_THUMBSTATFUNC (C_THUMBSTAT + 20)	/* 151 */
 
-/* True if XCOFF symbols of class CLASS have auxillary csect information.  */
+/* True if XCOFF symbols of class CLASS have auxiliary csect information.  */
 #define CSECT_SYM_P(CLASS) \
   ((CLASS) == C_EXT || (CLASS) == C_AIX_WEAKEXT || (CLASS) == C_HIDEXT)
 
@@ -807,6 +801,13 @@ struct internal_reloc
 /* Z80 modes */
 #define R_OFF8    0x32		/* 8 bit signed abs, for (i[xy]+d) */
 #define R_IMM24   0x33          /* 24 bit abs */
+#define R_IMM16BE 0x3A          /* 16 bit abs, big endian */
 /* R_JR, R_IMM8, R_IMM16, R_IMM32 - as for Z8k */
+#define R_BYTE0  0x34		/* first (lowest) 8 bits of multibyte value */
+#define R_BYTE1  0x35		/* second 8 bits of multibyte value */
+#define R_BYTE2  0x36		/* third 8 bits of multibyte value */
+#define R_BYTE3  0x37		/* fourth (highest) 8 bits of multibyte value */
+#define R_WORD0  0x38		/* lowest 16 bits of 32 or 24 bit value */
+#define R_WORD1  0x39		/* highest 16 bits of 32 or 24 bit value */
 
 #endif /* GNU_COFF_INTERNAL_H */

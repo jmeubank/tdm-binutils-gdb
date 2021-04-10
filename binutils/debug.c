@@ -1,5 +1,5 @@
 /* debug.c -- Handle generic debugging information.
-   Copyright (C) 1995-2019 Free Software Foundation, Inc.
+   Copyright (C) 1995-2021 Free Software Foundation, Inc.
    Written by Ian Lance Taylor <ian@cygnus.com>.
 
    This file is part of GNU Binutils.
@@ -3277,6 +3277,8 @@ debug_class_type_samep (struct debug_handle *info, struct debug_type_s *t1,
              names, since that sometimes fails in the presence of
              typedefs and we really don't care.  */
 	  if (strcmp (f1->name, f2->name) != 0
+	      || f1->type == NULL
+	      || f2->type == NULL
 	      || ! debug_type_samep (info,
 				     debug_get_real_type ((void *) info,
 							  f1->type, NULL),

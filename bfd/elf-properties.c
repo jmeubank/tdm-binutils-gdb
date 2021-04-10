@@ -1,5 +1,5 @@
 /* ELF program property support.
-   Copyright (C) 2017-2019 Free Software Foundation, Inc.
+   Copyright (C) 2017-2021 Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
@@ -86,7 +86,7 @@ _bfd_elf_parse_gnu_properties (bfd *abfd, Elf_Internal_Note *note)
 
   if (note->descsz < 8 || (note->descsz % align_size) != 0)
     {
-bad_size:
+    bad_size:
       _bfd_error_handler
 	(_("warning: %pB: corrupt GNU_PROPERTY_TYPE (%ld) size: %#lx"),
 	 abfd, note->type, note->descsz);
@@ -186,7 +186,7 @@ bad_size:
 	(_("warning: %pB: unsupported GNU_PROPERTY_TYPE (%ld) type: 0x%x"),
 	 abfd, note->type, type);
 
-next:
+    next:
       ptr += (datasz + (align_size - 1)) & ~ (align_size - 1);
     }
 
@@ -695,14 +695,16 @@ _bfd_elf_convert_gnu_properties (bfd *ibfd, asection *isec,
   align_shift = bed->s->elfclass == ELFCLASS64 ? 3 : 2;
 
   /* Get the output .note.gnu.property section size.  */
-  size = bfd_get_section_size (isec->output_section);
+  size = bfd_section_size (isec->output_section);
 
   /* Update the output .note.gnu.property section alignment.  */
-  bfd_set_section_alignment (obfd, isec->output_section, align_shift);
+  bfd_set_section_alignment (isec->output_section, align_shift);
 
-  if (size > bfd_get_section_size (isec))
+  if (size > bfd_section_size (isec))
     {
       contents = (bfd_byte *) bfd_malloc (size);
+      if (contents == NULL)
+	return FALSE;
       free (*ptr);
       *ptr = contents;
     }

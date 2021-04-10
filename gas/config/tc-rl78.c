@@ -1,5 +1,5 @@
 /* tc-rl78.c -- Assembler for the Renesas RL78
-   Copyright (C) 2011-2019 Free Software Foundation, Inc.
+   Copyright (C) 2011-2021 Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
@@ -1520,6 +1520,6 @@ md_apply_fix (struct fix * f ATTRIBUTE_UNUSED,
 valueT
 md_section_align (segT segment, valueT size)
 {
-  int align = bfd_get_section_alignment (stdoutput, segment);
+  int align = bfd_section_alignment (segment);
   return ((size + (1 << align) - 1) & -(1 << align));
 }

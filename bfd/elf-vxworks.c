@@ -1,5 +1,5 @@
 /* VxWorks support for ELF
-   Copyright (C) 2005-2019 Free Software Foundation, Inc.
+   Copyright (C) 2005-2021 Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
@@ -97,7 +97,7 @@ elf_vxworks_create_dynamic_sections (bfd *dynobj, struct bfd_link_info *info,
 					      | SEC_READONLY
 					      | SEC_LINKER_CREATED);
       if (s == NULL
-	  || !bfd_set_section_alignment (dynobj, s, bed->s->log_file_align))
+	  || !bfd_set_section_alignment (s, bed->s->log_file_align))
 	return FALSE;
 
       *srelplt2_out = s;
@@ -279,9 +279,7 @@ elf_vxworks_finish_dynamic_entry (bfd *output_bfd, Elf_Internal_Dyn *dyn)
 
     case DT_VX_WRS_TLS_DATA_ALIGN:
       sec = bfd_get_section_by_name (output_bfd, ".tls_data");
-      dyn->d_un.d_val
-	= (bfd_size_type)1 << bfd_get_section_alignment (output_bfd,
-							 sec);
+      dyn->d_un.d_val = (bfd_size_type) 1 << bfd_section_alignment (sec);
       break;
 
     case DT_VX_WRS_TLS_VARS_START:
@@ -297,4 +295,17 @@ elf_vxworks_finish_dynamic_entry (bfd *output_bfd, Elf_Internal_Dyn *dyn)
   return TRUE;
 }
 
+/* Add dynamic tags.  */
 
+bfd_boolean
+_bfd_elf_maybe_vxworks_add_dynamic_tags (bfd *output_bfd,
+					 struct bfd_link_info *info,
+					 bfd_boolean need_dynamic_reloc)
+{
+  struct elf_link_hash_table *htab = elf_hash_table (info);
+  return (_bfd_elf_add_dynamic_tags (output_bfd, info,
+				     need_dynamic_reloc)
+	  && (!htab->dynamic_sections_created
+	      || htab->target_os != is_vxworks
+	      || elf_vxworks_add_dynamic_entries (output_bfd, info)));
+}

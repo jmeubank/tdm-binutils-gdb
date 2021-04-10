@@ -1,5 +1,5 @@
 /* Print mips instructions for GDB, the GNU debugger, or for objdump.
-   Copyright (C) 1989-2019 Free Software Foundation, Inc.
+   Copyright (C) 1989-2021 Free Software Foundation, Inc.
    Contributed by Nobuyuki Hikichi(hikichi@sra.co.jp).
 
    This file is part of the GNU opcodes library.
@@ -24,6 +24,9 @@
 #include "libiberty.h"
 #include "opcode/mips.h"
 #include "opintl.h"
+#include "elf-bfd.h"
+#include "elf/mips.h"
+#include "elfxx-mips.h"
 
 /* FIXME: These are needed to figure out if the code is mips16 or
    not. The low bit of the address is often a good indicator.  No
@@ -32,8 +35,6 @@
 
 #if !defined(EMBEDDED_ENV)
 #define SYMTAB_AVAILABLE 1
-#include "elf-bfd.h"
-#include "elf/mips.h"
 #endif
 
 /* Mips instructions are at maximum this many bytes long.  */

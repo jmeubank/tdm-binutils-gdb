@@ -1,5 +1,5 @@
 # This shell script emits a C file. -*- C -*-
-#   Copyright (C) 2009-2019 Free Software Foundation, Inc.
+#   Copyright (C) 2009-2021 Free Software Foundation, Inc.
 #   Contributed by ARM Ltd.
 #
 # This file is part of the GNU Binutils.
@@ -19,13 +19,14 @@
 # see <http://www.gnu.org/licenses/>.
 #
 
-# This file is sourced from elf32.em, and defines extra aarch64-elf
+# This file is sourced from elf.em, and defines extra aarch64-elf
 # specific routines.
 #
 fragment <<EOF
 
 #include "ldctor.h"
 #include "elf/aarch64.h"
+#include "elfxx-aarch64.h"
 
 static int no_enum_size_warning = 0;
 static int no_wchar_size_warning = 0;
@@ -46,7 +47,13 @@ gld${EMULATION_NAME}_before_parse (void)
   config.has_shared = `if test -n "$GENERATE_SHLIB_SCRIPT" ; then echo TRUE ; else echo FALSE ; fi`;
   config.separate_code = `if test "x${SEPARATE_CODE}" = xyes ; then echo TRUE ; else echo FALSE ; fi`;
   link_info.check_relocs_after_open_input = TRUE;
+EOF
+if test -n "$COMMONPAGESIZE"; then
+fragment <<EOF
   link_info.relro = DEFAULT_LD_Z_RELRO;
+EOF
+fi
+fragment <<EOF
 }
 
 static void
@@ -169,7 +176,7 @@ elf${ELFSIZE}_aarch64_add_stub_section (const char *stub_sec_name,
   lang_output_section_statement_type *os;
   struct hook_stub_info info;
 
-  flags = (SEC_ALLOC | SEC_LOAD | SEC_READONLY | SEC_CODE | SEC_LINKER_CREATED
+  flags = (SEC_ALLOC | SEC_LOAD | SEC_READONLY | SEC_CODE
 	   | SEC_HAS_CONTENTS | SEC_RELOC | SEC_IN_MEMORY | SEC_KEEP);
   stub_sec = bfd_make_section_anyway_with_flags (stub_file->the_bfd,
 						 stub_sec_name, flags);
@@ -178,7 +185,7 @@ elf${ELFSIZE}_aarch64_add_stub_section (const char *stub_sec_name,
 
   /* Long branch stubs contain a 64-bit address, so the section requires
      8 byte alignment.  */
-  bfd_set_section_alignment (stub_file->the_bfd, stub_sec, 3);
+  bfd_set_section_alignment (stub_sec, 3);
 
   output_section = input_section->output_section;
   os = lang_output_section_get (output_section);
@@ -206,7 +213,7 @@ gldaarch64_layout_sections_again (void)
   /* If we have changed sizes of the stub sections, then we need
      to recalculate all the section offsets.  This may mean we need to
      add even more stubs.  */
-  gld${EMULATION_NAME}_map_segments (TRUE);
+  ldelf_map_segments (TRUE);
   need_laying_out = -1;
 }
 
@@ -217,7 +224,7 @@ build_section_lists (lang_statement_union_type *statement)
     {
       asection *i = statement->input_section.section;
 
-      if (!((lang_input_statement_type *) i->owner->usrdata)->flags.just_syms
+      if (!bfd_input_just_syms (i->owner)
 	  && (i->flags & SEC_EXCLUDE) == 0
 	  && i->output_section != NULL
 	  && i->output_section->owner == link_info.output_bfd)
@@ -275,7 +282,7 @@ gld${EMULATION_NAME}_after_allocation (void)
     }
 
   if (need_laying_out != -1)
-    gld${EMULATION_NAME}_map_segments (need_laying_out);
+    ldelf_map_segments (need_laying_out);
 }
 
 static void
@@ -338,26 +345,6 @@ aarch64_elf_create_output_section_statements (void)
   stub_file->the_bfd->flags |= BFD_LINKER_CREATED;
   ldlang_add_file (stub_file);
 }
-
-/* Avoid processing the fake stub_file in vercheck, stat_needed and
-   check_needed routines.  */
-
-static void (*real_func) (lang_input_statement_type *);
-
-static void aarch64_for_each_input_file_wrapper (lang_input_statement_type *l)
-{
-  if (l != stub_file)
-    (*real_func) (l);
-}
-
-static void
-aarch64_lang_for_each_input_file (void (*func) (lang_input_statement_type *))
-{
-  real_func = func;
-  lang_for_each_input_file (&aarch64_for_each_input_file_wrapper);
-}
-
-#define lang_for_each_input_file aarch64_lang_for_each_input_file
 
 EOF
 

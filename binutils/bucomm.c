@@ -1,5 +1,5 @@
 /* bucomm.c -- Bin Utils COMmon code.
-   Copyright (C) 1991-2019 Free Software Foundation, Inc.
+   Copyright (C) 1991-2021 Free Software Foundation, Inc.
 
    This file is part of GNU Binutils.
 
@@ -64,10 +64,10 @@ bfd_nonfatal (const char *string)
    bfd error message is printed.  In summary, error messages are of
    one of the following forms:
 
-   PROGRAM:file: bfd-error-message
-   PROGRAM:file[section]: bfd-error-message
-   PROGRAM:file: printf-message: bfd-error-message
-   PROGRAM:file[section]: printf-message: bfd-error-message.  */
+   PROGRAM: file: bfd-error-message
+   PROGRAM: file[section]: bfd-error-message
+   PROGRAM: file: printf-message: bfd-error-message
+   PROGRAM: file[section]: printf-message: bfd-error-message.  */
 
 void
 bfd_nonfatal_message (const char *filename,
@@ -94,12 +94,12 @@ bfd_nonfatal_message (const char *filename,
       if (!filename)
 	filename = bfd_get_archive_filename (abfd);
       if (section)
-	section_name = bfd_get_section_name (abfd, section);
+	section_name = bfd_section_name (section);
     }
   if (section_name)
-    fprintf (stderr, ":%s[%s]", filename, section_name);
+    fprintf (stderr, ": %s[%s]", filename, section_name);
   else
-    fprintf (stderr, ":%s", filename);
+    fprintf (stderr, ": %s", filename);
 
   if (format)
     {
@@ -532,7 +532,7 @@ template_in_dir (const char *path)
    as FILENAME.  */
 
 char *
-make_tempname (char *filename)
+make_tempname (const char *filename, int *ofd)
 {
   char *tmpname = template_in_dir (filename);
   int fd;
@@ -550,7 +550,7 @@ make_tempname (char *filename)
       free (tmpname);
       return NULL;
     }
-  close (fd);
+  *ofd = fd;
   return tmpname;
 }
 
@@ -558,7 +558,7 @@ make_tempname (char *filename)
    directory containing FILENAME.  */
 
 char *
-make_tempdir (char *filename)
+make_tempdir (const char *filename)
 {
   char *tmpname = template_in_dir (filename);
 
@@ -608,15 +608,6 @@ get_file_size (const char * file_name)
   if (file_name == NULL)
     return (off_t) -1;
 
-  int f, t;
-  t = -1;
-  f = open (file_name, O_RDONLY | O_BINARY);
-  if (f != 0)
-    {
-      t = isatty (f);
-      close (f);
-    }
-
   if (stat (file_name, &statbuf) < 0)
     {
       if (errno == ENOENT)
@@ -627,15 +618,8 @@ get_file_size (const char * file_name)
     }
   else if (S_ISDIR (statbuf.st_mode))
     non_fatal (_("Warning: '%s' is a directory"), file_name);
-  else if (! S_ISREG (statbuf.st_mode) || t > 0)
-    {
-#ifdef _WIN32
-      /* libtool passes /dev/null and checks for /dev/null in the output */
-      if (stricmp (file_name, "nul") == 0)
-        file_name = "/dev/null";
-#endif
-      non_fatal (_("Warning: '%s' is not an ordinary file"), file_name);
-    }
+  else if (! S_ISREG (statbuf.st_mode))
+    non_fatal (_("Warning: '%s' is not an ordinary file"), file_name);
   else if (statbuf.st_size < 0)
     non_fatal (_("Warning: '%s' has negative size, probably it is too large"),
                file_name);

@@ -1,6 +1,6 @@
 // plugin.cc -- plugin manager for gold      -*- C++ -*-
 
-// Copyright (C) 2008-2019 Free Software Foundation, Inc.
+// Copyright (C) 2008-2021 Free Software Foundation, Inc.
 // Written by Cary Coutant <ccoutant@google.com>.
 
 // This file is part of gold.
@@ -502,117 +502,6 @@ class Plugin_recorder
   FILE* logfile_;
 };
 
-/* Use the widest available unsigned type if uint64_t is not
-   available.  The algorithm below extracts a number less than 62**6
-   (approximately 2**35.725) from uint64_t, so ancient hosts where
-   uintmax_t is only 32 bits lose about 3.725 bits of randomness,
-   which is better than not having mkstemp at all.  */
-#if !defined UINT64_MAX && !defined uint64_t
-# define uint64_t uintmax_t
-#endif
-
-/* These are the characters used in temporary filenames.  */
-static const char letters[] =
-"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-
-/* Generate a temporary file name based on TMPL.  TMPL must match the
-   rules for mk[s]temp (i.e. end in "XXXXXX").  The name constructed
-   does not exist at the time of the call to __gen_tempname.  TMPL is
-   overwritten with the result.
-
-   KIND is:
-   __GT_DIR:            create a directory, which will be mode 0700.
-
-   We use a clever algorithm to get hard-to-predict names. */
-static int
-gen_tempname (char *tmpl)
-{
-  int len;
-  char *XXXXXX;
-  static uint64_t value;
-  uint64_t random_time_bits;
-  int count, fd = -1;
-  int save_errno = errno;
-
-  len = (int) strlen(tmpl);
-  if (len < 6 || strcmp (&tmpl[len - 6], "XXXXXX"))
-    {
-      errno = EINVAL;
-      return -1;
-    }
-
-  /* This is where the Xs start.  */
-  XXXXXX = &tmpl[len - 6];
-
-/* Get some more or less random data.  */
-  {
-    SYSTEMTIME      stNow;
-    FILETIME ftNow;
-
-    // get system time
-    GetSystemTime(&stNow);
-    stNow.wMilliseconds = 500;
-    if (!SystemTimeToFileTime(&stNow, &ftNow))
-    {
-        errno = -1;
-        return -1;
-    }
-
-    random_time_bits = (((uint64_t)ftNow.dwHighDateTime << 32)
-                        | (uint64_t)ftNow.dwLowDateTime);
-  }
-  value += (random_time_bits << 8) ^ getpid ();
-
-  for (count = 0; count < TMP_MAX; value += 7777, ++count)
-    {
-      uint64_t v = value;
-
-      /* Fill in the random bits.  */
-      XXXXXX[0] = letters[v % 62];
-      v /= 62;
-      XXXXXX[1] = letters[v % 62];
-      v /= 62;
-      XXXXXX[2] = letters[v % 62];
-      v /= 62;
-      XXXXXX[3] = letters[v % 62];
-      v /= 62;
-      XXXXXX[4] = letters[v % 62];
-      v /= 62;
-      XXXXXX[5] = letters[v % 62];
-
-      fd = mkdir (tmpl);
-
-      if (fd >= 0)
-	{
-	  errno = save_errno;
-	  return fd;
-	}
-      else if (errno != EEXIST)
-	return -1;
-    }
-
-  /* We got out of the loop because we ran out of combinations to try.  */
-  errno = EEXIST;
-  return -1;
-}
-
-/* Generate a unique temporary directory from TEMPLATE.
-   The last six characters of TEMPLATE must be "XXXXXX";
-   they are replaced with a string that makes the filename unique.
-   The directory is created, mode 700, and its name is returned.
-   (This function comes from OpenBSD.) */
-char *
-mkdtemp (char *Template)
-#ifdef __cplusplus
-	throw()
-#endif
-{
-  if (gen_tempname (Template))
-    return NULL;
-  else
-    return Template;
-}
-
 bool
 Plugin_recorder::init()
 {
@@ -636,7 +525,7 @@ Plugin_recorder::init()
 
   size_t len = strlen(dir_template) + 1;
   char* tempdir = new char[len];
-  strncpy(tempdir, dir_template, len);
+  memcpy(tempdir, dir_template, len);
 
   // Create the log file.
   std::string logname(tempdir);
@@ -866,17 +755,17 @@ Plugin_manager::claim_file(Input_file* input_file, off_t offset,
     this->objects_.push_back(elf_object);
   this->in_claim_file_handler_ = true;
 
-  for (this->current_ = this->plugins_.begin();
-       this->current_ != this->plugins_.end();
-       ++this->current_)
+  for (Plugin_list::iterator p = this->plugins_.begin();
+       p != this->plugins_.end();
+       ++p)
     {
       // If we aren't yet in replacement phase, allow plugins to claim input
       // files, otherwise notify the plugin of the new input file, if needed.
       if (!this->in_replacement_phase_)
-        {
-          if ((*this->current_)->claim_file(&this->plugin_input_file_))
-            {
-              this->any_claimed_ = true;
+	{
+	  if ((*p)->claim_file(&this->plugin_input_file_))
+	    {
+	      this->any_claimed_ = true;
               this->in_claim_file_handler_ = false;
 
 	      if (this->recorder_ != NULL)
@@ -886,7 +775,7 @@ Plugin_manager::claim_file(Input_file* input_file, off_t offset,
 						: elf_object->name());
 		  this->recorder_->claimed_file(objname,
 						offset, filesize,
-						(*this->current_)->filename());
+						(*p)->filename());
 		}
 
               if (this->objects_.size() > handle
@@ -901,7 +790,7 @@ Plugin_manager::claim_file(Input_file* input_file, off_t offset,
         }
       else
         {
-          (*this->current_)->new_input(&this->plugin_input_file_);
+	  (*p)->new_input(&this->plugin_input_file_);
         }
     }
 
@@ -961,10 +850,10 @@ Plugin_manager::all_symbols_read(Workqueue* workqueue, Task* task,
   layout->script_options()->set_defsym_uses_in_real_elf(symtab);
   layout->script_options()->find_defsym_defs(this->defsym_defines_set_);
 
-  for (this->current_ = this->plugins_.begin();
-       this->current_ != this->plugins_.end();
-       ++this->current_)
-    (*this->current_)->all_symbols_read();
+  for (Plugin_list::iterator p = this->plugins_.begin();
+       p != this->plugins_.end();
+       ++p)
+    (*p)->all_symbols_read();
 
   if (this->any_added_)
     {
@@ -1139,10 +1028,10 @@ Plugin_manager::cleanup()
       close_all_descriptors();
     }
 
-  for (this->current_ = this->plugins_.begin();
-       this->current_ != this->plugins_.end();
-       ++this->current_)
-    (*this->current_)->cleanup();
+  for (Plugin_list::iterator p = this->plugins_.begin();
+       p != this->plugins_.end();
+       ++p)
+    (*p)->cleanup();
 }
 
 // Make a new Pluginobj object.  This is called when the plugin calls
@@ -1508,7 +1397,6 @@ Sized_pluginobj<size, big_endian>::do_add_symbols(Symbol_table* symtab,
 {
   const int sym_size = elfcpp::Elf_sizes<size>::sym_size;
   unsigned char symbuf[sym_size];
-  elfcpp::Sym<size, big_endian> sym(symbuf);
   elfcpp::Sym_write<size, big_endian> osym(symbuf);
 
   Plugin_recorder* recorder = parameters->options().plugins()->recorder();
@@ -1591,6 +1479,7 @@ Sized_pluginobj<size, big_endian>::do_add_symbols(Symbol_table* symtab,
       osym.put_st_other(vis, 0);
       osym.put_st_shndx(shndx);
 
+      elfcpp::Sym<size, big_endian> sym(symbuf);
       this->symbols_[i] =
         symtab->add_from_pluginobj<size, big_endian>(this, name, ver, &sym);
     }

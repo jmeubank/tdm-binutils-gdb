@@ -6,7 +6,7 @@
 /* libbfd.h -- Declarations used by bfd library *implementation*.
    (This include file is not for users of the library.)
 
-   Copyright (C) 1990-2019 Free Software Foundation, Inc.
+   Copyright (C) 1990-2021 Free Software Foundation, Inc.
 
    Written by Cygnus Support.
 
@@ -121,12 +121,6 @@ extern void *bfd_realloc_or_free
   (void *, bfd_size_type) ATTRIBUTE_HIDDEN;
 extern void *bfd_zmalloc
   (bfd_size_type) ATTRIBUTE_HIDDEN;
-extern void *bfd_malloc2
-  (bfd_size_type, bfd_size_type) ATTRIBUTE_HIDDEN;
-extern void *bfd_realloc2
-  (void *, bfd_size_type, bfd_size_type) ATTRIBUTE_HIDDEN;
-extern void *bfd_zmalloc2
-  (bfd_size_type, bfd_size_type) ATTRIBUTE_HIDDEN;
 
 static inline char *
 bfd_strdup (const char *str)
@@ -139,10 +133,6 @@ bfd_strdup (const char *str)
 }
 /* These routines allocate and free things on the BFD's objalloc.  */
 
-extern void *bfd_alloc2
-  (bfd *, bfd_size_type, bfd_size_type) ATTRIBUTE_HIDDEN;
-extern void *bfd_zalloc2
-  (bfd *, bfd_size_type, bfd_size_type) ATTRIBUTE_HIDDEN;
 extern void bfd_release
   (bfd *, void *) ATTRIBUTE_HIDDEN;
 
@@ -156,7 +146,7 @@ extern bfd_boolean _bfd_generic_mkarchive
   (bfd *) ATTRIBUTE_HIDDEN;
 extern char *_bfd_append_relative_path
   (bfd *, char *) ATTRIBUTE_HIDDEN;
-extern const bfd_target *bfd_generic_archive_p
+extern bfd_cleanup bfd_generic_archive_p
   (bfd *) ATTRIBUTE_HIDDEN;
 extern bfd_boolean bfd_slurp_armap
   (bfd *) ATTRIBUTE_HIDDEN;
@@ -242,8 +232,9 @@ extern void _bfd_void_bfd_asection
 
 extern bfd *_bfd_new_bfd_contained_in
   (bfd *) ATTRIBUTE_HIDDEN;
-extern const bfd_target *_bfd_dummy_target
+extern bfd_cleanup _bfd_dummy_target
   (bfd *) ATTRIBUTE_HIDDEN;
+#define _bfd_no_cleanup _bfd_void_bfd
 
 extern void bfd_dont_truncate_arname
   (bfd *, const char *, char *) ATTRIBUTE_HIDDEN;
@@ -440,9 +431,9 @@ extern symindex _bfd_vms_lib_find_symbol
   (bfd *, const char *) ATTRIBUTE_HIDDEN;
 extern bfd *_bfd_vms_lib_get_imagelib_file
   (bfd *) ATTRIBUTE_HIDDEN;
-extern const bfd_target *_bfd_vms_lib_alpha_archive_p
+extern bfd_cleanup _bfd_vms_lib_alpha_archive_p
   (bfd *) ATTRIBUTE_HIDDEN;
-extern const bfd_target *_bfd_vms_lib_ia64_archive_p
+extern bfd_cleanup _bfd_vms_lib_ia64_archive_p
   (bfd *) ATTRIBUTE_HIDDEN;
 extern bfd_boolean _bfd_vms_lib_alpha_mkarchive
   (bfd *) ATTRIBUTE_HIDDEN;
@@ -461,7 +452,7 @@ extern void _bfd_nosymbols_print_symbol
 extern void _bfd_nosymbols_get_symbol_info
   (bfd *, asymbol *, symbol_info *) ATTRIBUTE_HIDDEN;
 extern const char * _bfd_nosymbols_get_symbol_version_string
-  (bfd *, asymbol *, bfd_boolean *) ATTRIBUTE_HIDDEN;
+  (bfd *, asymbol *, bfd_boolean, bfd_boolean *) ATTRIBUTE_HIDDEN;
 extern bfd_boolean _bfd_nosymbols_bfd_is_local_label_name
   (bfd *, const char *) ATTRIBUTE_HIDDEN;
 #define _bfd_nosymbols_bfd_is_target_special_symbol _bfd_bool_bfd_asymbol_false
@@ -527,6 +518,8 @@ extern bfd_boolean _bfd_nolink_bfd_lookup_section_flags
   (struct bfd_link_info *, struct flag_info *, asection *) ATTRIBUTE_HIDDEN;
 #define _bfd_nolink_bfd_merge_sections _bfd_bool_bfd_link_false_error
 extern bfd_boolean _bfd_nolink_bfd_is_group_section
+  (bfd *, const asection *) ATTRIBUTE_HIDDEN;
+extern const char *_bfd_nolink_bfd_group_name
   (bfd *, const asection *) ATTRIBUTE_HIDDEN;
 extern bfd_boolean _bfd_nolink_bfd_discard_group
   (bfd *, asection *) ATTRIBUTE_HIDDEN;
@@ -599,7 +592,7 @@ struct dwarf_debug_section
 extern const struct dwarf_debug_section dwarf_debug_sections[] ATTRIBUTE_HIDDEN;
 
 /* Find the nearest line using DWARF 2 debugging information.  */
-extern bfd_boolean _bfd_dwarf2_find_nearest_line
+extern int _bfd_dwarf2_find_nearest_line
   (bfd *, asymbol **, asymbol *, asection *, bfd_vma,
    const char **, const char **, unsigned int *, unsigned int *,
    const struct dwarf_debug_section *, void **) ATTRIBUTE_HIDDEN;
@@ -837,11 +830,11 @@ extern FILE *_bfd_real_fopen
 
 /* List of supported target vectors, and the default vector (if
    bfd_default_vector[0] is NULL, there is no default).  */
-extern const bfd_target * const *bfd_target_vector ATTRIBUTE_HIDDEN;
+extern const bfd_target *const *const bfd_target_vector ATTRIBUTE_HIDDEN;
 extern const bfd_target *bfd_default_vector[] ATTRIBUTE_HIDDEN;
 
 /* List of associated target vectors.  */
-extern const bfd_target * const *bfd_associated_vector ATTRIBUTE_HIDDEN;
+extern const bfd_target *const *const bfd_associated_vector ATTRIBUTE_HIDDEN;
 
 /* Functions shared by the ECOFF and MIPS ELF backends, which have no
    other common header files.  */
@@ -908,6 +901,68 @@ extern bfd_signed_vma _bfd_read_signed_leb128
 extern bfd_vma _bfd_safe_read_leb128
   (bfd *, bfd_byte *, unsigned int *, bfd_boolean, const bfd_byte * const)
   ATTRIBUTE_HIDDEN;
+extern bfd_byte * _bfd_write_unsigned_leb128
+  (bfd_byte *, bfd_byte *, bfd_vma) ATTRIBUTE_HIDDEN;
+
+#if GCC_VERSION >= 7000
+#define _bfd_mul_overflow(a, b, res) __builtin_mul_overflow (a, b, res)
+#else
+/* Assumes unsigned values.  Careful!  Args evaluated multiple times.  */
+#define _bfd_mul_overflow(a, b, res) \
+  ((*res) = (a), (*res) *= (b), (b) != 0 && (*res) / (b) != (a))
+#endif
+
+#ifdef __GNUC__
+#define _bfd_constant_p(v) __builtin_constant_p (v)
+#else
+#define _bfd_constant_p(v) 0
+#endif
+
+static inline bfd_byte *
+_bfd_alloc_and_read (bfd *abfd, bfd_size_type asize, bfd_size_type rsize)
+{
+  bfd_byte *mem;
+  if (!_bfd_constant_p (rsize))
+    {
+      ufile_ptr filesize = bfd_get_file_size (abfd);
+      if (filesize != 0 && rsize > filesize)
+	{
+	  bfd_set_error (bfd_error_file_truncated);
+	  return NULL;
+	}
+    }
+  mem = bfd_alloc (abfd, asize);
+  if (mem != NULL)
+    {
+      if (bfd_bread (mem, rsize, abfd) == rsize)
+	return mem;
+      bfd_release (abfd, mem);
+    }
+  return NULL;
+}
+
+static inline bfd_byte *
+_bfd_malloc_and_read (bfd *abfd, bfd_size_type asize, bfd_size_type rsize)
+{
+  bfd_byte *mem;
+  if (!_bfd_constant_p (rsize))
+    {
+      ufile_ptr filesize = bfd_get_file_size (abfd);
+      if (filesize != 0 && rsize > filesize)
+	{
+	  bfd_set_error (bfd_error_file_truncated);
+	  return NULL;
+	}
+    }
+  mem = bfd_malloc (asize);
+  if (mem != NULL)
+    {
+      if (bfd_bread (mem, rsize, abfd) == rsize)
+	return mem;
+      free (mem);
+    }
+  return NULL;
+}
 /* Extracted from libbfd.c.  */
 bfd_boolean bfd_write_bigendian_4byte_int (bfd *, unsigned int);
 
@@ -1550,10 +1605,10 @@ static const char *const bfd_reloc_code_real_names[] = { "@@uninitialized@@",
   "BFD_RELOC_PPC64_DTPREL16_HIGHESTA",
   "BFD_RELOC_PPC64_TPREL34",
   "BFD_RELOC_PPC64_DTPREL34",
-  "BFD_RELOC_PPC64_GOT_TLSGD34",
-  "BFD_RELOC_PPC64_GOT_TLSLD34",
-  "BFD_RELOC_PPC64_GOT_TPREL34",
-  "BFD_RELOC_PPC64_GOT_DTPREL34",
+  "BFD_RELOC_PPC64_GOT_TLSGD_PCREL34",
+  "BFD_RELOC_PPC64_GOT_TLSLD_PCREL34",
+  "BFD_RELOC_PPC64_GOT_TPREL_PCREL34",
+  "BFD_RELOC_PPC64_GOT_DTPREL_PCREL34",
   "BFD_RELOC_PPC64_TLS_PCREL",
   "BFD_RELOC_I370_D12",
   "BFD_RELOC_CTOR",
@@ -2577,46 +2632,6 @@ static const char *const bfd_reloc_code_real_names[] = { "@@uninitialized@@",
   "BFD_RELOC_M68HC12_LO8XG",
   "BFD_RELOC_M68HC12_HI8XG",
   "BFD_RELOC_S12Z_15_PCREL",
-  "BFD_RELOC_16C_NUM08",
-  "BFD_RELOC_16C_NUM08_C",
-  "BFD_RELOC_16C_NUM16",
-  "BFD_RELOC_16C_NUM16_C",
-  "BFD_RELOC_16C_NUM32",
-  "BFD_RELOC_16C_NUM32_C",
-  "BFD_RELOC_16C_DISP04",
-  "BFD_RELOC_16C_DISP04_C",
-  "BFD_RELOC_16C_DISP08",
-  "BFD_RELOC_16C_DISP08_C",
-  "BFD_RELOC_16C_DISP16",
-  "BFD_RELOC_16C_DISP16_C",
-  "BFD_RELOC_16C_DISP24",
-  "BFD_RELOC_16C_DISP24_C",
-  "BFD_RELOC_16C_DISP24a",
-  "BFD_RELOC_16C_DISP24a_C",
-  "BFD_RELOC_16C_REG04",
-  "BFD_RELOC_16C_REG04_C",
-  "BFD_RELOC_16C_REG04a",
-  "BFD_RELOC_16C_REG04a_C",
-  "BFD_RELOC_16C_REG14",
-  "BFD_RELOC_16C_REG14_C",
-  "BFD_RELOC_16C_REG16",
-  "BFD_RELOC_16C_REG16_C",
-  "BFD_RELOC_16C_REG20",
-  "BFD_RELOC_16C_REG20_C",
-  "BFD_RELOC_16C_ABS20",
-  "BFD_RELOC_16C_ABS20_C",
-  "BFD_RELOC_16C_ABS24",
-  "BFD_RELOC_16C_ABS24_C",
-  "BFD_RELOC_16C_IMM04",
-  "BFD_RELOC_16C_IMM04_C",
-  "BFD_RELOC_16C_IMM16",
-  "BFD_RELOC_16C_IMM16_C",
-  "BFD_RELOC_16C_IMM20",
-  "BFD_RELOC_16C_IMM20_C",
-  "BFD_RELOC_16C_IMM24",
-  "BFD_RELOC_16C_IMM24_C",
-  "BFD_RELOC_16C_IMM32",
-  "BFD_RELOC_16C_IMM32_C",
   "BFD_RELOC_CR16_NUM8",
   "BFD_RELOC_CR16_NUM16",
   "BFD_RELOC_CR16_NUM32",
@@ -2789,6 +2804,8 @@ static const char *const bfd_reloc_code_real_names[] = { "@@uninitialized@@",
   "BFD_RELOC_MSP430_ABS_HI16",
   "BFD_RELOC_MSP430_PREL31",
   "BFD_RELOC_MSP430_SYM_DIFF",
+  "BFD_RELOC_MSP430_SET_ULEB128",
+  "BFD_RELOC_MSP430_SUB_ULEB128",
   "BFD_RELOC_NIOS2_S16",
   "BFD_RELOC_NIOS2_U16",
   "BFD_RELOC_NIOS2_CALL26",
@@ -2906,7 +2923,20 @@ static const char *const bfd_reloc_code_real_names[] = { "@@uninitialized@@",
   "BFD_RELOC_XTENSA_TLS_FUNC",
   "BFD_RELOC_XTENSA_TLS_ARG",
   "BFD_RELOC_XTENSA_TLS_CALL",
+  "BFD_RELOC_XTENSA_PDIFF8",
+  "BFD_RELOC_XTENSA_PDIFF16",
+  "BFD_RELOC_XTENSA_PDIFF32",
+  "BFD_RELOC_XTENSA_NDIFF8",
+  "BFD_RELOC_XTENSA_NDIFF16",
+  "BFD_RELOC_XTENSA_NDIFF32",
   "BFD_RELOC_Z80_DISP8",
+  "BFD_RELOC_Z80_BYTE0",
+  "BFD_RELOC_Z80_BYTE1",
+  "BFD_RELOC_Z80_BYTE2",
+  "BFD_RELOC_Z80_BYTE3",
+  "BFD_RELOC_Z80_WORD0",
+  "BFD_RELOC_Z80_WORD1",
+  "BFD_RELOC_Z80_16_BE",
   "BFD_RELOC_Z8K_DISP7",
   "BFD_RELOC_Z8K_CALLR",
   "BFD_RELOC_Z8K_IMM4L",

@@ -384,3 +384,13 @@ power9:
 	scv         0
 	scv         127
 	rfscv
+	dcbf	    0,3
+	dcbf	    0,3,0
+	dcbfl	    0,4
+	dcbf	    0,4,1
+	dcbflp	    0,5
+	dcbf	    0,5,3
+	ori	    31,31,0
+	exser
+	msgsndu     3
+	msgclru     27

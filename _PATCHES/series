@@ -1,8 +1,0 @@
-# This series applies on GIT commit a5a0caf94bda1723cde609958a5cdbe08aa9abe0
-github-readme.patch
-bfd-Increase-_bfd_coff_max_nscns-to-65279.patch
-binutils-mingw-gnu-print.patch
-check-for-unusual-file-harder.patch
-binutils_2.31_mkdtemp_impl.patch
-enable-gold-on.mingw32.patch
-export-patches.patch

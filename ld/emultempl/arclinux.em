@@ -1,5 +1,5 @@
 # This shell script emits a C file. -*- C -*-
-# Copyright (C) 2007-2019 Free Software Foundation, Inc.
+# Copyright (C) 2007-2021 Free Software Foundation, Inc.
 #
 # Copyright 2008-2019 Synopsys Inc.
 #
@@ -20,6 +20,6 @@
 # Foundation, Inc., 51 Franklin Street - Fifth Floor, Boston,
 # MA 02110-1301, USA.
 
-# This file is sourced from elf32.em, and defines extra arc-linux
+# This file is sourced from elf.em, and defines extra arc-linux
 # specific routines.
 #

@@ -1,7 +1,7 @@
 dnl                                            -*- Autoconf -*-
 dnl Process this file with autoconf to produce a configure script.
 dnl
-dnl   Copyright (C) 2019 Free Software Foundation, Inc.
+dnl   Copyright (C) 2019-2021 Free Software Foundation, Inc.
 dnl
 dnl This file is free software; you can redistribute it and/or modify
 dnl it under the terms of the GNU General Public License as published by
@@ -19,9 +19,11 @@ dnl <http://www.gnu.org/licenses/>.
 dnl
 
 AC_PREREQ(2.64)
-AC_INIT([libctf library], 1.2.0-pre)
+AC_INIT([libctf], 1.2.0)
 AC_CONFIG_SRCDIR(ctf-impl.h)
+AC_CONFIG_MACRO_DIR(..)
 AC_CONFIG_MACRO_DIR(../config)
+AC_CONFIG_MACRO_DIR(../bfd)
 AC_USE_SYSTEM_EXTENSIONS
 AM_INIT_AUTOMAKE
 
@@ -30,7 +32,13 @@ AC_PROG_MAKE_SET
 AC_PROG_CC
 AC_PROG_RANLIB
 AM_PROG_AR
+ZW_GNU_GETTEXT_SISTER_DIR
 
+dnl Default to a non shared library.  This may be overridden by the
+dnl configure option --enable-shared.
+AC_DISABLE_SHARED
+
+LT_INIT
 AC_SYS_LARGEFILE
 
 MISSING=`cd $ac_aux_dir && ${PWDCMD-pwd}`/missing
@@ -52,11 +60,19 @@ ACX_PROG_CC_WARNING_ALMOST_PEDANTIC([-Wno-long-long])
 ACX_PROG_CC_WARNINGS_ARE_ERRORS([manual])
 
 AM_MAINTAINER_MODE
+AM_INSTALL_LIBBFD
 ACX_PROG_CC_WARNING_OPTS([-Wall], [ac_libctf_warn_cflags])
 
 AC_FUNC_MMAP
+# Needed for BFD capability checks.
 AC_SEARCH_LIBS(dlopen, dl)
 AM_ZLIB
+
+GCC_ENABLE([libctf-hash-debugging], [no], [], [Enable expensive debugging of CTF deduplication type hashing])
+if test "${enable_libctf_hash_debugging}" = yes; then
+    AC_DEFINE(ENABLE_LIBCTF_HASH_DEBUGGING, 1, [Enable expensive debugging of CTF deduplication type hashing])
+fi
+AM_CONDITIONAL(ENABLE_LIBCTF_HASH_DEBUGGING, test "${enable_libctf_hash_debugging}" = yes)
 
 # Similar to GDB_AC_CHECK_BFD.
 OLD_CFLAGS=$CFLAGS
@@ -90,6 +106,10 @@ fi
 AC_C_BIGENDIAN
 AC_CHECK_HEADERS(byteswap.h endian.h)
 AC_CHECK_FUNCS(pread)
+
+dnl Check for bswap_{16,32,64}
+AC_CHECK_DECLS([bswap_16, bswap_32, bswap_64], [], [], [[#include <byteswap.h>]])
+AC_CHECK_DECLS([asprintf, vasprintf, stpcpy])
 
 dnl Check for qsort_r.  (Taken from gnulib.)
 AC_CHECK_FUNCS_ONCE([qsort_r])
@@ -148,6 +168,44 @@ if test $ac_cv_libctf_macro_O_CLOEXEC = yes; then
   AC_DEFINE([HAVE_O_CLOEXEC], 1,
 	    [Whether the platform has a definition of O_CLOEXEC.])
 fi
+
+# Horrible hacks to build DLLs on Windows and a shared library elsewhere.
+
+CTF_LIBADD="-L`pwd`/../libiberty -liberty"
+SHARED_LDFLAGS=
+if test "$enable_shared" = "yes"; then
+# When building a shared libctf, link against the pic version of libiberty
+# so that apps that use libctf won't need libiberty just to satisfy any
+# libctf references.
+# We can't do that if a pic libiberty is unavailable since including non-pic
+# code would insert text relocations into libctf.
+# Note that linking against libbfd as we do here, which is itself linked
+# against libiberty, may not satisfy all the libctf libiberty references
+# since libbfd may not pull in the entirety of libiberty.
+changequote(,)dnl
+  x=`sed -n -e 's/^[ 	]*PICFLAG[ 	]*=[ 	]*//p' < ../libiberty/Makefile | sed -n '$p'`
+changequote([,])dnl
+  if test -n "$x"; then
+    CTF_LIBADD="-L`pwd`/../libiberty/pic -liberty"
+  fi
+
+  case "${host}" in
+  # More hacks to build DLLs on Windows.
+    *-*-cygwin*)
+      SHARED_LDFLAGS="-no-undefined"
+      CTF_LIBADD="$CTF_LIBADD -L`pwd`/../intl -lintl -lcygwin"
+      ;;
+  esac
+fi
+AC_SUBST(SHARED_LDFLAGS)
+AC_SUBST(CTF_LIBADD)
+
+# Use a version script, if possible, or an -export-symbols-regex otherwise.
+VERSION_FLAGS='-export-symbols-regex ctf_.*'
+if $LD --help 2>&1 | grep -- --version-script >/dev/null; then
+    VERSION_FLAGS="-Wl,--version-script='$srcdir/libctf.ver'"
+fi
+AC_SUBST(VERSION_FLAGS)
 
 AC_CONFIG_FILES(Makefile)
 AC_CONFIG_HEADERS(config.h)

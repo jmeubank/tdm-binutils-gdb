@@ -1,5 +1,5 @@
 /* SPARC-specific support for 64-bit ELF
-   Copyright (C) 1993-2019 Free Software Foundation, Inc.
+   Copyright (C) 1993-2021 Free Software Foundation, Inc.
 
    This file is part of BFD, the Binary File Descriptor library.
 
@@ -79,13 +79,11 @@ elf64_sparc_slurp_one_reloc_table (bfd *abfd, asection *asect,
   bfd_size_type count;
   arelent *relents;
 
-  allocated = bfd_malloc (rel_hdr->sh_size);
+  if (bfd_seek (abfd, rel_hdr->sh_offset, SEEK_SET) != 0)
+    return FALSE;
+  allocated = _bfd_malloc_and_read (abfd, rel_hdr->sh_size, rel_hdr->sh_size);
   if (allocated == NULL)
-    goto error_return;
-
-  if (bfd_seek (abfd, rel_hdr->sh_offset, SEEK_SET) != 0
-      || bfd_bread (allocated, rel_hdr->sh_size, abfd) != rel_hdr->sh_size)
-    goto error_return;
+    return FALSE;
 
   native_relocs = (bfd_byte *) allocated;
 
@@ -163,14 +161,11 @@ elf64_sparc_slurp_one_reloc_table (bfd *abfd, asection *asect,
 
   canon_reloc_count (asect) += relent - relents;
 
-  if (allocated != NULL)
-    free (allocated);
-
+  free (allocated);
   return TRUE;
 
  error_return:
-  if (allocated != NULL)
-    free (allocated);
+  free (allocated);
   return FALSE;
 }
 
@@ -748,7 +743,7 @@ elf64_sparc_fake_sections (bfd *abfd ATTRIBUTE_UNUSED,
 {
   const char *name;
 
-  name = bfd_get_section_name (abfd, sec);
+  name = bfd_section_name (sec);
 
   if (strcmp (name, ".stab") == 0)
     {

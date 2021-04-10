@@ -1,5 +1,5 @@
 /* BFD support for the ARM processor
-   Copyright (C) 1994-2019 Free Software Foundation, Inc.
+   Copyright (C) 1994-2021 Free Software Foundation, Inc.
    Contributed by Richard Earnshaw (rwe@pegasus.esprit.ec.org)
 
    This file is part of BFD, the Binary File Descriptor library.
@@ -23,6 +23,7 @@
 #include "bfd.h"
 #include "libbfd.h"
 #include "libiberty.h"
+#include "cpu-arm.h"
 
 /* This routine is provided two arch_infos and works out which ARM
    machine which would be compatible with both and returns a pointer
@@ -149,6 +150,9 @@ processors[] =
   { bfd_mach_arm_8,	  "cortex-a76"	    },
   { bfd_mach_arm_8,	  "cortex-a76ae"    },
   { bfd_mach_arm_8,	  "cortex-a77"	    },
+  { bfd_mach_arm_8,	  "cortex-a78"	    },
+  { bfd_mach_arm_8,	  "cortex-a78ae"    },
+  { bfd_mach_arm_8,	  "cortex-a78c"     },
   { bfd_mach_arm_6SM,	  "cortex-m0"	    },
   { bfd_mach_arm_6SM,	  "cortex-m0plus"   },
   { bfd_mach_arm_6SM,	  "cortex-m1"	    },
@@ -164,6 +168,7 @@ processors[] =
   { bfd_mach_arm_8R,	  "cortex-r52"	    },
   { bfd_mach_arm_7,	  "cortex-r7"	    },
   { bfd_mach_arm_7,	  "cortex-r8"	    },
+  { bfd_mach_arm_8,	  "cortex-x1"	    },
   { bfd_mach_arm_4T,	  "ep9312"	    },
   { bfd_mach_arm_8,	  "exynos-m1"	    },
   { bfd_mach_arm_4,	  "fa526"	    },
@@ -221,7 +226,7 @@ scan (const struct bfd_arch_info *info, const char *string)
 
 #define N(number, print, default, next)  \
 {  32, 32, 8, bfd_arch_arm, number, "arm", print, 4, default, compatible, \
-   scan, bfd_arch_default_fill, next }
+    scan, bfd_arch_default_fill, next, 0 }
 
 static const bfd_arch_info_type arch_info_struct[] =
 {
@@ -299,8 +304,8 @@ bfd_arm_merge_machines (bfd *ibfd, bfd *obfd)
 	       || out == bfd_mach_arm_iWMMXt2))
     {
       /* xgettext: c-format */
-      _bfd_error_handler (_("\
-error: %pB is compiled for the EP9312, whereas %pB is compiled for XScale"),
+      _bfd_error_handler (_("error: %pB is compiled for the EP9312, "
+			    "whereas %pB is compiled for XScale"),
 			  ibfd, obfd);
       bfd_set_error (bfd_error_wrong_format);
       return FALSE;
@@ -311,8 +316,8 @@ error: %pB is compiled for the EP9312, whereas %pB is compiled for XScale"),
 	       || in == bfd_mach_arm_iWMMXt2))
     {
       /* xgettext: c-format */
-      _bfd_error_handler (_("\
-error: %pB is compiled for the EP9312, whereas %pB is compiled for XScale"),
+      _bfd_error_handler (_("error: %pB is compiled for the EP9312, "
+			    "whereas %pB is compiled for XScale"),
 			  obfd, ibfd);
       bfd_set_error (bfd_error_wrong_format);
       return FALSE;
@@ -457,8 +462,7 @@ bfd_arm_update_notes (bfd *abfd, const char *note_section)
   return TRUE;
 
  FAIL:
-  if (buffer != NULL)
-    free (buffer);
+  free (buffer);
   return FALSE;
 }
 
@@ -527,8 +531,7 @@ bfd_arm_get_mach_from_notes (bfd *abfd, const char *note_section)
       }
 
  FAIL:
-  if (buffer != NULL)
-    free (buffer);
+  free (buffer);
   return bfd_mach_arm_unknown;
 }
 

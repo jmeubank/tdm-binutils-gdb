@@ -1,5 +1,5 @@
 # Expect script for ld --undefined and --require-defined testing.
-#   Copyright (C) 2015-2019 Free Software Foundation, Inc.
+#   Copyright (C) 2015-2021 Free Software Foundation, Inc.
 #
 # This file is part of the GNU Binutils.
 #
@@ -35,9 +35,8 @@ if { [istarget "powerpcle-*-*"] \
      || [istarget "cris-axis-elf"] \
      || [istarget "ns32k-*-*"] \
      || [istarget "*-*-coff"] \
-     || [istarget "*-*-xcoff"] \
      || [istarget "*-*-*aout*"] \
-     || [istarget "*-*-*aix*"] } {
+     || [is_xcoff_format] } {
     unsupported "require-defined testing"
     return
 }

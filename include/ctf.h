@@ -1,5 +1,5 @@
 /* CTF format description.
-   Copyright (C) 2019 Free Software Foundation, Inc.
+   Copyright (C) 2019-2021 Free Software Foundation, Inc.
 
    This file is part of libctf.
 
@@ -52,10 +52,15 @@ extern "C"
 
    The CTF file or section itself has the following structure:
 
-   +--------+--------+---------+----------+----------+-------+--------+
-   |  file  |  type  |  data   | function | variable | data  | string |
-   | header | labels | objects |   info   |   info   | types | table  |
-   +--------+--------+---------+----------+----------+-------+--------+
+   +--------+--------+---------+----------+--------+----------+...
+   |  file  |  type  |  data   | function | object | function |...
+   | header | labels | objects |   info   | index  |  index   |...
+   +--------+--------+---------+----------+--------+----------+...
+
+   ...+----------+-------+--------+
+   ...| variable | data  | string |
+   ...|   info   | types | table  |
+      +----------+-------+--------+
 
    The file header stores a magic number and version information, encoding
    flags, and the byte offset of each of the sections relative to the end of the
@@ -68,36 +73,55 @@ extern "C"
    the data types section.  Each label is accompanied by a type ID i.  A given
    label refers to the group of types whose IDs are in the range [0, i].
 
-   Data object and function records are stored in the same order as they appear
-   in the corresponding symbol table, except that symbols marked SHN_UNDEF are
-   not stored and symbols that have no type data are padded out with zeroes.
-   For each data object, the type ID (a small integer) is recorded.  For each
-   function, the type ID of the return type and argument types is recorded.
+   Data object and function records (collectively, "symtypetabs") are stored in
+   the same order as they appear in the corresponding symbol table, except that
+   symbols marked SHN_UNDEF are not stored and symbols that have no type data
+   are padded out with zeroes.  For each entry in these tables, the type ID (a
+   small integer) is recorded.  (Functions get CTF_K_FUNCTION types, just like
+   data objects that are function pointers.)
+
+   For situations in which the order of the symbols in the symtab is not known,
+   or most symbols have no type in this dict and most entries would be
+   zero-pads, a pair of optional indexes follow the data object and function
+   info sections: each of these is an array of strtab indexes, mapped 1:1 to the
+   corresponding data object / function info section, giving each entry in those
+   sections a name so that the linker can correlate them with final symtab
+   entries and reorder them accordingly (dropping the indexes in the process).
 
    Variable records (as distinct from data objects) provide a modicum of support
    for non-ELF systems, mapping a variable name to a CTF type ID.  The variable
-   names are sorted into ASCIIbetical order, permitting binary searching.
+   names are sorted into ASCIIbetical order, permitting binary searching.  We do
+   not define how the consumer maps these variable names to addresses or
+   anything else, or indeed what these names represent: they might be names
+   looked up at runtime via dlsym() or names extracted at runtime by a debugger
+   or anything else the consumer likes.  Variable records with identically-
+   named entries in the data object section are removed.
 
    The data types section is a list of variable size records that represent each
    type, in order by their ID.  The types themselves form a directed graph,
    where each node may contain one or more outgoing edges to other type nodes,
-   denoted by their ID.
+   denoted by their ID.  Most type nodes are standalone or point backwards to
+   earlier nodes, but this is not required: nodes can point to later nodes,
+   particularly structure and union members.
 
    Strings are recorded as a string table ID (0 or 1) and a byte offset into the
    string table.  String table 0 is the internal CTF string table.  String table
    1 is the external string table, which is the string table associated with the
-   ELF symbol table for this object.  CTF does not record any strings that are
-   already in the symbol table, and the CTF string table does not contain any
-   duplicated strings.
+   ELF dynamic symbol table for this object.  CTF does not record any strings
+   that are already in the symbol table, and the CTF string table does not
+   contain any duplicated strings.
 
    If the CTF data has been merged with another parent CTF object, some outgoing
    edges may refer to type nodes that exist in another CTF object.  The debugger
    and libctf library are responsible for connecting the appropriate objects
    together so that the full set of types can be explored and manipulated.
 
-   This connection is done purely using the ctf_import() function.  There is no
-   notation anywhere in the child CTF file indicating which parent it is
-   connected to: it is the debugger's responsibility to track this.  */
+   This connection is done purely using the ctf_import() function.  The
+   ctf_archive machinery (and thus ctf_open et al) automatically imports archive
+   members named ".ctf" into child dicts if available in the same archive, to
+   match the relationship set up by the linker, but callers can call ctf_import
+   themselves as well if need be, if they know a different relationship is in
+   force.  */
 
 #define CTF_MAX_TYPE	0xfffffffe	/* Max type identifier value.  */
 #define CTF_MAX_PTYPE	0x7fffffff	/* Max parent type identifier value.  */
@@ -126,7 +150,7 @@ typedef struct ctf_preamble
   unsigned char ctp_flags;	/* Flags (see below).  */
 } ctf_preamble_t;
 
-typedef struct ctf_header
+typedef struct ctf_header_v2
 {
   ctf_preamble_t cth_preamble;
   uint32_t cth_parlabel;	/* Ref to name of parent lbl uniq'd against.  */
@@ -134,6 +158,23 @@ typedef struct ctf_header
   uint32_t cth_lbloff;		/* Offset of label section.  */
   uint32_t cth_objtoff;		/* Offset of object section.  */
   uint32_t cth_funcoff;		/* Offset of function section.  */
+  uint32_t cth_varoff;		/* Offset of variable section.  */
+  uint32_t cth_typeoff;		/* Offset of type section.  */
+  uint32_t cth_stroff;		/* Offset of string section.  */
+  uint32_t cth_strlen;		/* Length of string section in bytes.  */
+} ctf_header_v2_t;
+
+typedef struct ctf_header
+{
+  ctf_preamble_t cth_preamble;
+  uint32_t cth_parlabel;	/* Ref to name of parent lbl uniq'd against.  */
+  uint32_t cth_parname;		/* Ref to basename of parent.  */
+  uint32_t cth_cuname;		/* Ref to CU name (may be 0).  */
+  uint32_t cth_lbloff;		/* Offset of label section.  */
+  uint32_t cth_objtoff;		/* Offset of object section.  */
+  uint32_t cth_funcoff;		/* Offset of function section.  */
+  uint32_t cth_objtidxoff;	/* Offset of object index section.  */
+  uint32_t cth_funcidxoff;	/* Offset of function index section.  */
   uint32_t cth_varoff;		/* Offset of variable section.  */
   uint32_t cth_typeoff;		/* Offset of type section.  */
   uint32_t cth_stroff;		/* Offset of string section.  */
@@ -148,13 +189,14 @@ typedef struct ctf_header
 
 /* Data format version number.  */
 
-/* v1 upgraded to v2 is not quite the same as native v2 (the boundary between
-   parent and child types is different), and you can write it out again via
-   ctf_compress_write(), so we must track whether the thing was originally v1 or
-   not.  If we were writing the header from scratch, we would add a *pair* of
-   version number fields to allow for this, but this will do for now.  (A flag
-   will not do, because we need to encode both the version we came from and the
-   version we went to, not just "we were upgraded".) */
+/* v1 upgraded to a later version is not quite the same as the native form,
+   because the boundary between parent and child types is different but not
+   recorded anywhere, and you can write it out again via ctf_compress_write(),
+   so we must track whether the thing was originally v1 or not.  If we were
+   writing the header from scratch, we would add a *pair* of version number
+   fields to allow for this, but this will do for now.  (A flag will not do,
+   because we need to encode both the version we came from and the version we
+   went to, not just "we were upgraded".) */
 
 # define CTF_VERSION_1 1
 # define CTF_VERSION_1_UPGRADED_3 2
@@ -163,7 +205,16 @@ typedef struct ctf_header
 #define CTF_VERSION_3 4
 #define CTF_VERSION CTF_VERSION_3 /* Current version.  */
 
-#define CTF_F_COMPRESS	0x1	/* Data buffer is compressed by libctf.  */
+/* All of these flags bar CTF_F_COMPRESS and CTF_F_IDXSORTED are bug-workaround
+   flags and are valid only in format v3: in v2 and below they cannot occur and
+   in v4 and later, they will be recycled for other purposes.  */
+
+#define CTF_F_COMPRESS	0x1		/* Data buffer is compressed by libctf.  */
+#define CTF_F_NEWFUNCINFO 0x2		/* New v3 func info section format.  */
+#define CTF_F_IDXSORTED 0x4		/* Index sections already sorted.  */
+#define CTF_F_DYNSTR 0x8		/* Strings come from .dynstr.  */
+#define CTF_F_MAX (CTF_F_COMPRESS | CTF_F_NEWFUNCINFO | CTF_F_IDXSORTED	\
+		   | CTF_F_DYNSTR)
 
 typedef struct ctf_lblent
 {
@@ -317,6 +368,7 @@ union
 
 #define CTF_NAME_STID(name)		((name) >> 31)
 #define CTF_NAME_OFFSET(name)		((name) & CTF_MAX_NAME)
+#define CTF_SET_STID(name, stid)	((name) | (stid) << 31)
 
 /* V2 only. */
 #define CTF_TYPE_INFO(kind, isroot, vlen) \
@@ -514,7 +566,7 @@ typedef struct ctf_enum
   int32_t cte_value;		/* Value associated with this name.  */
 } ctf_enum_t;
 
-/* The ctf_archive is a collection of ctf_file_t's stored together. The format
+/* The ctf_archive is a collection of ctf_dict_t's stored together. The format
    is suitable for mmap()ing: this control structure merely describes the
    mmap()ed archive (and overlaps the first few bytes of it), hence the
    greater care taken with integral types.  All CTF files in an archive
@@ -540,20 +592,20 @@ struct ctf_archive
   /* CTF data model.  */
   uint64_t ctfa_model;
 
-  /* Number of CTF files in the archive.  */
-  uint64_t ctfa_nfiles;
+  /* Number of CTF dicts in the archive.  */
+  uint64_t ctfa_ndicts;
 
   /* Offset of the name table.  */
   uint64_t ctfa_names;
 
   /* Offset of the CTF table.  Each element starts with a size (a uint64_t
-     in network byte order) then a ctf_file_t of that size.  */
+     in network byte order) then a ctf_dict_t of that size.  */
   uint64_t ctfa_ctfs;
 };
 
 /* An array of ctfa_nnamed of this structure lies at
    ctf_archive[ctf_archive->ctfa_modents] and gives the ctfa_ctfs or
-   ctfa_names-relative offsets of each name or ctf_file_t.  */
+   ctfa_names-relative offsets of each name or ctf_dict_t.  */
 
 typedef struct ctf_archive_modent
 {

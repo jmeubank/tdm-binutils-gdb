@@ -1,5 +1,5 @@
 /* frags.c - manage frags -
-   Copyright (C) 1987-2019 Free Software Foundation, Inc.
+   Copyright (C) 1987-2021 Free Software Foundation, Inc.
 
    This file is part of GAS, the GNU Assembler.
 
@@ -89,9 +89,9 @@ frag_alloc (struct obstack *ob)
 }
 
 /* Try to augment current frag by nchars chars.
-   If there is no room, close of the current frag with a ".fill 0"
-   and begin a new frag. Unless the new frag has nchars chars available
-   do not return. Do not set up any fields of *now_frag.  */
+   If there is no room, close off the current frag with a ".fill 0"
+   and begin a new frag.  Then loop until the new frag has at least
+   nchars chars available.  Does not set up any fields in frag_now.  */
 
 void
 frag_grow (size_t nchars)
@@ -395,7 +395,12 @@ frag_now_fix_octets (void)
 addressT
 frag_now_fix (void)
 {
-  return frag_now_fix_octets () / OCTETS_PER_BYTE;
+  /* Symbols whose section has SEC_ELF_OCTETS set,
+     resolve to octets instead of target bytes.  */
+  if (now_seg->flags & SEC_OCTETS)
+    return frag_now_fix_octets ();
+  else
+    return frag_now_fix_octets () / OCTETS_PER_BYTE;
 }
 
 void
@@ -454,6 +459,48 @@ frag_offset_fixed_p (const fragS *frag1, const fragS *frag2, offsetT *offset)
       if (frag == NULL)
 	break;
       if (frag == frag1)
+	{
+	  *offset = off;
+	  return TRUE;
+	}
+    }
+
+  return FALSE;
+}
+
+/* Return TRUE if FRAG2 follows FRAG1 with a fixed relationship
+   between the two assuming alignment frags do nothing.  Set OFFSET to
+   the difference in address not already accounted for in the frag
+   FR_ADDRESS.  */
+
+bfd_boolean
+frag_offset_ignore_align_p (const fragS *frag1, const fragS *frag2,
+			    offsetT *offset)
+{
+  const fragS *frag;
+  offsetT off;
+
+  /* Start with offset initialised to difference between the two frags.
+     Prior to assigning frag addresses this will be zero.  */
+  off = frag1->fr_address - frag2->fr_address;
+  if (frag1 == frag2)
+    {
+      *offset = off;
+      return TRUE;
+    }
+
+  frag = frag1;
+  while (frag->fr_type == rs_fill
+	 || frag->fr_type == rs_align
+	 || frag->fr_type == rs_align_code
+	 || frag->fr_type == rs_align_test)
+    {
+      if (frag->fr_type == rs_fill)
+	off += frag->fr_fix + frag->fr_offset * frag->fr_var;
+      frag = frag->fr_next;
+      if (frag == NULL)
+	break;
+      if (frag == frag2)
 	{
 	  *offset = off;
 	  return TRUE;

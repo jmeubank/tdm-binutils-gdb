@@ -1,6 +1,6 @@
 #   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999, 2000,
 #   2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012,
-#   2014, 2015, 2016, 2019 Free Software Foundation, Inc.
+#   2014, 2015, 2016, 2019, 2020 Free Software Foundation, Inc.
 #
 # This file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
@@ -139,7 +139,7 @@ host_libs="intl libiberty opcodes bfd readline tcl tk itcl libgui zlib libbacktr
 # binutils, gas and ld appear in that order because it makes sense to run
 # "make check" in that particular order.
 # If --enable-gold is used, "gold" may replace "ld".
-host_tools="flex bison binutils gas ld fixincludes gcc cgen sid sim gdb gprof etc expect dejagnu m4 utils guile fastjar gnattools libcc1 gotools"
+host_tools="flex bison binutils gas ld fixincludes gcc cgen sid sim gdb gdbserver gprof etc expect dejagnu m4 utils guile fastjar gnattools libcc1 gotools"
 
 # these libraries are built for the target environment, and are built after
 # the host libraries and the host tools (which may be a cross compiler)
@@ -781,6 +781,22 @@ case "${target}" in
     ;;
 esac
 
+# Only allow gdbserver on some systems.
+if test -d ${srcdir}/gdbserver; then
+    if test x$enable_gdbserver = x; then
+	AC_MSG_CHECKING([for gdbserver support])
+	if (srcdir=${srcdir}/gdbserver; \
+		. ${srcdir}/configure.srv; \
+		test -n "$UNSUPPORTED")
+	then
+	    AC_MSG_RESULT([no])
+	    noconfigdirs="$noconfigdirs gdbserver"
+	else
+	    AC_MSG_RESULT([yes])
+	fi
+    fi
+fi
+
 # Disable libgo for some systems where it is known to not work.
 # For testing, you can easily override this with --enable-libgo.
 if test x$enable_libgo = x; then
@@ -1099,6 +1115,9 @@ case "${target}" in
   nfp-*-*)
     noconfigdirs="$noconfigdirs ld gas gdb gprof sim"
     noconfigdirs="$noconfigdirs $target_libraries"
+    ;;
+  pdp11-*-*)
+    noconfigdirs="$noconfigdirs gdb gprof"
     ;;
   powerpc-*-aix*)
     # copied from rs6000-*-* entry
@@ -2726,13 +2745,17 @@ esac
 CONFIGURE_GDB_TK=`echo ${GDB_TK} | sed s/-all-/-configure-/g`
 INSTALL_GDB_TK=`echo ${GDB_TK} | sed s/-all-/-install-/g`
 
-# gdb depends on gnulib, but as nothing else does, only include it if
-# gdb is built.
-if echo " ${configdirs} " | grep " gdb " > /dev/null 2>&1 ; then
-  # The Makefile provides the ordering, so it's enough here to add
-  # gnulib to the list.
-  configdirs="${configdirs} gnulib"
-fi
+# gdb and gdbserver depend on gnulib and gdbsupport, but as nothing
+# else does, only include them if one of these is built.  The Makefile
+# provides the ordering, so it's enough here to add to the list.
+case " ${configdirs} " in
+  *\ gdb\ *)
+    configdirs="${configdirs} gnulib gdbsupport"
+    ;;
+  *\ gdbserver\ *)
+    configdirs="${configdirs} gnulib gdbsupport"
+    ;;
+esac
 
 # Strip out unwanted targets.
 
