@@ -1271,7 +1271,7 @@ get_print_format (void)
 #if BFD_HOST_64BIT_LONG
       ;
 #elif BFD_HOST_64BIT_LONG_LONG
-#ifndef __MSVCRT__
+#if !defined(__MSVCRT__) || defined(__USE_MINGW_ANSI_STDIO)
       length = "ll";
 #else
       length = "I64";

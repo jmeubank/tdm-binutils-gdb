@@ -678,7 +678,7 @@ AC_CACHE_CHECK([whether we can use attributes with template functions],
 [gold_cv_template_attribute],
 [AC_COMPILE_IFELSE([AC_LANG_SOURCE([
 template<typename T> extern void foo(const char*, ...)
-  __attribute__ ((__format__ (__printf__, 1, 2)));
+  __attribute__ ((__format__ (gnu_printf, 1, 2)));
 template<typename T> void foo(const char* format, ...) {}
 void bar() { foo<int>("%s\n", "foo"); }
 ])], [gold_cv_template_attribute=yes], [gold_cv_template_attribute=no])])

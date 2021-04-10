@@ -209,7 +209,7 @@ get_encoded_value (unsigned char **pdata,
 }
 
 #if defined HAVE_LONG_LONG && SIZEOF_LONG_LONG > SIZEOF_LONG
-# ifndef __MINGW32__
+#if !defined(__MSVCRT__) || defined(__USE_MINGW_ANSI_STDIO)
 #  define DWARF_VMA_FMT		"ll"
 #  define DWARF_VMA_FMT_LONG	"%16.16llx"
 # else

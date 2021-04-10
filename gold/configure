@@ -10153,7 +10153,7 @@ else
 /* end confdefs.h.  */
 
 template<typename T> extern void foo(const char*, ...)
-  __attribute__ ((__format__ (__printf__, 1, 2)));
+  __attribute__ ((__format__ (gnu_printf, 1, 2)));
 template<typename T> void foo(const char* format, ...) {}
 void bar() { foo<int>("%s\n", "foo"); }
 
