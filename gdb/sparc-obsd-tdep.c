@@ -1,6 +1,6 @@
 /* Target-dependent code for OpenBSD/sparc.
 
-   Copyright (C) 2004-2019 Free Software Foundation, Inc.
+   Copyright (C) 2004-2021 Free Software Foundation, Inc.
 
    This file is part of GDB.
 
@@ -25,11 +25,13 @@
 #include "regcache.h"
 #include "symtab.h"
 #include "trad-frame.h"
+#include "inferior.h"
 
 #include "obsd-tdep.h"
 #include "sparc-tdep.h"
 #include "solib-svr4.h"
 #include "bsd-uthread.h"
+#include "gdbarch.h"
 
 /* Signal trampolines.  */
 
@@ -157,6 +159,9 @@ sparc32obsd_supply_uthread (struct regcache *regcache,
   CORE_ADDR fp, fp_addr = addr + SPARC32OBSD_UTHREAD_FP_OFFSET;
   gdb_byte buf[4];
 
+  /* This function calls functions that depend on the global current thread.  */
+  gdb_assert (regcache->ptid () == inferior_ptid);
+
   gdb_assert (regnum >= -1);
 
   fp = read_memory_unsigned_integer (fp_addr, 4, byte_order);
@@ -202,6 +207,9 @@ sparc32obsd_collect_uthread(const struct regcache *regcache,
   CORE_ADDR sp;
   gdb_byte buf[4];
 
+  /* This function calls functions that depend on the global current thread.  */
+  gdb_assert (regcache->ptid () == inferior_ptid);
+
   gdb_assert (regnum >= -1);
 
   if (regnum == SPARC_SP_REGNUM || regnum == -1)
@@ -245,8 +253,9 @@ sparc32obsd_init_abi (struct gdbarch_info info, struct gdbarch *gdbarch)
   bsd_uthread_set_collect_uthread (gdbarch, sparc32obsd_collect_uthread);
 }
 
+void _initialize_sparc32obsd_tdep ();
 void
-_initialize_sparc32obsd_tdep (void)
+_initialize_sparc32obsd_tdep ()
 {
   gdbarch_register_osabi (bfd_arch_sparc, 0, GDB_OSABI_OPENBSD,
 			  sparc32obsd_init_abi);

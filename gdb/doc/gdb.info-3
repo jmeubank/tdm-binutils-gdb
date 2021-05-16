@@ -1,6 +1,6 @@
-This is gdb.info, produced by makeinfo version 6.5 from gdb.texinfo.
+This is gdb.info, produced by makeinfo version 6.7 from gdb.texinfo.
 
-Copyright (C) 1988-2019 Free Software Foundation, Inc.
+Copyright (C) 1988-2021 Free Software Foundation, Inc.
 
    Permission is granted to copy, distribute and/or modify this document
 under the terms of the GNU Free Documentation License, Version 1.3 or
@@ -21,9 +21,9 @@ END-INFO-DIR-ENTRY
    This file documents the GNU debugger GDB.
 
    This is the Tenth Edition, of 'Debugging with GDB: the GNU
-Source-Level Debugger' for GDB (GDB) Version 8.3.1.
+Source-Level Debugger' for GDB (GDB) Version 10.2.
 
-   Copyright (C) 1988-2019 Free Software Foundation, Inc.
+   Copyright (C) 1988-2021 Free Software Foundation, Inc.
 
    Permission is granted to copy, distribute and/or modify this document
 under the terms of the GNU Free Documentation License, Version 1.3 or
@@ -37,9 +37,1126 @@ this GNU Manual.  Buying copies from GNU Press supports the FSF in
 developing GNU and promoting software freedom."
 
 
+File: gdb.info,  Node: Go,  Next: Objective-C,  Prev: D,  Up: Supported Languages
+
+15.4.3 Go
+---------
+
+GDB can be used to debug programs written in Go and compiled with
+'gccgo' or '6g' compilers.
+
+   Here is a summary of the Go-specific features and restrictions:
+
+'The current Go package'
+     The name of the current package does not need to be specified when
+     specifying global variables and functions.
+
+     For example, given the program:
+
+          package main
+          var myglob = "Shall we?"
+          func main () {
+            // ...
+          }
+
+     When stopped inside 'main' either of these work:
+
+          (gdb) p myglob
+          (gdb) p main.myglob
+
+'Builtin Go types'
+     The 'string' type is recognized by GDB and is printed as a string.
+
+'Builtin Go functions'
+     The GDB expression parser recognizes the 'unsafe.Sizeof' function
+     and handles it internally.
+
+'Restrictions on Go expressions'
+     All Go operators are supported except '&^'.  The Go '_' "blank
+     identifier" is not supported.  Automatic dereferencing of pointers
+     is not supported.
+
+
+File: gdb.info,  Node: Objective-C,  Next: OpenCL C,  Prev: Go,  Up: Supported Languages
+
+15.4.4 Objective-C
+------------------
+
+This section provides information about some commands and command
+options that are useful for debugging Objective-C code.  See also *note
+info classes: Symbols, and *note info selectors: Symbols, for a few more
+commands specific to Objective-C support.
+
+* Menu:
+
+* Method Names in Commands::
+* The Print Command with Objective-C::
+
+
+File: gdb.info,  Node: Method Names in Commands,  Next: The Print Command with Objective-C,  Up: Objective-C
+
+15.4.4.1 Method Names in Commands
+.................................
+
+The following commands have been extended to accept Objective-C method
+names as line specifications:
+
+   * 'clear'
+   * 'break'
+   * 'info line'
+   * 'jump'
+   * 'list'
+
+   A fully qualified Objective-C method name is specified as
+
+     -[CLASS METHODNAME]
+
+   where the minus sign is used to indicate an instance method and a
+plus sign (not shown) is used to indicate a class method.  The class
+name CLASS and method name METHODNAME are enclosed in brackets, similar
+to the way messages are specified in Objective-C source code.  For
+example, to set a breakpoint at the 'create' instance method of class
+'Fruit' in the program currently being debugged, enter:
+
+     break -[Fruit create]
+
+   To list ten program lines around the 'initialize' class method,
+enter:
+
+     list +[NSText initialize]
+
+   In the current version of GDB, the plus or minus sign is required.
+In future versions of GDB, the plus or minus sign will be optional, but
+you can use it to narrow the search.  It is also possible to specify
+just a method name:
+
+     break create
+
+   You must specify the complete method name, including any colons.  If
+your program's source files contain more than one 'create' method,
+you'll be presented with a numbered list of classes that implement that
+method.  Indicate your choice by number, or type '0' to exit if none
+apply.
+
+   As another example, to clear a breakpoint established at the
+'makeKeyAndOrderFront:' method of the 'NSWindow' class, enter:
+
+     clear -[NSWindow makeKeyAndOrderFront:]
+
+
+File: gdb.info,  Node: The Print Command with Objective-C,  Prev: Method Names in Commands,  Up: Objective-C
+
+15.4.4.2 The Print Command with Objective-C
+...........................................
+
+The print command has also been extended to accept methods.  For
+example:
+
+     print -[OBJECT hash]
+
+will tell GDB to send the 'hash' message to OBJECT and print the result.
+Also, an additional command has been added, 'print-object' or 'po' for
+short, which is meant to print the description of an object.  However,
+this command may only work with certain Objective-C libraries that have
+a particular hook function, '_NSPrintForDebugger', defined.
+
+
+File: gdb.info,  Node: OpenCL C,  Next: Fortran,  Prev: Objective-C,  Up: Supported Languages
+
+15.4.5 OpenCL C
+---------------
+
+This section provides information about GDBs OpenCL C support.
+
+* Menu:
+
+* OpenCL C Datatypes::
+* OpenCL C Expressions::
+* OpenCL C Operators::
+
+
+File: gdb.info,  Node: OpenCL C Datatypes,  Next: OpenCL C Expressions,  Up: OpenCL C
+
+15.4.5.1 OpenCL C Datatypes
+...........................
+
+GDB supports the builtin scalar and vector datatypes specified by OpenCL
+1.1.  In addition the half- and double-precision floating point data
+types of the 'cl_khr_fp16' and 'cl_khr_fp64' OpenCL extensions are also
+known to GDB.
+
+
+File: gdb.info,  Node: OpenCL C Expressions,  Next: OpenCL C Operators,  Prev: OpenCL C Datatypes,  Up: OpenCL C
+
+15.4.5.2 OpenCL C Expressions
+.............................
+
+GDB supports accesses to vector components including the access as
+lvalue where possible.  Since OpenCL C is based on C99 most C
+expressions supported by GDB can be used as well.
+
+
+File: gdb.info,  Node: OpenCL C Operators,  Prev: OpenCL C Expressions,  Up: OpenCL C
+
+15.4.5.3 OpenCL C Operators
+...........................
+
+GDB supports the operators specified by OpenCL 1.1 for scalar and vector
+data types.
+
+
+File: gdb.info,  Node: Fortran,  Next: Pascal,  Prev: OpenCL C,  Up: Supported Languages
+
+15.4.6 Fortran
+--------------
+
+GDB can be used to debug programs written in Fortran, but it currently
+supports only the features of Fortran 77 language.
+
+   Some Fortran compilers (GNU Fortran 77 and Fortran 95 compilers among
+them) append an underscore to the names of variables and functions.
+When you debug programs compiled by those compilers, you will need to
+refer to variables and functions with a trailing underscore.
+
+* Menu:
+
+* Fortran Operators::           Fortran operators and expressions
+* Fortran Defaults::            Default settings for Fortran
+* Special Fortran Commands::    Special GDB commands for Fortran
+
+
+File: gdb.info,  Node: Fortran Operators,  Next: Fortran Defaults,  Up: Fortran
+
+15.4.6.1 Fortran Operators and Expressions
+..........................................
+
+Operators must be defined on values of specific types.  For instance,
+'+' is defined on numbers, but not on characters or other non-
+arithmetic types.  Operators are often defined on groups of types.
+
+'**'
+     The exponentiation operator.  It raises the first operand to the
+     power of the second one.
+
+':'
+     The range operator.  Normally used in the form of array(low:high)
+     to represent a section of array.
+
+'%'
+     The access component operator.  Normally used to access elements in
+     derived types.  Also suitable for unions.  As unions aren't part of
+     regular Fortran, this can only happen when accessing a register
+     that uses a gdbarch-defined union type.
+'::'
+     The scope operator.  Normally used to access variables in modules
+     or to set breakpoints on subroutines nested in modules or in other
+     subroutines (internal subroutines).
+
+
+File: gdb.info,  Node: Fortran Defaults,  Next: Special Fortran Commands,  Prev: Fortran Operators,  Up: Fortran
+
+15.4.6.2 Fortran Defaults
+.........................
+
+Fortran symbols are usually case-insensitive, so GDB by default uses
+case-insensitive matches for Fortran symbols.  You can change that with
+the 'set case-insensitive' command, see *note Symbols::, for the
+details.
+
+
+File: gdb.info,  Node: Special Fortran Commands,  Prev: Fortran Defaults,  Up: Fortran
+
+15.4.6.3 Special Fortran Commands
+.................................
+
+GDB has some commands to support Fortran-specific features, such as
+displaying common blocks.
+
+'info common [COMMON-NAME]'
+     This command prints the values contained in the Fortran 'COMMON'
+     block whose name is COMMON-NAME.  With no argument, the names of
+     all 'COMMON' blocks visible at the current program location are
+     printed.
+
+
+File: gdb.info,  Node: Pascal,  Next: Rust,  Prev: Fortran,  Up: Supported Languages
+
+15.4.7 Pascal
+-------------
+
+Debugging Pascal programs which use sets, subranges, file variables, or
+nested functions does not currently work.  GDB does not support entering
+expressions, printing values, or similar features using Pascal syntax.
+
+   The Pascal-specific command 'set print pascal_static-members'
+controls whether static members of Pascal objects are displayed.  *Note
+pascal_static-members: Print Settings.
+
+
+File: gdb.info,  Node: Rust,  Next: Modula-2,  Prev: Pascal,  Up: Supported Languages
+
+15.4.8 Rust
+-----------
+
+GDB supports the Rust Programming Language (https://www.rust-lang.org/).
+Type- and value-printing, and expression parsing, are reasonably
+complete.  However, there are a few peculiarities and holes to be aware
+of.
+
+   * Linespecs (*note Specify Location::) are never relative to the
+     current crate.  Instead, they act as if there were a global
+     namespace of crates, somewhat similar to the way 'extern crate'
+     behaves.
+
+     That is, if GDB is stopped at a breakpoint in a function in crate
+     'A', module 'B', then 'break B::f' will attempt to set a breakpoint
+     in a function named 'f' in a crate named 'B'.
+
+     As a consequence of this approach, linespecs also cannot refer to
+     items using 'self::' or 'super::'.
+
+   * Because GDB implements Rust name-lookup semantics in expressions,
+     it will sometimes prepend the current crate to a name.  For
+     example, if GDB is stopped at a breakpoint in the crate 'K', then
+     'print ::x::y' will try to find the symbol 'K::x::y'.
+
+     However, since it is useful to be able to refer to other crates
+     when debugging, GDB provides the 'extern' extension to circumvent
+     this.  To use the extension, just put 'extern' before a path
+     expression to refer to the otherwise unavailable "global" scope.
+
+     In the above example, if you wanted to refer to the symbol 'y' in
+     the crate 'x', you would use 'print extern x::y'.
+
+   * The Rust expression evaluator does not support "statement-like"
+     expressions such as 'if' or 'match', or lambda expressions.
+
+   * Tuple expressions are not implemented.
+
+   * The Rust expression evaluator does not currently implement the
+     'Drop' trait.  Objects that may be created by the evaluator will
+     never be destroyed.
+
+   * GDB does not implement type inference for generics.  In order to
+     call generic functions or otherwise refer to generic items, you
+     will have to specify the type parameters manually.
+
+   * GDB currently uses the C++ demangler for Rust.  In most cases this
+     does not cause any problems.  However, in an expression context,
+     completing a generic function name will give syntactically invalid
+     results.  This happens because Rust requires the '::' operator
+     between the function name and its generic arguments.  For example,
+     GDB might provide a completion like 'crate::f<u32>', where the
+     parser would require 'crate::f::<u32>'.
+
+   * As of this writing, the Rust compiler (version 1.8) has a few holes
+     in the debugging information it generates.  These holes prevent
+     certain features from being implemented by GDB:
+
+        * Method calls cannot be made via traits.
+
+        * Operator overloading is not implemented.
+
+        * When debugging in a monomorphized function, you cannot use the
+          generic type names.
+
+        * The type 'Self' is not available.
+
+        * 'use' statements are not available, so some names may not be
+          available in the crate.
+
+
+File: gdb.info,  Node: Modula-2,  Next: Ada,  Prev: Rust,  Up: Supported Languages
+
+15.4.9 Modula-2
+---------------
+
+The extensions made to GDB to support Modula-2 only support output from
+the GNU Modula-2 compiler (which is currently being developed).  Other
+Modula-2 compilers are not currently supported, and attempting to debug
+executables produced by them is most likely to give an error as GDB
+reads in the executable's symbol table.
+
+* Menu:
+
+* M2 Operators::                Built-in operators
+* Built-In Func/Proc::          Built-in functions and procedures
+* M2 Constants::                Modula-2 constants
+* M2 Types::                    Modula-2 types
+* M2 Defaults::                 Default settings for Modula-2
+* Deviations::                  Deviations from standard Modula-2
+* M2 Checks::                   Modula-2 type and range checks
+* M2 Scope::                    The scope operators '::' and '.'
+* GDB/M2::                      GDB and Modula-2
+
+
+File: gdb.info,  Node: M2 Operators,  Next: Built-In Func/Proc,  Up: Modula-2
+
+15.4.9.1 Operators
+..................
+
+Operators must be defined on values of specific types.  For instance,
+'+' is defined on numbers, but not on structures.  Operators are often
+defined on groups of types.  For the purposes of Modula-2, the following
+definitions hold:
+
+   * _Integral types_ consist of 'INTEGER', 'CARDINAL', and their
+     subranges.
+
+   * _Character types_ consist of 'CHAR' and its subranges.
+
+   * _Floating-point types_ consist of 'REAL'.
+
+   * _Pointer types_ consist of anything declared as 'POINTER TO TYPE'.
+
+   * _Scalar types_ consist of all of the above.
+
+   * _Set types_ consist of 'SET' and 'BITSET' types.
+
+   * _Boolean types_ consist of 'BOOLEAN'.
+
+The following operators are supported, and appear in order of increasing
+precedence:
+
+','
+     Function argument or array index separator.
+
+':='
+     Assignment.  The value of VAR ':=' VALUE is VALUE.
+
+'<, >'
+     Less than, greater than on integral, floating-point, or enumerated
+     types.
+
+'<=, >='
+     Less than or equal to, greater than or equal to on integral,
+     floating-point and enumerated types, or set inclusion on set types.
+     Same precedence as '<'.
+
+'=, <>, #'
+     Equality and two ways of expressing inequality, valid on scalar
+     types.  Same precedence as '<'.  In GDB scripts, only '<>' is
+     available for inequality, since '#' conflicts with the script
+     comment character.
+
+'IN'
+     Set membership.  Defined on set types and the types of their
+     members.  Same precedence as '<'.
+
+'OR'
+     Boolean disjunction.  Defined on boolean types.
+
+'AND, &'
+     Boolean conjunction.  Defined on boolean types.
+
+'@'
+     The GDB "artificial array" operator (*note Expressions:
+     Expressions.).
+
+'+, -'
+     Addition and subtraction on integral and floating-point types, or
+     union and difference on set types.
+
+'*'
+     Multiplication on integral and floating-point types, or set
+     intersection on set types.
+
+'/'
+     Division on floating-point types, or symmetric set difference on
+     set types.  Same precedence as '*'.
+
+'DIV, MOD'
+     Integer division and remainder.  Defined on integral types.  Same
+     precedence as '*'.
+
+'-'
+     Negative.  Defined on 'INTEGER' and 'REAL' data.
+
+'^'
+     Pointer dereferencing.  Defined on pointer types.
+
+'NOT'
+     Boolean negation.  Defined on boolean types.  Same precedence as
+     '^'.
+
+'.'
+     'RECORD' field selector.  Defined on 'RECORD' data.  Same
+     precedence as '^'.
+
+'[]'
+     Array indexing.  Defined on 'ARRAY' data.  Same precedence as '^'.
+
+'()'
+     Procedure argument list.  Defined on 'PROCEDURE' objects.  Same
+     precedence as '^'.
+
+'::, .'
+     GDB and Modula-2 scope operators.
+
+     _Warning:_ Set expressions and their operations are not yet
+     supported, so GDB treats the use of the operator 'IN', or the use
+     of operators '+', '-', '*', '/', '=', , '<>', '#', '<=', and '>='
+     on sets as an error.
+
+
+File: gdb.info,  Node: Built-In Func/Proc,  Next: M2 Constants,  Prev: M2 Operators,  Up: Modula-2
+
+15.4.9.2 Built-in Functions and Procedures
+..........................................
+
+Modula-2 also makes available several built-in procedures and functions.
+In describing these, the following metavariables are used:
+
+A
+     represents an 'ARRAY' variable.
+
+C
+     represents a 'CHAR' constant or variable.
+
+I
+     represents a variable or constant of integral type.
+
+M
+     represents an identifier that belongs to a set.  Generally used in
+     the same function with the metavariable S.  The type of S should be
+     'SET OF MTYPE' (where MTYPE is the type of M).
+
+N
+     represents a variable or constant of integral or floating-point
+     type.
+
+R
+     represents a variable or constant of floating-point type.
+
+T
+     represents a type.
+
+V
+     represents a variable.
+
+X
+     represents a variable or constant of one of many types.  See the
+     explanation of the function for details.
+
+   All Modula-2 built-in procedures also return a result, described
+below.
+
+'ABS(N)'
+     Returns the absolute value of N.
+
+'CAP(C)'
+     If C is a lower case letter, it returns its upper case equivalent,
+     otherwise it returns its argument.
+
+'CHR(I)'
+     Returns the character whose ordinal value is I.
+
+'DEC(V)'
+     Decrements the value in the variable V by one.  Returns the new
+     value.
+
+'DEC(V,I)'
+     Decrements the value in the variable V by I.  Returns the new
+     value.
+
+'EXCL(M,S)'
+     Removes the element M from the set S.  Returns the new set.
+
+'FLOAT(I)'
+     Returns the floating point equivalent of the integer I.
+
+'HIGH(A)'
+     Returns the index of the last member of A.
+
+'INC(V)'
+     Increments the value in the variable V by one.  Returns the new
+     value.
+
+'INC(V,I)'
+     Increments the value in the variable V by I.  Returns the new
+     value.
+
+'INCL(M,S)'
+     Adds the element M to the set S if it is not already there.
+     Returns the new set.
+
+'MAX(T)'
+     Returns the maximum value of the type T.
+
+'MIN(T)'
+     Returns the minimum value of the type T.
+
+'ODD(I)'
+     Returns boolean TRUE if I is an odd number.
+
+'ORD(X)'
+     Returns the ordinal value of its argument.  For example, the
+     ordinal value of a character is its ASCII value (on machines
+     supporting the ASCII character set).  The argument X must be of an
+     ordered type, which include integral, character and enumerated
+     types.
+
+'SIZE(X)'
+     Returns the size of its argument.  The argument X can be a variable
+     or a type.
+
+'TRUNC(R)'
+     Returns the integral part of R.
+
+'TSIZE(X)'
+     Returns the size of its argument.  The argument X can be a variable
+     or a type.
+
+'VAL(T,I)'
+     Returns the member of the type T whose ordinal value is I.
+
+     _Warning:_ Sets and their operations are not yet supported, so GDB
+     treats the use of procedures 'INCL' and 'EXCL' as an error.
+
+
+File: gdb.info,  Node: M2 Constants,  Next: M2 Types,  Prev: Built-In Func/Proc,  Up: Modula-2
+
+15.4.9.3 Constants
+..................
+
+GDB allows you to express the constants of Modula-2 in the following
+ways:
+
+   * Integer constants are simply a sequence of digits.  When used in an
+     expression, a constant is interpreted to be type-compatible with
+     the rest of the expression.  Hexadecimal integers are specified by
+     a trailing 'H', and octal integers by a trailing 'B'.
+
+   * Floating point constants appear as a sequence of digits, followed
+     by a decimal point and another sequence of digits.  An optional
+     exponent can then be specified, in the form 'E[+|-]NNN', where
+     '[+|-]NNN' is the desired exponent.  All of the digits of the
+     floating point constant must be valid decimal (base 10) digits.
+
+   * Character constants consist of a single character enclosed by a
+     pair of like quotes, either single (''') or double ('"').  They may
+     also be expressed by their ordinal value (their ASCII value,
+     usually) followed by a 'C'.
+
+   * String constants consist of a sequence of characters enclosed by a
+     pair of like quotes, either single (''') or double ('"').  Escape
+     sequences in the style of C are also allowed.  *Note C and C++
+     Constants: C Constants, for a brief explanation of escape
+     sequences.
+
+   * Enumerated constants consist of an enumerated identifier.
+
+   * Boolean constants consist of the identifiers 'TRUE' and 'FALSE'.
+
+   * Pointer constants consist of integral values only.
+
+   * Set constants are not yet supported.
+
+
+File: gdb.info,  Node: M2 Types,  Next: M2 Defaults,  Prev: M2 Constants,  Up: Modula-2
+
+15.4.9.4 Modula-2 Types
+.......................
+
+Currently GDB can print the following data types in Modula-2 syntax:
+array types, record types, set types, pointer types, procedure types,
+enumerated types, subrange types and base types.  You can also print the
+contents of variables declared using these type.  This section gives a
+number of simple source code examples together with sample GDB sessions.
+
+   The first example contains the following section of code:
+
+     VAR
+        s: SET OF CHAR ;
+        r: [20..40] ;
+
+and you can request GDB to interrogate the type and value of 'r' and
+'s'.
+
+     (gdb) print s
+     {'A'..'C', 'Z'}
+     (gdb) ptype s
+     SET OF CHAR
+     (gdb) print r
+     21
+     (gdb) ptype r
+     [20..40]
+
+Likewise if your source code declares 's' as:
+
+     VAR
+        s: SET ['A'..'Z'] ;
+
+then you may query the type of 's' by:
+
+     (gdb) ptype s
+     type = SET ['A'..'Z']
+
+Note that at present you cannot interactively manipulate set expressions
+using the debugger.
+
+   The following example shows how you might declare an array in
+Modula-2 and how you can interact with GDB to print its type and
+contents:
+
+     VAR
+        s: ARRAY [-10..10] OF CHAR ;
+
+     (gdb) ptype s
+     ARRAY [-10..10] OF CHAR
+
+   Note that the array handling is not yet complete and although the
+type is printed correctly, expression handling still assumes that all
+arrays have a lower bound of zero and not '-10' as in the example above.
+
+   Here are some more type related Modula-2 examples:
+
+     TYPE
+        colour = (blue, red, yellow, green) ;
+        t = [blue..yellow] ;
+     VAR
+        s: t ;
+     BEGIN
+        s := blue ;
+
+The GDB interaction shows how you can query the data type and value of a
+variable.
+
+     (gdb) print s
+     $1 = blue
+     (gdb) ptype t
+     type = [blue..yellow]
+
+In this example a Modula-2 array is declared and its contents displayed.
+Observe that the contents are written in the same way as their 'C'
+counterparts.
+
+     VAR
+        s: ARRAY [1..5] OF CARDINAL ;
+     BEGIN
+        s[1] := 1 ;
+
+     (gdb) print s
+     $1 = {1, 0, 0, 0, 0}
+     (gdb) ptype s
+     type = ARRAY [1..5] OF CARDINAL
+
+   The Modula-2 language interface to GDB also understands pointer types
+as shown in this example:
+
+     VAR
+        s: POINTER TO ARRAY [1..5] OF CARDINAL ;
+     BEGIN
+        NEW(s) ;
+        s^[1] := 1 ;
+
+and you can request that GDB describes the type of 's'.
+
+     (gdb) ptype s
+     type = POINTER TO ARRAY [1..5] OF CARDINAL
+
+   GDB handles compound types as we can see in this example.  Here we
+combine array types, record types, pointer types and subrange types:
+
+     TYPE
+        foo = RECORD
+                 f1: CARDINAL ;
+                 f2: CHAR ;
+                 f3: myarray ;
+              END ;
+
+        myarray = ARRAY myrange OF CARDINAL ;
+        myrange = [-2..2] ;
+     VAR
+        s: POINTER TO ARRAY myrange OF foo ;
+
+and you can ask GDB to describe the type of 's' as shown below.
+
+     (gdb) ptype s
+     type = POINTER TO ARRAY [-2..2] OF foo = RECORD
+         f1 : CARDINAL;
+         f2 : CHAR;
+         f3 : ARRAY [-2..2] OF CARDINAL;
+     END
+
+
+File: gdb.info,  Node: M2 Defaults,  Next: Deviations,  Prev: M2 Types,  Up: Modula-2
+
+15.4.9.5 Modula-2 Defaults
+..........................
+
+If type and range checking are set automatically by GDB, they both
+default to 'on' whenever the working language changes to Modula-2.  This
+happens regardless of whether you or GDB selected the working language.
+
+   If you allow GDB to set the language automatically, then entering
+code compiled from a file whose name ends with '.mod' sets the working
+language to Modula-2.  *Note Having GDB Infer the Source Language:
+Automatically, for further details.
+
+
+File: gdb.info,  Node: Deviations,  Next: M2 Checks,  Prev: M2 Defaults,  Up: Modula-2
+
+15.4.9.6 Deviations from Standard Modula-2
+..........................................
+
+A few changes have been made to make Modula-2 programs easier to debug.
+This is done primarily via loosening its type strictness:
+
+   * Unlike in standard Modula-2, pointer constants can be formed by
+     integers.  This allows you to modify pointer variables during
+     debugging.  (In standard Modula-2, the actual address contained in
+     a pointer variable is hidden from you; it can only be modified
+     through direct assignment to another pointer variable or expression
+     that returned a pointer.)
+
+   * C escape sequences can be used in strings and characters to
+     represent non-printable characters.  GDB prints out strings with
+     these escape sequences embedded.  Single non-printable characters
+     are printed using the 'CHR(NNN)' format.
+
+   * The assignment operator (':=') returns the value of its right-hand
+     argument.
+
+   * All built-in procedures both modify _and_ return their argument.
+
+
+File: gdb.info,  Node: M2 Checks,  Next: M2 Scope,  Prev: Deviations,  Up: Modula-2
+
+15.4.9.7 Modula-2 Type and Range Checks
+.......................................
+
+     _Warning:_ in this release, GDB does not yet perform type or range
+     checking.
+
+   GDB considers two Modula-2 variables type equivalent if:
+
+   * They are of types that have been declared equivalent via a 'TYPE T1
+     = T2' statement
+
+   * They have been declared on the same line.  (Note: This is true of
+     the GNU Modula-2 compiler, but it may not be true of other
+     compilers.)
+
+   As long as type checking is enabled, any attempt to combine variables
+whose types are not equivalent is an error.
+
+   Range checking is done on all mathematical operations, assignment,
+array index bounds, and all built-in functions and procedures.
+
+
+File: gdb.info,  Node: M2 Scope,  Next: GDB/M2,  Prev: M2 Checks,  Up: Modula-2
+
+15.4.9.8 The Scope Operators '::' and '.'
+.........................................
+
+There are a few subtle differences between the Modula-2 scope operator
+('.') and the GDB scope operator ('::').  The two have similar syntax:
+
+
+     MODULE . ID
+     SCOPE :: ID
+
+where SCOPE is the name of a module or a procedure, MODULE the name of a
+module, and ID is any declared identifier within your program, except
+another module.
+
+   Using the '::' operator makes GDB search the scope specified by SCOPE
+for the identifier ID.  If it is not found in the specified scope, then
+GDB searches all scopes enclosing the one specified by SCOPE.
+
+   Using the '.' operator makes GDB search the current scope for the
+identifier specified by ID that was imported from the definition module
+specified by MODULE.  With this operator, it is an error if the
+identifier ID was not imported from definition module MODULE, or if ID
+is not an identifier in MODULE.
+
+
+File: gdb.info,  Node: GDB/M2,  Prev: M2 Scope,  Up: Modula-2
+
+15.4.9.9 GDB and Modula-2
+.........................
+
+Some GDB commands have little use when debugging Modula-2 programs.
+Five subcommands of 'set print' and 'show print' apply specifically to C
+and C++: 'vtbl', 'demangle', 'asm-demangle', 'object', and 'union'.  The
+first four apply to C++, and the last to the C 'union' type, which has
+no direct analogue in Modula-2.
+
+   The '@' operator (*note Expressions: Expressions.), while available
+with any language, is not useful with Modula-2.  Its intent is to aid
+the debugging of "dynamic arrays", which cannot be created in Modula-2
+as they can in C or C++.  However, because an address can be specified
+by an integral constant, the construct '{TYPE}ADREXP' is still useful.
+
+   In GDB scripts, the Modula-2 inequality operator '#' is interpreted
+as the beginning of a comment.  Use '<>' instead.
+
+
+File: gdb.info,  Node: Ada,  Prev: Modula-2,  Up: Supported Languages
+
+15.4.10 Ada
+-----------
+
+The extensions made to GDB for Ada only support output from the GNU Ada
+(GNAT) compiler.  Other Ada compilers are not currently supported, and
+attempting to debug executables produced by them is most likely to be
+difficult.
+
+* Menu:
+
+* Ada Mode Intro::              General remarks on the Ada syntax
+                                   and semantics supported by Ada mode
+                                   in GDB.
+* Omissions from Ada::          Restrictions on the Ada expression syntax.
+* Additions to Ada::            Extensions of the Ada expression syntax.
+* Overloading support for Ada:: Support for expressions involving overloaded
+                                   subprograms.
+* Stopping Before Main Program:: Debugging the program during elaboration.
+* Ada Exceptions::              Ada Exceptions
+* Ada Tasks::                   Listing and setting breakpoints in tasks.
+* Ada Tasks and Core Files::    Tasking Support when Debugging Core Files
+* Ravenscar Profile::           Tasking Support when using the Ravenscar
+                                   Profile
+* Ada Settings::                New settable GDB parameters for Ada.
+* Ada Glitches::                Known peculiarities of Ada mode.
+
+
+File: gdb.info,  Node: Ada Mode Intro,  Next: Omissions from Ada,  Up: Ada
+
+15.4.10.1 Introduction
+......................
+
+The Ada mode of GDB supports a fairly large subset of Ada expression
+syntax, with some extensions.  The philosophy behind the design of this
+subset is
+
+   * That GDB should provide basic literals and access to operations for
+     arithmetic, dereferencing, field selection, indexing, and
+     subprogram calls, leaving more sophisticated computations to
+     subprograms written into the program (which therefore may be called
+     from GDB).
+
+   * That type safety and strict adherence to Ada language restrictions
+     are not particularly important to the GDB user.
+
+   * That brevity is important to the GDB user.
+
+   Thus, for brevity, the debugger acts as if all names declared in
+user-written packages are directly visible, even if they are not visible
+according to Ada rules, thus making it unnecessary to fully qualify most
+names with their packages, regardless of context.  Where this causes
+ambiguity, GDB asks the user's intent.
+
+   The debugger will start in Ada mode if it detects an Ada main
+program.  As for other languages, it will enter Ada mode when stopped in
+a program that was translated from an Ada source file.
+
+   While in Ada mode, you may use '--' for comments.  This is useful
+mostly for documenting command files.  The standard GDB comment ('#')
+still works at the beginning of a line in Ada mode, but not in the
+middle (to allow based literals).
+
+
+File: gdb.info,  Node: Omissions from Ada,  Next: Additions to Ada,  Prev: Ada Mode Intro,  Up: Ada
+
+15.4.10.2 Omissions from Ada
+............................
+
+Here are the notable omissions from the subset:
+
+   * Only a subset of the attributes are supported:
+
+        - 'First, 'Last, and 'Length on array objects (not on types and
+          subtypes).
+
+        - 'Min and 'Max.
+
+        - 'Pos and 'Val.
+
+        - 'Tag.
+
+        - 'Range on array objects (not subtypes), but only as the right
+          operand of the membership ('in') operator.
+
+        - 'Access, 'Unchecked_Access, and 'Unrestricted_Access (a GNAT
+          extension).
+
+        - 'Address.
+
+   * The names in 'Characters.Latin_1' are not available and
+     concatenation is not implemented.  Thus, escape characters in
+     strings are not currently available.
+
+   * Equality tests ('=' and '/=') on arrays test for bitwise equality
+     of representations.  They will generally work correctly for strings
+     and arrays whose elements have integer or enumeration types.  They
+     may not work correctly for arrays whose element types have
+     user-defined equality, for arrays of real values (in particular,
+     IEEE-conformant floating point, because of negative zeroes and
+     NaNs), and for arrays whose elements contain unused bits with
+     indeterminate values.
+
+   * The other component-by-component array operations ('and', 'or',
+     'xor', 'not', and relational tests other than equality) are not
+     implemented.
+
+   * There is limited support for array and record aggregates.  They are
+     permitted only on the right sides of assignments, as in these
+     examples:
+
+          (gdb) set An_Array := (1, 2, 3, 4, 5, 6)
+          (gdb) set An_Array := (1, others => 0)
+          (gdb) set An_Array := (0|4 => 1, 1..3 => 2, 5 => 6)
+          (gdb) set A_2D_Array := ((1, 2, 3), (4, 5, 6), (7, 8, 9))
+          (gdb) set A_Record := (1, "Peter", True);
+          (gdb) set A_Record := (Name => "Peter", Id => 1, Alive => True)
+
+     Changing a discriminant's value by assigning an aggregate has an
+     undefined effect if that discriminant is used within the record.
+     However, you can first modify discriminants by directly assigning
+     to them (which normally would not be allowed in Ada), and then
+     performing an aggregate assignment.  For example, given a variable
+     'A_Rec' declared to have a type such as:
+
+          type Rec (Len : Small_Integer := 0) is record
+              Id : Integer;
+              Vals : IntArray (1 .. Len);
+          end record;
+
+     you can assign a value with a different size of 'Vals' with two
+     assignments:
+
+          (gdb) set A_Rec.Len := 4
+          (gdb) set A_Rec := (Id => 42, Vals => (1, 2, 3, 4))
+
+     As this example also illustrates, GDB is very loose about the usual
+     rules concerning aggregates.  You may leave out some of the
+     components of an array or record aggregate (such as the 'Len'
+     component in the assignment to 'A_Rec' above); they will retain
+     their original values upon assignment.  You may freely use dynamic
+     values as indices in component associations.  You may even use
+     overlapping or redundant component associations, although which
+     component values are assigned in such cases is not defined.
+
+   * Calls to dispatching subprograms are not implemented.
+
+   * The overloading algorithm is much more limited (i.e., less
+     selective) than that of real Ada.  It makes only limited use of the
+     context in which a subexpression appears to resolve its meaning,
+     and it is much looser in its rules for allowing type matches.  As a
+     result, some function calls will be ambiguous, and the user will be
+     asked to choose the proper resolution.
+
+   * The 'new' operator is not implemented.
+
+   * Entry calls are not implemented.
+
+   * Aside from printing, arithmetic operations on the native VAX
+     floating-point formats are not supported.
+
+   * It is not possible to slice a packed array.
+
+   * The names 'True' and 'False', when not part of a qualified name,
+     are interpreted as if implicitly prefixed by 'Standard', regardless
+     of context.  Should your program redefine these names in a package
+     or procedure (at best a dubious practice), you will have to use
+     fully qualified names to access their new definitions.
+
+
+File: gdb.info,  Node: Additions to Ada,  Next: Overloading support for Ada,  Prev: Omissions from Ada,  Up: Ada
+
+15.4.10.3 Additions to Ada
+..........................
+
+As it does for other languages, GDB makes certain generic extensions to
+Ada (*note Expressions::):
+
+   * If the expression E is a variable residing in memory (typically a
+     local variable or array element) and N is a positive integer, then
+     'E@N' displays the values of E and the N-1 adjacent variables
+     following it in memory as an array.  In Ada, this operator is
+     generally not necessary, since its prime use is in displaying parts
+     of an array, and slicing will usually do this in Ada.  However,
+     there are occasional uses when debugging programs in which certain
+     debugging information has been optimized away.
+
+   * 'B::VAR' means "the variable named VAR that appears in function or
+     file B."  When B is a file name, you must typically surround it in
+     single quotes.
+
+   * The expression '{TYPE} ADDR' means "the variable of type TYPE that
+     appears at address ADDR."
+
+   * A name starting with '$' is a convenience variable (*note
+     Convenience Vars::) or a machine register (*note Registers::).
+
+   In addition, GDB provides a few other shortcuts and outright
+additions specific to Ada:
+
+   * The assignment statement is allowed as an expression, returning its
+     right-hand operand as its value.  Thus, you may enter
+
+          (gdb) set x := y + 3
+          (gdb) print A(tmp := y + 1)
+
+   * The semicolon is allowed as an "operator," returning as its value
+     the value of its right-hand operand.  This allows, for example,
+     complex conditional breaks:
+
+          (gdb) break f
+          (gdb) condition 1 (report(i); k += 1; A(k) > 100)
+
+   * Rather than use catenation and symbolic character names to
+     introduce special characters into strings, one may instead use a
+     special bracket notation, which is also used to print strings.  A
+     sequence of characters of the form '["XX"]' within a string or
+     character literal denotes the (single) character whose numeric
+     encoding is XX in hexadecimal.  The sequence of characters '["""]'
+     also denotes a single quotation mark in strings.  For example,
+             "One line.["0a"]Next line.["0a"]"
+     contains an ASCII newline character ('Ada.Characters.Latin_1.LF')
+     after each period.
+
+   * The subtype used as a prefix for the attributes 'Pos, 'Min, and
+     'Max is optional (and is ignored in any case).  For example, it is
+     valid to write
+
+          (gdb) print 'max(x, y)
+
+   * When printing arrays, GDB uses positional notation when the array
+     has a lower bound of 1, and uses a modified named notation
+     otherwise.  For example, a one-dimensional array of three integers
+     with a lower bound of 3 might print as
+
+          (3 => 10, 17, 1)
+
+     That is, in contrast to valid Ada, only the first component has a
+     '=>' clause.
+
+   * You may abbreviate attributes in expressions with any unique,
+     multi-character subsequence of their names (an exact match gets
+     preference).  For example, you may use a'len, a'gth, or a'lh in
+     place of a'length.
+
+   * Since Ada is case-insensitive, the debugger normally maps
+     identifiers you type to lower case.  The GNAT compiler uses
+     upper-case characters for some of its internal identifiers, which
+     are normally of no interest to users.  For the rare occasions when
+     you actually have to look at them, enclose them in angle brackets
+     to avoid the lower-case mapping.  For example,
+          (gdb) print <JMPBUF_SAVE>[0]
+
+   * Printing an object of class-wide type or dereferencing an
+     access-to-class-wide value will display all the components of the
+     object's specific type (as indicated by its run-time tag).
+     Likewise, component selection on such a value will operate on the
+     specific type of the object.
+
+
 File: gdb.info,  Node: Overloading support for Ada,  Next: Stopping Before Main Program,  Prev: Additions to Ada,  Up: Ada
 
-15.4.10.4 Overloading support for Ada
+15.4.10.4 Overloading Support for Ada
 .....................................
 
 The debugger supports limited overloading.  Given a subprogram call in
@@ -212,7 +1329,7 @@ Threads::).  GDB provides the following task-related commands:
           Name of the task in the program.
 
 'info task TASKNO'
-     This command shows detailled informations on the specified task, as
+     This command shows detailed informations on the specified task, as
      in the following example:
           (gdb) info tasks
             ID       TID P-ID Pri State                  Name
@@ -220,22 +1337,22 @@ Threads::).  GDB provides the following task-related commands:
           *  2   807c468    1  15 Runnable               task_1
           (gdb) info task 2
           Ada Task: 0x807c468
-          Name: task_1
+          Name: "task_1"
           Thread: 0
           LWP: 0x1fac
-          Parent: 1 (main_task)
+          Parent: 1 ("main_task")
           Base Priority: 15
           State: Runnable
 
 'task'
-     This command prints the ID of the current task.
+     This command prints the ID and name of the current task.
 
           (gdb) info tasks
             ID       TID P-ID Pri State                  Name
              1   8077870    0  15 Child Activation Wait  main_task
-          *  2   807c458    1  15 Runnable               t
+          *  2   807c458    1  15 Runnable               some_task
           (gdb) task
-          [Current task is 2]
+          [Current task is 2 "some_task"]
 
 'task TASKNO'
      This command is like the 'thread THREAD-ID' command (*note
@@ -245,9 +1362,9 @@ Threads::).  GDB provides the following task-related commands:
           (gdb) info tasks
             ID       TID P-ID Pri State                  Name
              1   8077870    0  15 Child Activation Wait  main_task
-          *  2   807c458    1  15 Runnable               t
+          *  2   807c458    1  15 Runnable               some_task
           (gdb) task 1
-          [Switching to task 1]
+          [Switching to task 1 "main_task"]
           #0  0x8067726 in pthread_cond_wait ()
           (gdb) bt
           #0  0x8067726 in pthread_cond_wait ()
@@ -302,7 +1419,7 @@ Threads::).  GDB provides the following task-related commands:
 
 File: gdb.info,  Node: Ada Tasks and Core Files,  Next: Ravenscar Profile,  Prev: Ada Tasks,  Up: Ada
 
-15.4.10.8 Tasking Support when Debugging Core Files
+15.4.10.8 Tasking Support When Debugging Core Files
 ...................................................
 
 When inspecting a core file, as opposed to debugging a live program,
@@ -320,7 +1437,7 @@ file before inspecting it with GDB.
 
 File: gdb.info,  Node: Ravenscar Profile,  Next: Ada Settings,  Prev: Ada Tasks and Core Files,  Up: Ada
 
-15.4.10.9 Tasking Support when using the Ravenscar Profile
+15.4.10.9 Tasking Support When Using the Ravenscar Profile
 ..........................................................
 
 The "Ravenscar Profile" is a subset of the Ada tasking features,
@@ -342,6 +1459,29 @@ requirements.
 'show ravenscar task-switching'
      Show whether it is possible to switch from task to task in a
      program using the Ravenscar Profile.
+
+   When Ravenscar task-switching is enabled, Ravenscar tasks are
+announced by GDB as if they were threads:
+
+     (gdb) continue
+     [New Ravenscar Thread 0x2b8f0]
+
+   Both Ravenscar tasks and the underlying CPU threads will show up in
+the output of 'info threads':
+
+     (gdb) info threads
+       Id   Target Id                  Frame
+       1    Thread 1 (CPU#0 [running]) simple () at simple.adb:10
+       2    Thread 2 (CPU#1 [running]) 0x0000000000003d34 in __gnat_initialize_cpu_devices ()
+       3    Thread 3 (CPU#2 [running]) 0x0000000000003d28 in __gnat_initialize_cpu_devices ()
+       4    Thread 4 (CPU#3 [halted ]) 0x000000000000c6ec in system.task_primitives.operations.idle ()
+     * 5    Ravenscar Thread 0x2b8f0   simple () at simple.adb:10
+       6    Ravenscar Thread 0x2f150   0x000000000000c6ec in system.task_primitives.operations.idle ()
+
+   One known limitation of the Ravenscar support in GDB is that it isn't
+currently possible to single-step through the runtime initialization
+sequence.  If you need to debug this code, you should use 'set ravenscar
+task-switching off'.
 
 
 File: gdb.info,  Node: Ada Settings,  Next: Ada Glitches,  Prev: Ravenscar Profile,  Up: Ada
@@ -757,14 +1897,15 @@ looks up the value of 'x' in the scope of the file 'foo.c'.
                /* XXX  3-bit hole   */
                /* XXX  4-byte hole  */
                /*    8      |     8 */    int64_t a5;
-               /*   16:27   |     4 */    int a6 : 5;
-               /*   16:56   |     8 */    int64_t a7 : 3;
+               /*   16: 0   |     4 */    int a6 : 5;
+               /*   16: 5   |     8 */    int64_t a7 : 3;
+               "/* XXX  7-byte padding  */
 
                                           /* total size (bytes):   24 */
                                         }
 
           Note how the offset information is now extended to also
-          include how many bits are left to be used in each bitfield.
+          include the first bit of the bitfield.
 
 'ptype[/FLAGS] [ARG]'
      'ptype' accepts the same arguments as 'whatis', but prints a
@@ -846,8 +1987,7 @@ looks up the value of 'x' in the scope of the file 'foo.c'.
      *Note no debug info variables: Variables, for how to print the
      values of such variables.
 
-'info types REGEXP'
-'info types'
+'info types [-q] [REGEXP]'
      Print a brief description of all types whose names match the
      regular expression REGEXP (or all types in your program, if you
      supply no argument).  Each complete typename is matched as though
@@ -866,6 +2006,11 @@ looks up the value of 'x' in the scope of the file 'foo.c'.
      This command differs from 'ptype' in two ways: first, like
      'whatis', it does not print a detailed description; second, it
      lists all source files and line numbers where a type is defined.
+
+     The output from 'into types' is proceeded with a header line
+     describing what types are being listed.  The optional flag '-q',
+     which stands for 'quiet', disables printing this header
+     information.
 
 'info type-printers'
      Versions of GDB that ship with Python scripting enabled may have
@@ -922,7 +2067,16 @@ looks up the value of 'x' in the scope of the file 'foo.c'.
      symbols have already been read, and files whose symbols will be
      read when needed.
 
-'info functions [-q]'
+'info sources [-dirname | -basename] [--] [REGEXP]'
+     Like 'info sources', but only print the names of the files matching
+     the provided REGEXP.  By default, the REGEXP is used to match
+     anywhere in the filename.  If '-dirname', only files having a
+     dirname matching REGEXP are shown.  If '-basename', only files
+     having a basename matching REGEXP are shown.  The matching is
+     case-sensitive, except on operating systems that have
+     case-insensitive filesystem (e.g., MS-Windows).
+
+'info functions [-q] [-n]'
      Print the names and data types of all defined functions.  Similarly
      to 'info types', this command groups its output by source files and
      annotates each function definition with its source line number.
@@ -934,11 +2088,16 @@ looks up the value of 'x' in the scope of the file 'foo.c'.
      function, other values mean to use the manually specified language
      (see *note Set Language Manually: Manually.).
 
+     The '-n' flag excludes "non-debugging symbols" from the results.  A
+     non-debugging symbol is a symbol that comes from the executable's
+     symbol table, not from the debug information (for example, DWARF)
+     associated with the executable.
+
      The optional flag '-q', which stands for 'quiet', disables printing
      header information and messages explaining why no functions have
      been printed.
 
-'info functions [-q] [-t TYPE_REGEXP] [REGEXP]'
+'info functions [-q] [-n] [-t TYPE_REGEXP] [REGEXP]'
      Like 'info functions', but only print the names and data types of
      the functions selected with the provided regexp(s).
 
@@ -962,7 +2121,7 @@ looks up the value of 'x' in the scope of the file 'foo.c'.
      If both REGEXP and TYPE_REGEXP are provided, a function is printed
      only if its name matches REGEXP and its type matches TYPE_REGEXP.
 
-'info variables [-q]'
+'info variables [-q] [-n]'
      Print the names and data types of all variables that are defined
      outside of functions (i.e. excluding local variables).  The printed
      variables are grouped by source files and annotated with their
@@ -975,11 +2134,13 @@ looks up the value of 'x' in the scope of the file 'foo.c'.
      variable, other values mean to use the manually specified language
      (see *note Set Language Manually: Manually.).
 
+     The '-n' flag excludes non-debugging symbols from the results.
+
      The optional flag '-q', which stands for 'quiet', disables printing
      header information and messages explaining why no variables have
      been printed.
 
-'info variables [-q] [-t TYPE_REGEXP] [REGEXP]'
+'info variables [-q] [-n] [-t TYPE_REGEXP] [REGEXP]'
      Like 'info variables', but only print the variables selected with
      the provided regexp(s).
 
@@ -994,6 +2155,29 @@ looks up the value of 'x' in the scope of the file 'foo.c'.
 
      If both REGEXP and TYPE_REGEXP are provided, an argument is printed
      only if its name matches REGEXP and its type matches TYPE_REGEXP.
+
+'info modules [-q] [REGEXP]'
+     List all Fortran modules in the program, or all modules matching
+     the optional regular expression REGEXP.
+
+     The optional flag '-q', which stands for 'quiet', disables printing
+     header information and messages explaining why no modules have been
+     printed.
+
+'info module functions [-q] [-m MODULE-REGEXP] [-t TYPE-REGEXP] [REGEXP]'
+'info module variables [-q] [-m MODULE-REGEXP] [-t TYPE-REGEXP] [REGEXP]'
+     List all functions or variables within all Fortran modules.  The
+     set of functions or variables listed can be limited by providing
+     some or all of the optional regular expressions.  If MODULE-REGEXP
+     is provided, then only Fortran modules matching MODULE-REGEXP will
+     be searched.  Only functions or variables whose type matches the
+     optional regular expression TYPE-REGEXP will be listed.  And only
+     functions or variables whose name matches the optional regular
+     expression REGEXP will be listed.
+
+     The optional flag '-q', which stands for 'quiet', disables printing
+     header information and messages explaining why no functions or
+     variables have been printed.
 
 'info classes'
 'info classes REGEXP'
@@ -1301,7 +2485,7 @@ has already executed, in order to examine its execution in more detail.
 
 File: gdb.info,  Node: Signaling,  Next: Returning,  Prev: Jumping,  Up: Altering
 
-17.3 Giving your Program a Signal
+17.3 Giving Your Program a Signal
 =================================
 
 'signal SIGNAL'
@@ -1488,7 +2672,24 @@ controlled by the 'set unwind-on-terminating-exception' command.
      Show the current setting of stack unwinding in the functions called
      by GDB.
 
-17.5.1 Calling functions with no debug info
+'set may-call-functions'
+     Set permission to call functions in the program.  This controls
+     whether GDB will attempt to call functions in the program, such as
+     with expressions in the 'print' command.  It defaults to 'on'.
+
+     To call a function in the program, GDB has to temporarily modify
+     the state of the inferior.  This has potentially undesired side
+     effects.  Also, having GDB call nested functions is likely to be
+     erroneous and may even crash the program being debugged.  You can
+     avoid such hazards by forbidding GDB from calling functions in the
+     program being debugged.  If calling functions in the program is
+     forbidden, GDB will throw an error when a command (such as printing
+     an expression) starts a function call in the program.
+
+'show may-call-functions'
+     Show permission to call functions in the program.
+
+17.5.1 Calling Functions with No Debug Info
 -------------------------------------------
 
 Sometimes, a function you wish to call is missing debug information.  In
@@ -1573,7 +2774,7 @@ turn on internal debugging flags, or even to make emergency repairs.
 
 File: gdb.info,  Node: Compiling and Injecting Code,  Prev: Patching,  Up: Altering
 
-17.7 Compiling and injecting code in GDB
+17.7 Compiling and Injecting Code in GDB
 ========================================
 
 GDB supports on-demand compilation and code injection into programs
@@ -1632,17 +2833,18 @@ implemented with the following commands.
 
           compile file /home/user/example.c
 
-'compile print EXPR'
-'compile print /F EXPR'
+'compile print [[OPTIONS] --] EXPR'
+'compile print [[OPTIONS] --] /F EXPR'
      Compile and execute EXPR with the compiler language found as the
      current language in GDB (*note Languages::).  By default the value
      of EXPR is printed in a format appropriate to its data type; you
      can choose a different format by specifying '/F', where F is a
      letter specifying the format; see *note Output Formats: Output
-     Formats.
+     Formats.  The 'compile print' command accepts the same options as
+     the 'print' command; see *note print options::.
 
-'compile print'
-'compile print /F'
+'compile print [[OPTIONS] --]'
+'compile print [[OPTIONS] --] /F'
      Alternatively you can enter the expression (source code producing
      it) as multiple lines of text.  To enter this mode, invoke the
      'compile print' command without any text following the command.
@@ -1666,7 +2868,7 @@ The process of compiling and injecting the code can be inspected using:
      Displays the current state of displaying debugging information for
      C++ type conversion.
 
-17.7.1 Compilation options for the 'compile' command
+17.7.1 Compilation Options for the 'compile' Command
 ----------------------------------------------------
 
 GDB needs to specify the right compilation options for the code to be
@@ -1704,7 +2906,7 @@ You can override compilation options using the following command:
      does not show all the options actually used during compilation, use
      *note set debug compile:: for that.
 
-17.7.2 Caveats when using the 'compile' command
+17.7.2 Caveats When Using the 'compile' Command
 -----------------------------------------------
 
 There are a few caveats to keep in mind when using the 'compile'
@@ -1842,7 +3044,7 @@ C code examples and caveats
      to those variables will generate a compiler error which GDB will
      print to the console.
 
-17.7.3 Compiler search for the 'compile' command
+17.7.3 Compiler Search for the 'compile' Command
 ------------------------------------------------
 
 GDB needs to find GCC for the inferior being debugged which may not be
@@ -2085,7 +3287,7 @@ files are useful.
           add symbol table from file "/home/user/gdb/mylib.so" at
               .text_addr = 0x7ffff7ff9480
           (y or n) y
-          Reading symbols from /home/user/gdb/mylib.so...done.
+          Reading symbols from /home/user/gdb/mylib.so...
           (gdb) remove-symbol-file -a 0x7ffff7ff9480
           Remove symbol table from file "/home/user/gdb/mylib.so"? (y or n) y
           (gdb)
@@ -2257,9 +3459,9 @@ command:
 of shared library events happen.  The best way to do this is to use
 'catch load' and 'catch unload' (*note Set Catchpoints::).
 
-   GDB also supports the the 'set stop-on-solib-events' command for
-this.  This command exists for historical reasons.  It is less useful
-than setting a catchpoint, because it does not allow for conditions or
+   GDB also supports the 'set stop-on-solib-events' command for this.
+This command exists for historical reasons.  It is less useful than
+setting a catchpoint, because it does not allow for conditions or
 commands as a catchpoint does.
 
 'set stop-on-solib-events'
@@ -2711,7 +3913,7 @@ This computation does not apply to the "build ID" method.
 
 File: gdb.info,  Node: MiniDebugInfo,  Next: Index Files,  Prev: Separate Debug Files,  Up: GDB Files
 
-18.4 Debugging information in a special section
+18.4 Debugging Information in a Special Section
 ===============================================
 
 Some systems ship pre-built executables and libraries that have a
@@ -2833,11 +4035,9 @@ done before gdb reads the file.  The following will not work:
 
      $ gdb -iex "set use-deprecated-index-sections on" <program>
 
-   There are currently some limitation on indices.  They only work when
-for DWARF debugging information, not stabs.  And, they do not currently
-work for programs using Ada.
+   Indices only work when using DWARF debugging information, not stabs.
 
-18.5.1 Automatic symbol index cache
+18.5.1 Automatic Symbol Index Cache
 -----------------------------------
 
 It is possible for GDB to automatically save a copy of this index in a
@@ -3343,6 +4543,13 @@ Attaching
      'gdbserver' using the '--attach' option (*note Running
      gdbserver::).
 
+     Some remote targets allow GDB to determine the executable file
+     running in the process the debugger is attaching to.  In such a
+     case, GDB uses the value of 'exec-file-mismatch' to handle a
+     possible mismatch between the executable file name running in the
+     process and the name of the current exec-file loaded by GDB (*note
+     set exec-file-mismatch::).
+
 20.1.2 Host and Target Files
 ----------------------------
 
@@ -3538,7 +4745,7 @@ to the target.
 
 File: gdb.info,  Node: File Transfer,  Next: Server,  Prev: Connecting,  Up: Remote Debugging
 
-20.2 Sending files to a remote system
+20.2 Sending Files to a Remote System
 =====================================
 
 Some remote targets offer the ability to transfer files over the same
@@ -3667,7 +4874,7 @@ has the 'pidof' utility:
 multiple threads, most versions of 'pidof' support the '-s' option to
 only return the first process ID.
 
-20.3.1.2 TCP port allocation lifecycle of 'gdbserver'
+20.3.1.2 TCP Port Allocation Lifecycle of 'gdbserver'
 .....................................................
 
 This section applies only when 'gdbserver' is run to listen on a TCP
@@ -3709,9 +4916,10 @@ information, *note --multi Option in Types of Remote Connnections::.
 
    The '--debug' option tells 'gdbserver' to display extra status
 information about the debugging process.  The '--remote-debug' option
-tells 'gdbserver' to display remote protocol debug output.  These
-options are intended for 'gdbserver' development and for bug reports to
-the developers.
+tells 'gdbserver' to display remote protocol debug output.  The
+'--debug-file=FILENAME' option tells 'gdbserver' to write any debug
+output to the given FILENAME.  These options are intended for
+'gdbserver' development and for bug reports to the developers.
 
    The '--debug-format=option1[,option2,...]' option tells 'gdbserver'
 to include additional information in each output.  Possible options are:
@@ -3794,6 +5002,10 @@ commands.
      Disable or enable specific debugging messages associated with the
      remote protocol (*note Remote Protocol::).
 
+'monitor set debug-file filename'
+'monitor set debug-file'
+     Send any debug output to the given file, or to stderr.
+
 'monitor set debug-format option1[,option2,...]'
      Specify additional text to add to debugging messages.  Possible
      options are:
@@ -3825,7 +5037,7 @@ commands.
      processes it created.  Use 'monitor exit' to terminate 'gdbserver'
      at the end of a multi-process mode debug session.
 
-20.3.4 Tracepoints support in 'gdbserver'
+20.3.4 Tracepoints Support in 'gdbserver'
 -----------------------------------------
 
 On some targets, 'gdbserver' supports tracepoints, fast tracepoints and
@@ -4120,10 +5332,6 @@ Command Name         Remote Packet           Related Features
 'memory-map'         'qXfer:memory-map:read' 'info mem'
                                              
 'read-sdata-object'  'qXfer:sdata:read'      'print $_sdata'
-                                             
-'read-spu-object'    'qXfer:spu:read'        'info spu'
-                                             
-'write-spu-object'   'qXfer:spu:write'       'info spu'
                                              
 'read-siginfo-object''qXfer:siginfo:read'    'print
                                              $_siginfo'
@@ -4451,7 +5659,7 @@ subroutines which 'GCC' generates as inline code.
 
 File: gdb.info,  Node: Debug Session,  Prev: Bootstrapping,  Up: Remote Stub
 
-20.5.3 Putting it All Together
+20.5.3 Putting It All Together
 ------------------------------
 
 In summary, when your program is ready to debug, you must follow these
@@ -4589,13 +5797,13 @@ running on your system.
 to examine the image of a running process using file-system subroutines.
 This facility is supported on GNU/Linux and Solaris systems.
 
-   On FreeBSD systems, system control nodes are used to query process
-information.
+   On FreeBSD and NetBSD systems, system control nodes are used to query
+process information.
 
    In addition, some systems may provide additional process information
 in core files.  Note that a core file may include a subset of the
 information available from a live process.  Process information is
-currently avaiable from cores created on GNU/Linux and FreeBSD systems.
+currently available from cores created on GNU/Linux and FreeBSD systems.
 
 'info proc'
 'info proc PROCESS-ID'
@@ -4614,15 +5822,15 @@ currently avaiable from cores created on GNU/Linux and FreeBSD systems.
 
 'info proc cmdline'
      Show the original command line of the process.  This command is
-     supported on GNU/Linux and FreeBSD.
+     supported on GNU/Linux, FreeBSD and NetBSD.
 
 'info proc cwd'
      Show the current working directory of the process.  This command is
-     supported on GNU/Linux and FreeBSD.
+     supported on GNU/Linux, FreeBSD and NetBSD.
 
 'info proc exe'
      Show the name of executable of the process.  This command is
-     supported on GNU/Linux and FreeBSD.
+     supported on GNU/Linux, FreeBSD and NetBSD.
 
 'info proc files'
      Show the file descriptors open by the process.  For each open file
@@ -4653,10 +5861,11 @@ currently avaiable from cores created on GNU/Linux and FreeBSD systems.
 
 'info proc mappings'
      Report the memory address space ranges accessible in a process.  On
-     Solaris and FreeBSD systems, each memory range includes information
-     on whether the process has read, write, or execute access rights to
-     each range.  On GNU/Linux and FreeBSD systems, each memory range
-     includes the object file which is mapped to that range.
+     Solaris, FreeBSD and NetBSD systems, each memory range includes
+     information on whether the process has read, write, or execute
+     access rights to each range.  On GNU/Linux, FreeBSD and NetBSD
+     systems, each memory range includes the object file which is mapped
+     to that range.
 
 'info proc stat'
 'info proc status'
@@ -4664,13 +5873,13 @@ currently avaiable from cores created on GNU/Linux and FreeBSD systems.
      and group ID; virtual memory usage; the signals that are pending,
      blocked, and ignored; its TTY; its consumption of system and user
      time; its stack size; its 'nice' value; etc.  These commands are
-     supported on GNU/Linux and FreeBSD.
+     supported on GNU/Linux, FreeBSD and NetBSD.
 
      For GNU/Linux systems, see the 'proc' man page for more information
      (type 'man 5 proc' from your shell prompt).
 
-     For FreeBSD systems, 'info proc stat' is an alias for 'info proc
-     status'.
+     For FreeBSD and NetBSD systems, 'info proc stat' is an alias for
+     'info proc status'.
 
 'info proc all'
      Show all the information about the process described under all of
@@ -5297,6 +6506,7 @@ send an arbitrary command to the simulator.
 
 * ARC::                         Synopsys ARC
 * ARM::                         ARM
+* BPF::                         eBPF
 * M68K::                        Motorola M68K
 * MicroBlaze::			Xilinx MicroBlaze
 * MIPS Embedded::               MIPS Embedded
@@ -5327,7 +6537,7 @@ GDB provides the following ARC-specific commands:
      given address.
 
 
-File: gdb.info,  Node: ARM,  Next: M68K,  Prev: ARC,  Up: Embedded Processors
+File: gdb.info,  Node: ARM,  Next: BPF,  Prev: ARC,  Up: Embedded Processors
 
 21.3.2 ARM
 ----------
@@ -5413,9 +6623,24 @@ GDB provides the following ARM-specific commands:
           'all'
 
 
-File: gdb.info,  Node: M68K,  Next: MicroBlaze,  Prev: ARM,  Up: Embedded Processors
+File: gdb.info,  Node: BPF,  Next: M68K,  Prev: ARM,  Up: Embedded Processors
 
-21.3.3 M68k
+21.3.3 BPF
+----------
+
+'target sim [SIMARGS] ...'
+     The GDB BPF simulator accepts the following optional arguments.
+
+     '--skb-data-offset=OFFSET'
+          Tell the simulator the offset, measured in bytes, of the
+          'skb_data' field in the kernel 'struct sk_buff' structure.
+          This offset is used by some BPF specific-purpose load/store
+          instructions.  Defaults to 0.
+
+
+File: gdb.info,  Node: M68K,  Next: MicroBlaze,  Prev: BPF,  Up: Embedded Processors
+
+21.3.4 M68k
 -----------
 
 The Motorola m68k configuration includes ColdFire support.
@@ -5423,7 +6648,7 @@ The Motorola m68k configuration includes ColdFire support.
 
 File: gdb.info,  Node: MicroBlaze,  Next: MIPS Embedded,  Prev: M68K,  Up: Embedded Processors
 
-21.3.4 MicroBlaze
+21.3.5 MicroBlaze
 -----------------
 
 The MicroBlaze is a soft-core processor supported on various Xilinx
@@ -5460,7 +6685,7 @@ need to do this.)
 
 File: gdb.info,  Node: MIPS Embedded,  Next: OpenRISC 1000,  Prev: MicroBlaze,  Up: Embedded Processors
 
-21.3.5 MIPS Embedded
+21.3.6 MIPS Embedded
 --------------------
 
 GDB supports these special commands for MIPS targets:
@@ -5492,7 +6717,7 @@ GDB supports these special commands for MIPS targets:
 
 File: gdb.info,  Node: OpenRISC 1000,  Next: PowerPC Embedded,  Prev: MIPS Embedded,  Up: Embedded Processors
 
-21.3.6 OpenRISC 1000
+21.3.7 OpenRISC 1000
 --------------------
 
 The OpenRISC 1000 provides a free RISC instruction set architecture.  It
@@ -5521,7 +6746,7 @@ target:
 
 File: gdb.info,  Node: PowerPC Embedded,  Next: AVR,  Prev: OpenRISC 1000,  Up: Embedded Processors
 
-21.3.7 PowerPC Embedded
+21.3.8 PowerPC Embedded
 -----------------------
 
 GDB supports using the DVC (Data Value Compare) register to implement in
@@ -5593,7 +6818,7 @@ command.
 
 File: gdb.info,  Node: AVR,  Next: CRIS,  Prev: PowerPC Embedded,  Up: Embedded Processors
 
-21.3.8 Atmel AVR
+21.3.9 Atmel AVR
 ----------------
 
 When configured for debugging the Atmel AVR, GDB supports the following
@@ -5606,8 +6831,8 @@ AVR-specific commands:
 
 File: gdb.info,  Node: CRIS,  Next: Super-H,  Prev: AVR,  Up: Embedded Processors
 
-21.3.9 CRIS
------------
+21.3.10 CRIS
+------------
 
 When configured for debugging CRIS, GDB provides the following
 CRIS-specific commands:
@@ -5639,7 +6864,7 @@ CRIS-specific commands:
 
 File: gdb.info,  Node: Super-H,  Prev: CRIS,  Up: Embedded Processors
 
-21.3.10 Renesas Super-H
+21.3.11 Renesas Super-H
 -----------------------
 
 For the Renesas Super-H processor, GDB provides these commands:
@@ -5676,7 +6901,6 @@ uses of GDB with the architecture, both native and cross.
 * Alpha::
 * MIPS::
 * HPPA::               HP PA architecture
-* SPU::                Cell Broadband Engine SPU architecture
 * PowerPC::
 * Nios II::
 * Sparc64::
@@ -5698,8 +6922,8 @@ following special commands:
 'show debug aarch64'
      Show whether AArch64 debugging messages are displayed.
 
-21.4.1.1 AArch64 SVE.
-.....................
+21.4.1.1 AArch64 SVE
+....................
 
 When GDB is debugging the AArch64 architecture, if the Scalable Vector
 Extension (SVE) is present, then GDB will provide the vector registers
@@ -5713,10 +6937,20 @@ updated, but the lengths of the 'z' and 'p' registers will not change.
 This is a known limitation of GDB and does not affect the execution of
 the target process.
 
+21.4.1.2 AArch64 Pointer Authentication
+.......................................
+
+When GDB is debugging the AArch64 architecture, and the program is using
+the v8.3-A feature Pointer Authentication (PAC), then whenever the link
+register '$lr' is pointing to an PAC function its value will be masked.
+When GDB prints a backtrace, any addresses that required unmasking will
+be postfixed with the marker [PAC]. When using the MI, this is printed
+as part of the 'addr_flags' field.
+
 
 File: gdb.info,  Node: i386,  Next: Alpha,  Prev: AArch64,  Up: Architectures
 
-21.4.2 x86 Architecture-specific Issues
+21.4.2 x86 Architecture-Specific Issues
 ---------------------------------------
 
 'set struct-convention MODE'
@@ -5926,7 +7160,7 @@ programs:
      Show the current setting of MIPS debugging messages.
 
 
-File: gdb.info,  Node: HPPA,  Next: SPU,  Prev: MIPS,  Up: Architectures
+File: gdb.info,  Node: HPPA,  Next: PowerPC,  Prev: MIPS,  Up: Architectures
 
 21.4.5 HPPA
 -----------
@@ -5946,65 +7180,9 @@ special commands:
      given ADDRESS.
 
 
-File: gdb.info,  Node: SPU,  Next: PowerPC,  Prev: HPPA,  Up: Architectures
+File: gdb.info,  Node: PowerPC,  Next: Nios II,  Prev: HPPA,  Up: Architectures
 
-21.4.6 Cell Broadband Engine SPU architecture
----------------------------------------------
-
-When GDB is debugging the Cell Broadband Engine SPU architecture, it
-provides the following special commands:
-
-'info spu event'
-     Display SPU event facility status.  Shows current event mask and
-     pending event status.
-
-'info spu signal'
-     Display SPU signal notification facility status.  Shows pending
-     signal-control word and signal notification mode of both signal
-     notification channels.
-
-'info spu mailbox'
-     Display SPU mailbox facility status.  Shows all pending entries, in
-     order of processing, in each of the SPU Write Outbound, SPU Write
-     Outbound Interrupt, and SPU Read Inbound mailboxes.
-
-'info spu dma'
-     Display MFC DMA status.  Shows all pending commands in the MFC DMA
-     queue.  For each entry, opcode, tag, class IDs, effective and local
-     store addresses and transfer size are shown.
-
-'info spu proxydma'
-     Display MFC Proxy-DMA status.  Shows all pending commands in the
-     MFC Proxy-DMA queue.  For each entry, opcode, tag, class IDs,
-     effective and local store addresses and transfer size are shown.
-
-   When GDB is debugging a combined PowerPC/SPU application on the Cell
-Broadband Engine, it provides in addition the following special
-commands:
-
-'set spu stop-on-load ARG'
-     Set whether to stop for new SPE threads.  When set to 'on', GDB
-     will give control to the user when a new SPE thread enters its
-     'main' function.  The default is 'off'.
-
-'show spu stop-on-load'
-     Show whether to stop for new SPE threads.
-
-'set spu auto-flush-cache ARG'
-     Set whether to automatically flush the software-managed cache.
-     When set to 'on', GDB will automatically cause the SPE
-     software-managed cache to be flushed whenever SPE execution stops.
-     This provides a consistent view of PowerPC memory that is accessed
-     via the cache.  If an application does not use the software-managed
-     cache, this option has no effect.
-
-'show spu auto-flush-cache'
-     Show whether to automatically flush the software-managed cache.
-
-
-File: gdb.info,  Node: PowerPC,  Next: Nios II,  Prev: SPU,  Up: Architectures
-
-21.4.7 PowerPC
+21.4.6 PowerPC
 --------------
 
 When GDB is debugging the PowerPC architecture, it provides a set of
@@ -6023,7 +7201,7 @@ and 'f3' for '$dl1' and so on.
 
 File: gdb.info,  Node: Nios II,  Next: Sparc64,  Prev: PowerPC,  Up: Architectures
 
-21.4.8 Nios II
+21.4.7 Nios II
 --------------
 
 When GDB is debugging the Nios II architecture, it provides the
@@ -6039,10 +7217,10 @@ following special commands:
 
 File: gdb.info,  Node: Sparc64,  Next: S12Z,  Prev: Nios II,  Up: Architectures
 
-21.4.9 Sparc64
+21.4.8 Sparc64
 --------------
 
-21.4.9.1 ADI Support
+21.4.8.1 ADI Support
 ....................
 
 The M7 processor supports an Application Data Integrity (ADI) feature
@@ -6101,1083 +7279,4 @@ cacheline (64 bytes), can be viewed or modified.
           (gdb) adi a/100 shmaddr = 7
           (gdb) adi x/100 shmaddr
              0xfff800010002c000:     7 7
-
-
-File: gdb.info,  Node: S12Z,  Prev: Sparc64,  Up: Architectures
-
-21.4.10 S12Z
-------------
-
-When GDB is debugging the S12Z architecture, it provides the following
-special command:
-
-'maint info bdccsr'
-     This command displays the current value of the microprocessor's
-     BDCCSR register.
-
-
-File: gdb.info,  Node: Controlling GDB,  Next: Extending GDB,  Prev: Configurations,  Up: Top
-
-22 Controlling GDB
-******************
-
-You can alter the way GDB interacts with you by using the 'set' command.
-For commands controlling how GDB displays data, see *note Print
-Settings: Print Settings.  Other settings are described here.
-
-* Menu:
-
-* Prompt::                      Prompt
-* Editing::                     Command editing
-* Command History::             Command history
-* Screen Size::                 Screen size
-* Output Styling::              Output styling
-* Numbers::                     Numbers
-* ABI::                         Configuring the current ABI
-* Auto-loading::                Automatically loading associated files
-* Messages/Warnings::           Optional warnings and messages
-* Debugging Output::            Optional messages about internal happenings
-* Other Misc Settings::         Other Miscellaneous Settings
-
-
-File: gdb.info,  Node: Prompt,  Next: Editing,  Up: Controlling GDB
-
-22.1 Prompt
-===========
-
-GDB indicates its readiness to read a command by printing a string
-called the "prompt".  This string is normally '(gdb)'.  You can change
-the prompt string with the 'set prompt' command.  For instance, when
-debugging GDB with GDB, it is useful to change the prompt in one of the
-GDB sessions so that you can always tell which one you are talking to.
-
-   _Note:_ 'set prompt' does not add a space for you after the prompt
-you set.  This allows you to set a prompt which ends in a space or a
-prompt that does not.
-
-'set prompt NEWPROMPT'
-     Directs GDB to use NEWPROMPT as its prompt string henceforth.
-
-'show prompt'
-     Prints a line of the form: 'Gdb's prompt is: YOUR-PROMPT'
-
-   Versions of GDB that ship with Python scripting enabled have prompt
-extensions.  The commands for interacting with these extensions are:
-
-'set extended-prompt PROMPT'
-     Set an extended prompt that allows for substitutions.  *Note
-     gdb.prompt::, for a list of escape sequences that can be used for
-     substitution.  Any escape sequences specified as part of the prompt
-     string are replaced with the corresponding strings each time the
-     prompt is displayed.
-
-     For example:
-
-          set extended-prompt Current working directory: \w (gdb)
-
-     Note that when an extended-prompt is set, it takes control of the
-     PROMPT_HOOK hook.  *Note prompt_hook::, for further information.
-
-'show extended-prompt'
-     Prints the extended prompt.  Any escape sequences specified as part
-     of the prompt string with 'set extended-prompt', are replaced with
-     the corresponding strings each time the prompt is displayed.
-
-
-File: gdb.info,  Node: Editing,  Next: Command History,  Prev: Prompt,  Up: Controlling GDB
-
-22.2 Command Editing
-====================
-
-GDB reads its input commands via the "Readline" interface.  This GNU
-library provides consistent behavior for programs which provide a
-command line interface to the user.  Advantages are GNU Emacs-style or
-"vi"-style inline editing of commands, 'csh'-like history substitution,
-and a storage and recall of command history across debugging sessions.
-
-   You may control the behavior of command line editing in GDB with the
-command 'set'.
-
-'set editing'
-'set editing on'
-     Enable command line editing (enabled by default).
-
-'set editing off'
-     Disable command line editing.
-
-'show editing'
-     Show whether command line editing is enabled.
-
-   *Note Command Line Editing::, for more details about the Readline
-interface.  Users unfamiliar with GNU Emacs or 'vi' are encouraged to
-read that chapter.
-
-
-File: gdb.info,  Node: Command History,  Next: Screen Size,  Prev: Editing,  Up: Controlling GDB
-
-22.3 Command History
-====================
-
-GDB can keep track of the commands you type during your debugging
-sessions, so that you can be certain of precisely what happened.  Use
-these commands to manage the GDB command history facility.
-
-   GDB uses the GNU History library, a part of the Readline package, to
-provide the history facility.  *Note Using History Interactively::, for
-the detailed description of the History library.
-
-   To issue a command to GDB without affecting certain aspects of the
-state which is seen by users, prefix it with 'server ' (*note Server
-Prefix::).  This means that this command will not affect the command
-history, nor will it affect GDB's notion of which command to repeat if
-<RET> is pressed on a line by itself.
-
-   The server prefix does not affect the recording of values into the
-value history; to print a value without recording it into the value
-history, use the 'output' command instead of the 'print' command.
-
-   Here is the description of GDB commands related to command history.
-
-'set history filename FNAME'
-     Set the name of the GDB command history file to FNAME.  This is the
-     file where GDB reads an initial command history list, and where it
-     writes the command history from this session when it exits.  You
-     can access this list through history expansion or through the
-     history command editing characters listed below.  This file
-     defaults to the value of the environment variable 'GDBHISTFILE', or
-     to './.gdb_history' ('./_gdb_history' on MS-DOS) if this variable
-     is not set.
-
-'set history save'
-'set history save on'
-     Record command history in a file, whose name may be specified with
-     the 'set history filename' command.  By default, this option is
-     disabled.
-
-'set history save off'
-     Stop recording command history in a file.
-
-'set history size SIZE'
-'set history size unlimited'
-     Set the number of commands which GDB keeps in its history list.
-     This defaults to the value of the environment variable
-     'GDBHISTSIZE', or to 256 if this variable is not set.  Non-numeric
-     values of 'GDBHISTSIZE' are ignored.  If SIZE is 'unlimited' or if
-     'GDBHISTSIZE' is either a negative number or the empty string, then
-     the number of commands GDB keeps in the history list is unlimited.
-
-'set history remove-duplicates COUNT'
-'set history remove-duplicates unlimited'
-     Control the removal of duplicate history entries in the command
-     history list.  If COUNT is non-zero, GDB will look back at the last
-     COUNT history entries and remove the first entry that is a
-     duplicate of the current entry being added to the command history
-     list.  If COUNT is 'unlimited' then this lookbehind is unbounded.
-     If COUNT is 0, then removal of duplicate history entries is
-     disabled.
-
-     Only history entries added during the current session are
-     considered for removal.  This option is set to 0 by default.
-
-   History expansion assigns special meaning to the character '!'.
-*Note Event Designators::, for more details.
-
-   Since '!' is also the logical not operator in C, history expansion is
-off by default.  If you decide to enable history expansion with the 'set
-history expansion on' command, you may sometimes need to follow '!'
-(when it is used as logical not, in an expression) with a space or a tab
-to prevent it from being expanded.  The readline history facilities do
-not attempt substitution on the strings '!=' and '!(', even when history
-expansion is enabled.
-
-   The commands to control history expansion are:
-
-'set history expansion on'
-'set history expansion'
-     Enable history expansion.  History expansion is off by default.
-
-'set history expansion off'
-     Disable history expansion.
-
-'show history'
-'show history filename'
-'show history save'
-'show history size'
-'show history expansion'
-     These commands display the state of the GDB history parameters.
-     'show history' by itself displays all four states.
-
-'show commands'
-     Display the last ten commands in the command history.
-
-'show commands N'
-     Print ten commands centered on command number N.
-
-'show commands +'
-     Print ten commands just after the commands last printed.
-
-
-File: gdb.info,  Node: Screen Size,  Next: Output Styling,  Prev: Command History,  Up: Controlling GDB
-
-22.4 Screen Size
-================
-
-Certain commands to GDB may produce large amounts of information output
-to the screen.  To help you read all of it, GDB pauses and asks you for
-input at the end of each page of output.  Type <RET> when you want to
-see one more page of output, 'q' to discard the remaining output, or 'c'
-to continue without paging for the rest of the current command.  Also,
-the screen width setting determines when to wrap lines of output.
-Depending on what is being printed, GDB tries to break the line at a
-readable place, rather than simply letting it overflow onto the
-following line.
-
-   Normally GDB knows the size of the screen from the terminal driver
-software.  For example, on Unix GDB uses the termcap data base together
-with the value of the 'TERM' environment variable and the 'stty rows'
-and 'stty cols' settings.  If this is not correct, you can override it
-with the 'set height' and 'set width' commands:
-
-'set height LPP'
-'set height unlimited'
-'show height'
-'set width CPL'
-'set width unlimited'
-'show width'
-     These 'set' commands specify a screen height of LPP lines and a
-     screen width of CPL characters.  The associated 'show' commands
-     display the current settings.
-
-     If you specify a height of either 'unlimited' or zero lines, GDB
-     does not pause during output no matter how long the output is.
-     This is useful if output is to a file or to an editor buffer.
-
-     Likewise, you can specify 'set width unlimited' or 'set width 0' to
-     prevent GDB from wrapping its output.
-
-'set pagination on'
-'set pagination off'
-     Turn the output pagination on or off; the default is on.  Turning
-     pagination off is the alternative to 'set height unlimited'.  Note
-     that running GDB with the '--batch' option (*note -batch: Mode
-     Options.) also automatically disables pagination.
-
-'show pagination'
-     Show the current pagination mode.
-
-
-File: gdb.info,  Node: Output Styling,  Next: Numbers,  Prev: Screen Size,  Up: Controlling GDB
-
-22.5 Output Styling
-===================
-
-GDB can style its output on a capable terminal.  This is enabled by
-default on most systems, but disabled by default when in batch mode
-(*note Mode Options::).  Various style settings are available; and
-styles can also be disabled entirely.
-
-'set style enabled 'on|off''
-     Enable or disable all styling.  The default is host-dependent, with
-     most hosts defaulting to 'on'.
-
-'show style enabled'
-     Show the current state of styling.
-
-'set style sources 'on|off''
-     Enable or disable source code styling.  This affects whether source
-     code, such as the output of the 'list' command, is styled.  Note
-     that source styling only works if styling in general is enabled,
-     and if GDB was linked with the GNU Source Highlight library.  The
-     default is 'on'.
-
-'show style sources'
-     Show the current state of source code styling.
-
-   Subcommands of 'set style' control specific forms of styling.  These
-subcommands all follow the same pattern: each style-able object can be
-styled with a foreground color, a background color, and an intensity.
-
-   For example, the style of file names can be controlled using the 'set
-style filename' group of commands:
-
-'set style filename background COLOR'
-     Set the background to COLOR.  Valid colors are 'none' (meaning the
-     terminal's default color), 'black', 'red', 'green', 'yellow',
-     'blue', 'magenta', 'cyan', and'white'.
-
-'set style filename foreground COLOR'
-     Set the foreground to COLOR.  Valid colors are 'none' (meaning the
-     terminal's default color), 'black', 'red', 'green', 'yellow',
-     'blue', 'magenta', 'cyan', and'white'.
-
-'set style filename intensity VALUE'
-     Set the intensity to VALUE.  Valid intensities are 'normal' (the
-     default), 'bold', and 'dim'.
-
-   The style-able objects are:
-'filename'
-     Control the styling of file names.  By default, this style's
-     foreground color is green.
-
-'function'
-     Control the styling of function names.  These are managed with the
-     'set style function' family of commands.  By default, this style's
-     foreground color is yellow.
-
-'variable'
-     Control the styling of variable names.  These are managed with the
-     'set style variable' family of commands.  By default, this style's
-     foreground color is cyan.
-
-'address'
-     Control the styling of addresses.  These are managed with the 'set
-     style address' family of commands.  By default, this style's
-     foreground color is blue.
-
-
-File: gdb.info,  Node: Numbers,  Next: ABI,  Prev: Output Styling,  Up: Controlling GDB
-
-22.6 Numbers
-============
-
-You can always enter numbers in octal, decimal, or hexadecimal in GDB by
-the usual conventions: octal numbers begin with '0', decimal numbers end
-with '.', and hexadecimal numbers begin with '0x'.  Numbers that neither
-begin with '0' or '0x', nor end with a '.' are, by default, entered in
-base 10; likewise, the default display for numbers--when no particular
-format is specified--is base 10.  You can change the default base for
-both input and output with the commands described below.
-
-'set input-radix BASE'
-     Set the default base for numeric input.  Supported choices for BASE
-     are decimal 8, 10, or 16.  The base must itself be specified either
-     unambiguously or using the current input radix; for example, any of
-
-          set input-radix 012
-          set input-radix 10.
-          set input-radix 0xa
-
-     sets the input base to decimal.  On the other hand, 'set
-     input-radix 10' leaves the input radix unchanged, no matter what it
-     was, since '10', being without any leading or trailing signs of its
-     base, is interpreted in the current radix.  Thus, if the current
-     radix is 16, '10' is interpreted in hex, i.e. as 16 decimal, which
-     doesn't change the radix.
-
-'set output-radix BASE'
-     Set the default base for numeric display.  Supported choices for
-     BASE are decimal 8, 10, or 16.  The base must itself be specified
-     either unambiguously or using the current input radix.
-
-'show input-radix'
-     Display the current default base for numeric input.
-
-'show output-radix'
-     Display the current default base for numeric display.
-
-'set radix [BASE]'
-'show radix'
-     These commands set and show the default base for both input and
-     output of numbers.  'set radix' sets the radix of input and output
-     to the same base; without an argument, it resets the radix back to
-     its default value of 10.
-
-
-File: gdb.info,  Node: ABI,  Next: Auto-loading,  Prev: Numbers,  Up: Controlling GDB
-
-22.7 Configuring the Current ABI
-================================
-
-GDB can determine the "ABI" (Application Binary Interface) of your
-application automatically.  However, sometimes you need to override its
-conclusions.  Use these commands to manage GDB's view of the current
-ABI.
-
-   One GDB configuration can debug binaries for multiple operating
-system targets, either via remote debugging or native emulation.  GDB
-will autodetect the "OS ABI" (Operating System ABI) in use, but you can
-override its conclusion using the 'set osabi' command.  One example
-where this is useful is in debugging of binaries which use an alternate
-C library (e.g. UCLIBC for GNU/Linux) which does not have the same
-identifying marks that the standard C library for your platform
-provides.
-
-   When GDB is debugging the AArch64 architecture, it provides a
-"Newlib" OS ABI. This is useful for handling 'setjmp' and 'longjmp' when
-debugging binaries that use the NEWLIB C library.  The "Newlib" OS ABI
-can be selected by 'set osabi Newlib'.
-
-'show osabi'
-     Show the OS ABI currently in use.
-
-'set osabi'
-     With no argument, show the list of registered available OS ABI's.
-
-'set osabi ABI'
-     Set the current OS ABI to ABI.
-
-   Generally, the way that an argument of type 'float' is passed to a
-function depends on whether the function is prototyped.  For a
-prototyped (i.e. ANSI/ISO style) function, 'float' arguments are passed
-unchanged, according to the architecture's convention for 'float'.  For
-unprototyped (i.e. K&R style) functions, 'float' arguments are first
-promoted to type 'double' and then passed.
-
-   Unfortunately, some forms of debug information do not reliably
-indicate whether a function is prototyped.  If GDB calls a function that
-is not marked as prototyped, it consults 'set coerce-float-to-double'.
-
-'set coerce-float-to-double'
-'set coerce-float-to-double on'
-     Arguments of type 'float' will be promoted to 'double' when passed
-     to an unprototyped function.  This is the default setting.
-
-'set coerce-float-to-double off'
-     Arguments of type 'float' will be passed directly to unprototyped
-     functions.
-
-'show coerce-float-to-double'
-     Show the current setting of promoting 'float' to 'double'.
-
-   GDB needs to know the ABI used for your program's C++ objects.  The
-correct C++ ABI depends on which C++ compiler was used to build your
-application.  GDB only fully supports programs with a single C++ ABI; if
-your program contains code using multiple C++ ABI's or if GDB can not
-identify your program's ABI correctly, you can tell GDB which ABI to
-use.  Currently supported ABI's include "gnu-v2", for 'g++' versions
-before 3.0, "gnu-v3", for 'g++' versions 3.0 and later, and "hpaCC" for
-the HP ANSI C++ compiler.  Other C++ compilers may use the "gnu-v2" or
-"gnu-v3" ABI's as well.  The default setting is "auto".
-
-'show cp-abi'
-     Show the C++ ABI currently in use.
-
-'set cp-abi'
-     With no argument, show the list of supported C++ ABI's.
-
-'set cp-abi ABI'
-'set cp-abi auto'
-     Set the current C++ ABI to ABI, or return to automatic detection.
-
-
-File: gdb.info,  Node: Auto-loading,  Next: Messages/Warnings,  Prev: ABI,  Up: Controlling GDB
-
-22.8 Automatically loading associated files
-===========================================
-
-GDB sometimes reads files with commands and settings automatically,
-without being explicitly told so by the user.  We call this feature
-"auto-loading".  While auto-loading is useful for automatically adapting
-GDB to the needs of your project, it can sometimes produce unexpected
-results or introduce security risks (e.g., if the file comes from
-untrusted sources).
-
-* Menu:
-
-* Init File in the Current Directory:: 'set/show/info auto-load local-gdbinit'
-* libthread_db.so.1 file::             'set/show/info auto-load libthread-db'
-
-* Auto-loading safe path::             'set/show/info auto-load safe-path'
-* Auto-loading verbose mode::          'set/show debug auto-load'
-
-   There are various kinds of files GDB can automatically load.  In
-addition to these files, GDB supports auto-loading code written in
-various extension languages.  *Note Auto-loading extensions::.
-
-   Note that loading of these associated files (including the local
-'.gdbinit' file) requires accordingly configured 'auto-load safe-path'
-(*note Auto-loading safe path::).
-
-   For these reasons, GDB includes commands and options to let you
-control when to auto-load files and which files should be auto-loaded.
-
-'set auto-load off'
-     Globally disable loading of all auto-loaded files.  You may want to
-     use this command with the '-iex' option (*note Option
-     -init-eval-command::) such as:
-          $ gdb -iex "set auto-load off" untrusted-executable corefile
-
-     Be aware that system init file (*note System-wide configuration::)
-     and init files from your home directory (*note Home Directory Init
-     File::) still get read (as they come from generally trusted
-     directories).  To prevent GDB from auto-loading even those init
-     files, use the '-nx' option (*note Mode Options::), in addition to
-     'set auto-load no'.
-
-'show auto-load'
-     Show whether auto-loading of each specific 'auto-load' file(s) is
-     enabled or disabled.
-
-          (gdb) show auto-load
-          gdb-scripts:  Auto-loading of canned sequences of commands scripts is on.
-          libthread-db:  Auto-loading of inferior specific libthread_db is on.
-          local-gdbinit:  Auto-loading of .gdbinit script from current directory
-                          is on.
-          python-scripts:  Auto-loading of Python scripts is on.
-          safe-path:  List of directories from which it is safe to auto-load files
-                      is $debugdir:$datadir/auto-load.
-          scripts-directory:  List of directories from which to load auto-loaded scripts
-                              is $debugdir:$datadir/auto-load.
-
-'info auto-load'
-     Print whether each specific 'auto-load' file(s) have been
-     auto-loaded or not.
-
-          (gdb) info auto-load
-          gdb-scripts:
-          Loaded  Script
-          Yes     /home/user/gdb/gdb-gdb.gdb
-          libthread-db:  No auto-loaded libthread-db.
-          local-gdbinit:  Local .gdbinit file "/home/user/gdb/.gdbinit" has been
-                          loaded.
-          python-scripts:
-          Loaded  Script
-          Yes     /home/user/gdb/gdb-gdb.py
-
-   These are GDB control commands for the auto-loading:
-
-*Note set auto-load off::.           Disable auto-loading globally.
-*Note show auto-load::.              Show setting of all kinds of
-                                     files.
-*Note info auto-load::.              Show state of all kinds of files.
-*Note set auto-load gdb-scripts::.   Control for GDB command scripts.
-*Note show auto-load gdb-scripts::.  Show setting of GDB command
-                                     scripts.
-*Note info auto-load gdb-scripts::.  Show state of GDB command scripts.
-*Note set auto-load python-scripts::.Control for GDB Python scripts.
-*Note show auto-load python-scripts::.Show setting of GDB Python
-                                     scripts.
-*Note info auto-load python-scripts::.Show state of GDB Python scripts.
-*Note set auto-load guile-scripts::. Control for GDB Guile scripts.
-*Note show auto-load guile-scripts::.Show setting of GDB Guile scripts.
-*Note info auto-load guile-scripts::.Show state of GDB Guile scripts.
-*Note set auto-load scripts-directory::.Control for GDB auto-loaded
-                                     scripts location.
-*Note show auto-load scripts-directory::.Show GDB auto-loaded scripts
-                                     location.
-*Note add-auto-load-scripts-directory::.Add directory for auto-loaded
-                                     scripts location list.
-*Note set auto-load local-gdbinit::. Control for init file in the
-                                     current directory.
-*Note show auto-load local-gdbinit::.Show setting of init file in the
-                                     current directory.
-*Note info auto-load local-gdbinit::.Show state of init file in the
-                                     current directory.
-*Note set auto-load libthread-db::.  Control for thread debugging
-                                     library.
-*Note show auto-load libthread-db::. Show setting of thread debugging
-                                     library.
-*Note info auto-load libthread-db::. Show state of thread debugging
-                                     library.
-*Note set auto-load safe-path::.     Control directories trusted for
-                                     automatic loading.
-*Note show auto-load safe-path::.    Show directories trusted for
-                                     automatic loading.
-*Note add-auto-load-safe-path::.     Add directory trusted for
-                                     automatic loading.
-
-
-File: gdb.info,  Node: Init File in the Current Directory,  Next: libthread_db.so.1 file,  Up: Auto-loading
-
-22.8.1 Automatically loading init file in the current directory
----------------------------------------------------------------
-
-By default, GDB reads and executes the canned sequences of commands from
-init file (if any) in the current working directory, see *note Init File
-in the Current Directory during Startup::.
-
-   Note that loading of this local '.gdbinit' file also requires
-accordingly configured 'auto-load safe-path' (*note Auto-loading safe
-path::).
-
-'set auto-load local-gdbinit [on|off]'
-     Enable or disable the auto-loading of canned sequences of commands
-     (*note Sequences::) found in init file in the current directory.
-
-'show auto-load local-gdbinit'
-     Show whether auto-loading of canned sequences of commands from init
-     file in the current directory is enabled or disabled.
-
-'info auto-load local-gdbinit'
-     Print whether canned sequences of commands from init file in the
-     current directory have been auto-loaded.
-
-
-File: gdb.info,  Node: libthread_db.so.1 file,  Next: Auto-loading safe path,  Prev: Init File in the Current Directory,  Up: Auto-loading
-
-22.8.2 Automatically loading thread debugging library
------------------------------------------------------
-
-This feature is currently present only on GNU/Linux native hosts.
-
-   GDB reads in some cases thread debugging library from places specific
-to the inferior (*note set libthread-db-search-path::).
-
-   The special 'libthread-db-search-path' entry '$sdir' is processed
-without checking this 'set auto-load libthread-db' switch as system
-libraries have to be trusted in general.  In all other cases of
-'libthread-db-search-path' entries GDB checks first if 'set auto-load
-libthread-db' is enabled before trying to open such thread debugging
-library.
-
-   Note that loading of this debugging library also requires accordingly
-configured 'auto-load safe-path' (*note Auto-loading safe path::).
-
-'set auto-load libthread-db [on|off]'
-     Enable or disable the auto-loading of inferior specific thread
-     debugging library.
-
-'show auto-load libthread-db'
-     Show whether auto-loading of inferior specific thread debugging
-     library is enabled or disabled.
-
-'info auto-load libthread-db'
-     Print the list of all loaded inferior specific thread debugging
-     libraries and for each such library print list of inferior PIDs
-     using it.
-
-
-File: gdb.info,  Node: Auto-loading safe path,  Next: Auto-loading verbose mode,  Prev: libthread_db.so.1 file,  Up: Auto-loading
-
-22.8.3 Security restriction for auto-loading
---------------------------------------------
-
-As the files of inferior can come from untrusted source (such as
-submitted by an application user) GDB does not always load any files
-automatically.  GDB provides the 'set auto-load safe-path' setting to
-list directories trusted for loading files not explicitly requested by
-user.  Each directory can also be a shell wildcard pattern.
-
-   If the path is not set properly you will see a warning and the file
-will not get loaded:
-
-     $ ./gdb -q ./gdb
-     Reading symbols from /home/user/gdb/gdb...done.
-     warning: File "/home/user/gdb/gdb-gdb.gdb" auto-loading has been
-              declined by your `auto-load safe-path' set
-              to "$debugdir:$datadir/auto-load".
-     warning: File "/home/user/gdb/gdb-gdb.py" auto-loading has been
-              declined by your `auto-load safe-path' set
-              to "$debugdir:$datadir/auto-load".
-
-To instruct GDB to go ahead and use the init files anyway, invoke GDB
-like this:
-
-     $ gdb -q -iex "set auto-load safe-path /home/user/gdb" ./gdb
-
-   The list of trusted directories is controlled by the following
-commands:
-
-'set auto-load safe-path [DIRECTORIES]'
-     Set the list of directories (and their subdirectories) trusted for
-     automatic loading and execution of scripts.  You can also enter a
-     specific trusted file.  Each directory can also be a shell wildcard
-     pattern; wildcards do not match directory separator - see
-     'FNM_PATHNAME' for system function 'fnmatch' (*note fnmatch:
-     (libc)Wildcard Matching.).  If you omit DIRECTORIES, 'auto-load
-     safe-path' will be reset to its default value as specified during
-     GDB compilation.
-
-     The list of directories uses path separator (':' on GNU and Unix
-     systems, ';' on MS-Windows and MS-DOS) to separate directories,
-     similarly to the 'PATH' environment variable.
-
-'show auto-load safe-path'
-     Show the list of directories trusted for automatic loading and
-     execution of scripts.
-
-'add-auto-load-safe-path'
-     Add an entry (or list of entries) to the list of directories
-     trusted for automatic loading and execution of scripts.  Multiple
-     entries may be delimited by the host platform path separator in
-     use.
-
-   This variable defaults to what '--with-auto-load-dir' has been
-configured to (*note with-auto-load-dir::).  '$debugdir' and '$datadir'
-substitution applies the same as for *note set auto-load
-scripts-directory::.  The default 'set auto-load safe-path' value can be
-also overriden by GDB configuration option '--with-auto-load-safe-path'.
-
-   Setting this variable to '/' disables this security protection,
-corresponding GDB configuration option is
-'--without-auto-load-safe-path'.  This variable is supposed to be set to
-the system directories writable by the system superuser only.  Users can
-add their source directories in init files in their home directories
-(*note Home Directory Init File::).  See also deprecated init file in
-the current directory (*note Init File in the Current Directory during
-Startup::).
-
-   To force GDB to load the files it declined to load in the previous
-example, you could use one of the following ways:
-
-'~/.gdbinit': 'add-auto-load-safe-path ~/src/gdb'
-     Specify this trusted directory (or a file) as additional component
-     of the list.  You have to specify also any existing directories
-     displayed by by 'show auto-load safe-path' (such as '/usr:/bin' in
-     this example).
-
-'gdb -iex "set auto-load safe-path /usr:/bin:~/src/gdb" ...'
-     Specify this directory as in the previous case but just for a
-     single GDB session.
-
-'gdb -iex "set auto-load safe-path /" ...'
-     Disable auto-loading safety for a single GDB session.  This assumes
-     all the files you debug during this GDB session will come from
-     trusted sources.
-
-'./configure --without-auto-load-safe-path'
-     During compilation of GDB you may disable any auto-loading safety.
-     This assumes all the files you will ever debug with this GDB come
-     from trusted sources.
-
-   On the other hand you can also explicitly forbid automatic files
-loading which also suppresses any such warning messages:
-
-'gdb -iex "set auto-load no" ...'
-     You can use GDB command-line option for a single GDB session.
-
-'~/.gdbinit': 'set auto-load no'
-     Disable auto-loading globally for the user (*note Home Directory
-     Init File::).  While it is improbable, you could also use system
-     init file instead (*note System-wide configuration::).
-
-   This setting applies to the file names as entered by user.  If no
-entry matches GDB tries as a last resort to also resolve all the file
-names into their canonical form (typically resolving symbolic links) and
-compare the entries again.  GDB already canonicalizes most of the
-filenames on its own before starting the comparison so a canonical form
-of directories is recommended to be entered.
-
-
-File: gdb.info,  Node: Auto-loading verbose mode,  Prev: Auto-loading safe path,  Up: Auto-loading
-
-22.8.4 Displaying files tried for auto-load
--------------------------------------------
-
-For better visibility of all the file locations where you can place
-scripts to be auto-loaded with inferior -- or to protect yourself
-against accidental execution of untrusted scripts -- GDB provides a
-feature for printing all the files attempted to be loaded.  Both
-existing and non-existing files may be printed.
-
-   For example the list of directories from which it is safe to
-auto-load files (*note Auto-loading safe path::) applies also to
-canonicalized filenames which may not be too obvious while setting it
-up.
-
-     (gdb) set debug auto-load on
-     (gdb) file ~/src/t/true
-     auto-load: Loading canned sequences of commands script "/tmp/true-gdb.gdb"
-                for objfile "/tmp/true".
-     auto-load: Updating directories of "/usr:/opt".
-     auto-load: Using directory "/usr".
-     auto-load: Using directory "/opt".
-     warning: File "/tmp/true-gdb.gdb" auto-loading has been declined
-              by your `auto-load safe-path' set to "/usr:/opt".
-
-'set debug auto-load [on|off]'
-     Set whether to print the filenames attempted to be auto-loaded.
-
-'show debug auto-load'
-     Show whether printing of the filenames attempted to be auto-loaded
-     is turned on or off.
-
-
-File: gdb.info,  Node: Messages/Warnings,  Next: Debugging Output,  Prev: Auto-loading,  Up: Controlling GDB
-
-22.9 Optional Warnings and Messages
-===================================
-
-By default, GDB is silent about its inner workings.  If you are running
-on a slow machine, you may want to use the 'set verbose' command.  This
-makes GDB tell you when it does a lengthy internal operation, so you
-will not think it has crashed.
-
-   Currently, the messages controlled by 'set verbose' are those which
-announce that the symbol table for a source file is being read; see
-'symbol-file' in *note Commands to Specify Files: Files.
-
-'set verbose on'
-     Enables GDB output of certain informational messages.
-
-'set verbose off'
-     Disables GDB output of certain informational messages.
-
-'show verbose'
-     Displays whether 'set verbose' is on or off.
-
-   By default, if GDB encounters bugs in the symbol table of an object
-file, it is silent; but if you are debugging a compiler, you may find
-this information useful (*note Errors Reading Symbol Files: Symbol
-Errors.).
-
-'set complaints LIMIT'
-     Permits GDB to output LIMIT complaints about each type of unusual
-     symbols before becoming silent about the problem.  Set LIMIT to
-     zero to suppress all complaints; set it to a large number to
-     prevent complaints from being suppressed.
-
-'show complaints'
-     Displays how many symbol complaints GDB is permitted to produce.
-
-   By default, GDB is cautious, and asks what sometimes seems to be a
-lot of stupid questions to confirm certain commands.  For example, if
-you try to run a program which is already running:
-
-     (gdb) run
-     The program being debugged has been started already.
-     Start it from the beginning? (y or n)
-
-   If you are willing to unflinchingly face the consequences of your own
-commands, you can disable this "feature":
-
-'set confirm off'
-     Disables confirmation requests.  Note that running GDB with the
-     '--batch' option (*note -batch: Mode Options.) also automatically
-     disables confirmation requests.
-
-'set confirm on'
-     Enables confirmation requests (the default).
-
-'show confirm'
-     Displays state of confirmation requests.
-
-   If you need to debug user-defined commands or sourced files you may
-find it useful to enable "command tracing".  In this mode each command
-will be printed as it is executed, prefixed with one or more '+'
-symbols, the quantity denoting the call depth of each command.
-
-'set trace-commands on'
-     Enable command tracing.
-'set trace-commands off'
-     Disable command tracing.
-'show trace-commands'
-     Display the current state of command tracing.
-
-
-File: gdb.info,  Node: Debugging Output,  Next: Other Misc Settings,  Prev: Messages/Warnings,  Up: Controlling GDB
-
-22.10 Optional Messages about Internal Happenings
-=================================================
-
-GDB has commands that enable optional debugging messages from various
-GDB subsystems; normally these commands are of interest to GDB
-maintainers, or when reporting a bug.  This section documents those
-commands.
-
-'set exec-done-display'
-     Turns on or off the notification of asynchronous commands'
-     completion.  When on, GDB will print a message when an asynchronous
-     command finishes its execution.  The default is off.
-'show exec-done-display'
-     Displays the current setting of asynchronous command completion
-     notification.
-'set debug aarch64'
-     Turns on or off display of debugging messages related to ARM
-     AArch64.  The default is off.
-'show debug aarch64'
-     Displays the current state of displaying debugging messages related
-     to ARM AArch64.
-'set debug arch'
-     Turns on or off display of gdbarch debugging info.  The default is
-     off
-'show debug arch'
-     Displays the current state of displaying gdbarch debugging info.
-'set debug aix-solib'
-     Control display of debugging messages from the AIX shared library
-     support module.  The default is off.
-'show debug aix-thread'
-     Show the current state of displaying AIX shared library debugging
-     messages.
-'set debug aix-thread'
-     Display debugging messages about inner workings of the AIX thread
-     module.
-'show debug aix-thread'
-     Show the current state of AIX thread debugging info display.
-'set debug check-physname'
-     Check the results of the "physname" computation.  When reading
-     DWARF debugging information for C++, GDB attempts to compute each
-     entity's name.  GDB can do this computation in two different ways,
-     depending on exactly what information is present.  When enabled,
-     this setting causes GDB to compute the names both ways and display
-     any discrepancies.
-'show debug check-physname'
-     Show the current state of "physname" checking.
-'set debug coff-pe-read'
-     Control display of debugging messages related to reading of COFF/PE
-     exported symbols.  The default is off.
-'show debug coff-pe-read'
-     Displays the current state of displaying debugging messages related
-     to reading of COFF/PE exported symbols.
-'set debug dwarf-die'
-     Dump DWARF DIEs after they are read in.  The value is the number of
-     nesting levels to print.  A value of zero turns off the display.
-'show debug dwarf-die'
-     Show the current state of DWARF DIE debugging.
-'set debug dwarf-line'
-     Turns on or off display of debugging messages related to reading
-     DWARF line tables.  The default is 0 (off).  A value of 1 provides
-     basic information.  A value greater than 1 provides more verbose
-     information.
-'show debug dwarf-line'
-     Show the current state of DWARF line table debugging.
-'set debug dwarf-read'
-     Turns on or off display of debugging messages related to reading
-     DWARF debug info.  The default is 0 (off).  A value of 1 provides
-     basic information.  A value greater than 1 provides more verbose
-     information.
-'show debug dwarf-read'
-     Show the current state of DWARF reader debugging.
-'set debug displaced'
-     Turns on or off display of GDB debugging info for the displaced
-     stepping support.  The default is off.
-'show debug displaced'
-     Displays the current state of displaying GDB debugging info related
-     to displaced stepping.
-'set debug event'
-     Turns on or off display of GDB event debugging info.  The default
-     is off.
-'show debug event'
-     Displays the current state of displaying GDB event debugging info.
-'set debug expression'
-     Turns on or off display of debugging info about GDB expression
-     parsing.  The default is off.
-'show debug expression'
-     Displays the current state of displaying debugging info about GDB
-     expression parsing.
-'set debug fbsd-lwp'
-     Turns on or off debugging messages from the FreeBSD LWP debug
-     support.
-'show debug fbsd-lwp'
-     Show the current state of FreeBSD LWP debugging messages.
-'set debug fbsd-nat'
-     Turns on or off debugging messages from the FreeBSD native target.
-'show debug fbsd-nat'
-     Show the current state of FreeBSD native target debugging messages.
-'set debug frame'
-     Turns on or off display of GDB frame debugging info.  The default
-     is off.
-'show debug frame'
-     Displays the current state of displaying GDB frame debugging info.
-'set debug gnu-nat'
-     Turn on or off debugging messages from the GNU/Hurd debug support.
-'show debug gnu-nat'
-     Show the current state of GNU/Hurd debugging messages.
-'set debug infrun'
-     Turns on or off display of GDB debugging info for running the
-     inferior.  The default is off.  'infrun.c' contains GDB's runtime
-     state machine used for implementing operations such as
-     single-stepping the inferior.
-'show debug infrun'
-     Displays the current state of GDB inferior debugging.
-'set debug jit'
-     Turn on or off debugging messages from JIT debug support.
-'show debug jit'
-     Displays the current state of GDB JIT debugging.
-'set debug lin-lwp'
-     Turn on or off debugging messages from the Linux LWP debug support.
-'show debug lin-lwp'
-     Show the current state of Linux LWP debugging messages.
-'set debug linux-namespaces'
-     Turn on or off debugging messages from the Linux namespaces debug
-     support.
-'show debug linux-namespaces'
-     Show the current state of Linux namespaces debugging messages.
-'set debug mach-o'
-     Control display of debugging messages related to Mach-O symbols
-     processing.  The default is off.
-'show debug mach-o'
-     Displays the current state of displaying debugging messages related
-     to reading of COFF/PE exported symbols.
-'set debug notification'
-     Turn on or off debugging messages about remote async notification.
-     The default is off.
-'show debug notification'
-     Displays the current state of remote async notification debugging
-     messages.
-'set debug observer'
-     Turns on or off display of GDB observer debugging.  This includes
-     info such as the notification of observable events.
-'show debug observer'
-     Displays the current state of observer debugging.
-'set debug overload'
-     Turns on or off display of GDB C++ overload debugging info.  This
-     includes info such as ranking of functions, etc.  The default is
-     off.
-'show debug overload'
-     Displays the current state of displaying GDB C++ overload debugging
-     info.
-'set debug parser'
-     Turns on or off the display of expression parser debugging output.
-     Internally, this sets the 'yydebug' variable in the expression
-     parser.  *Note Tracing Your Parser: (bison)Tracing, for details.
-     The default is off.
-'show debug parser'
-     Show the current state of expression parser debugging.
-'set debug remote'
-     Turns on or off display of reports on all packets sent back and
-     forth across the serial line to the remote machine.  The info is
-     printed on the GDB standard output stream.  The default is off.
-'show debug remote'
-     Displays the state of display of remote packets.
-
-'set debug separate-debug-file'
-     Turns on or off display of debug output about separate debug file
-     search.
-'show debug separate-debug-file'
-     Displays the state of separate debug file search debug output.
-
-'set debug serial'
-     Turns on or off display of GDB serial debugging info.  The default
-     is off.
-'show debug serial'
-     Displays the current state of displaying GDB serial debugging info.
-'set debug solib-frv'
-     Turn on or off debugging messages for FR-V shared-library code.
-'show debug solib-frv'
-     Display the current state of FR-V shared-library code debugging
-     messages.
-'set debug symbol-lookup'
-     Turns on or off display of debugging messages related to symbol
-     lookup.  The default is 0 (off).  A value of 1 provides basic
-     information.  A value greater than 1 provides more verbose
-     information.
-'show debug symbol-lookup'
-     Show the current state of symbol lookup debugging messages.
-'set debug symfile'
-     Turns on or off display of debugging messages related to symbol
-     file functions.  The default is off.  *Note Files::.
-'show debug symfile'
-     Show the current state of symbol file debugging messages.
-'set debug symtab-create'
-     Turns on or off display of debugging messages related to symbol
-     table creation.  The default is 0 (off).  A value of 1 provides
-     basic information.  A value greater than 1 provides more verbose
-     information.
-'show debug symtab-create'
-     Show the current state of symbol table creation debugging.
-'set debug target'
-     Turns on or off display of GDB target debugging info.  This info
-     includes what is going on at the target level of GDB, as it
-     happens.  The default is 0.  Set it to 1 to track events, and to 2
-     to also track the value of large memory transfers.
-'show debug target'
-     Displays the current state of displaying GDB target debugging info.
-'set debug timestamp'
-     Turns on or off display of timestamps with GDB debugging info.
-     When enabled, seconds and microseconds are displayed before each
-     debugging message.
-'show debug timestamp'
-     Displays the current state of displaying timestamps with GDB
-     debugging info.
-'set debug varobj'
-     Turns on or off display of GDB variable object debugging info.  The
-     default is off.
-'show debug varobj'
-     Displays the current state of displaying GDB variable object
-     debugging info.
-'set debug xml'
-     Turn on or off debugging messages for built-in XML parsers.
-'show debug xml'
-     Displays the current state of XML debugging messages.
 

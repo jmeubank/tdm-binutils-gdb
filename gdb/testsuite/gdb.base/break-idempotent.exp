@@ -1,4 +1,4 @@
-# Copyright 2014-2019 Free Software Foundation, Inc.
+# Copyright 2014-2021 Free Software Foundation, Inc.
 
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -45,11 +45,11 @@ proc force_breakpoint_re_set {} {
     set test "file \$binfile"
     gdb_test_multiple "file $binfile" $test {
 	-re "Are you sure you want to change the file. .*y or n. $" {
-	    send_gdb "y\n"
+	    send_gdb "y\n" optional
 	    exp_continue
 	}
 	-re "Load new symbol table from \".*\".*y or n. $" {
-	    send_gdb "y\n"
+	    send_gdb "y\n" optional
 	    exp_continue
 	}
 	-re "Reading symbols from.*$gdb_prompt $" {

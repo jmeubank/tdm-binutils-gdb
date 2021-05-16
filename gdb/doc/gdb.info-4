@@ -1,6 +1,6 @@
-This is gdb.info, produced by makeinfo version 6.5 from gdb.texinfo.
+This is gdb.info, produced by makeinfo version 6.7 from gdb.texinfo.
 
-Copyright (C) 1988-2019 Free Software Foundation, Inc.
+Copyright (C) 1988-2021 Free Software Foundation, Inc.
 
    Permission is granted to copy, distribute and/or modify this document
 under the terms of the GNU Free Documentation License, Version 1.3 or
@@ -21,9 +21,9 @@ END-INFO-DIR-ENTRY
    This file documents the GNU debugger GDB.
 
    This is the Tenth Edition, of 'Debugging with GDB: the GNU
-Source-Level Debugger' for GDB (GDB) Version 8.3.1.
+Source-Level Debugger' for GDB (GDB) Version 10.2.
 
-   Copyright (C) 1988-2019 Free Software Foundation, Inc.
+   Copyright (C) 1988-2021 Free Software Foundation, Inc.
 
    Permission is granted to copy, distribute and/or modify this document
 under the terms of the GNU Free Documentation License, Version 1.3 or
@@ -35,6 +35,1154 @@ with the Back-Cover Texts as in (a) below.
    (a) The FSF's Back-Cover Text is: "You are free to copy and modify
 this GNU Manual.  Buying copies from GNU Press supports the FSF in
 developing GNU and promoting software freedom."
+
+
+File: gdb.info,  Node: S12Z,  Prev: Sparc64,  Up: Architectures
+
+21.4.9 S12Z
+-----------
+
+When GDB is debugging the S12Z architecture, it provides the following
+special command:
+
+'maint info bdccsr'
+     This command displays the current value of the microprocessor's
+     BDCCSR register.
+
+
+File: gdb.info,  Node: Controlling GDB,  Next: Extending GDB,  Prev: Configurations,  Up: Top
+
+22 Controlling GDB
+******************
+
+You can alter the way GDB interacts with you by using the 'set' command.
+For commands controlling how GDB displays data, see *note Print
+Settings: Print Settings.  Other settings are described here.
+
+* Menu:
+
+* Prompt::                      Prompt
+* Editing::                     Command editing
+* Command History::             Command history
+* Screen Size::                 Screen size
+* Output Styling::              Output styling
+* Numbers::                     Numbers
+* ABI::                         Configuring the current ABI
+* Auto-loading::                Automatically loading associated files
+* Messages/Warnings::           Optional warnings and messages
+* Debugging Output::            Optional messages about internal happenings
+* Other Misc Settings::         Other Miscellaneous Settings
+
+
+File: gdb.info,  Node: Prompt,  Next: Editing,  Up: Controlling GDB
+
+22.1 Prompt
+===========
+
+GDB indicates its readiness to read a command by printing a string
+called the "prompt".  This string is normally '(gdb)'.  You can change
+the prompt string with the 'set prompt' command.  For instance, when
+debugging GDB with GDB, it is useful to change the prompt in one of the
+GDB sessions so that you can always tell which one you are talking to.
+
+   _Note:_ 'set prompt' does not add a space for you after the prompt
+you set.  This allows you to set a prompt which ends in a space or a
+prompt that does not.
+
+'set prompt NEWPROMPT'
+     Directs GDB to use NEWPROMPT as its prompt string henceforth.
+
+'show prompt'
+     Prints a line of the form: 'Gdb's prompt is: YOUR-PROMPT'
+
+   Versions of GDB that ship with Python scripting enabled have prompt
+extensions.  The commands for interacting with these extensions are:
+
+'set extended-prompt PROMPT'
+     Set an extended prompt that allows for substitutions.  *Note
+     gdb.prompt::, for a list of escape sequences that can be used for
+     substitution.  Any escape sequences specified as part of the prompt
+     string are replaced with the corresponding strings each time the
+     prompt is displayed.
+
+     For example:
+
+          set extended-prompt Current working directory: \w (gdb)
+
+     Note that when an extended-prompt is set, it takes control of the
+     PROMPT_HOOK hook.  *Note prompt_hook::, for further information.
+
+'show extended-prompt'
+     Prints the extended prompt.  Any escape sequences specified as part
+     of the prompt string with 'set extended-prompt', are replaced with
+     the corresponding strings each time the prompt is displayed.
+
+
+File: gdb.info,  Node: Editing,  Next: Command History,  Prev: Prompt,  Up: Controlling GDB
+
+22.2 Command Editing
+====================
+
+GDB reads its input commands via the "Readline" interface.  This GNU
+library provides consistent behavior for programs which provide a
+command line interface to the user.  Advantages are GNU Emacs-style or
+"vi"-style inline editing of commands, 'csh'-like history substitution,
+and a storage and recall of command history across debugging sessions.
+
+   You may control the behavior of command line editing in GDB with the
+command 'set'.
+
+'set editing'
+'set editing on'
+     Enable command line editing (enabled by default).
+
+'set editing off'
+     Disable command line editing.
+
+'show editing'
+     Show whether command line editing is enabled.
+
+   *Note Command Line Editing::, for more details about the Readline
+interface.  Users unfamiliar with GNU Emacs or 'vi' are encouraged to
+read that chapter.
+
+   GDB sets the Readline application name to 'gdb'.  This is useful for
+conditions in '.inputrc'.
+
+   GDB defines a bindable Readline command, 'operate-and-get-next'.
+This is bound to 'C-o' by default.  This command accepts the current
+line for execution and fetches the next line relative to the current
+line from the history for editing.  Any argument is ignored.
+
+
+File: gdb.info,  Node: Command History,  Next: Screen Size,  Prev: Editing,  Up: Controlling GDB
+
+22.3 Command History
+====================
+
+GDB can keep track of the commands you type during your debugging
+sessions, so that you can be certain of precisely what happened.  Use
+these commands to manage the GDB command history facility.
+
+   GDB uses the GNU History library, a part of the Readline package, to
+provide the history facility.  *Note Using History Interactively::, for
+the detailed description of the History library.
+
+   To issue a command to GDB without affecting certain aspects of the
+state which is seen by users, prefix it with 'server ' (*note Server
+Prefix::).  This means that this command will not affect the command
+history, nor will it affect GDB's notion of which command to repeat if
+<RET> is pressed on a line by itself.
+
+   The server prefix does not affect the recording of values into the
+value history; to print a value without recording it into the value
+history, use the 'output' command instead of the 'print' command.
+
+   Here is the description of GDB commands related to command history.
+
+'set history filename [FNAME]'
+     Set the name of the GDB command history file to FNAME.  This is the
+     file where GDB reads an initial command history list, and where it
+     writes the command history from this session when it exits.  You
+     can access this list through history expansion or through the
+     history command editing characters listed below.  This file
+     defaults to the value of the environment variable 'GDBHISTFILE', or
+     to './.gdb_history' ('./_gdb_history' on MS-DOS) if this variable
+     is not set.
+
+     The 'GDBHISTFILE' environment variable is read after processing any
+     GDB initialization files (*note Startup::) and after processing any
+     commands passed using command line options (for example, '-ex').
+
+     If the FNAME argument is not given, or if the 'GDBHISTFILE' is the
+     empty string then GDB will neither try to load an existing history
+     file, nor will it try to save the history on exit.
+
+'set history save'
+'set history save on'
+     Record command history in a file, whose name may be specified with
+     the 'set history filename' command.  By default, this option is
+     disabled.  The command history will be recorded when GDB exits.  If
+     'set history filename' is set to the empty string then history
+     saving is disabled, even when 'set history save' is 'on'.
+
+'set history save off'
+     Don't record the command history into the file specified by 'set
+     history filename' when GDB exits.
+
+'set history size SIZE'
+'set history size unlimited'
+     Set the number of commands which GDB keeps in its history list.
+     This defaults to the value of the environment variable
+     'GDBHISTSIZE', or to 256 if this variable is not set.  Non-numeric
+     values of 'GDBHISTSIZE' are ignored.  If SIZE is 'unlimited' or if
+     'GDBHISTSIZE' is either a negative number or the empty string, then
+     the number of commands GDB keeps in the history list is unlimited.
+
+     The 'GDBHISTSIZE' environment variable is read after processing any
+     GDB initialization files (*note Startup::) and after processing any
+     commands passed using command line options (for example, '-ex').
+
+'set history remove-duplicates COUNT'
+'set history remove-duplicates unlimited'
+     Control the removal of duplicate history entries in the command
+     history list.  If COUNT is non-zero, GDB will look back at the last
+     COUNT history entries and remove the first entry that is a
+     duplicate of the current entry being added to the command history
+     list.  If COUNT is 'unlimited' then this lookbehind is unbounded.
+     If COUNT is 0, then removal of duplicate history entries is
+     disabled.
+
+     Only history entries added during the current session are
+     considered for removal.  This option is set to 0 by default.
+
+   History expansion assigns special meaning to the character '!'.
+*Note Event Designators::, for more details.
+
+   Since '!' is also the logical not operator in C, history expansion is
+off by default.  If you decide to enable history expansion with the 'set
+history expansion on' command, you may sometimes need to follow '!'
+(when it is used as logical not, in an expression) with a space or a tab
+to prevent it from being expanded.  The readline history facilities do
+not attempt substitution on the strings '!=' and '!(', even when history
+expansion is enabled.
+
+   The commands to control history expansion are:
+
+'set history expansion on'
+'set history expansion'
+     Enable history expansion.  History expansion is off by default.
+
+'set history expansion off'
+     Disable history expansion.
+
+'show history'
+'show history filename'
+'show history save'
+'show history size'
+'show history expansion'
+     These commands display the state of the GDB history parameters.
+     'show history' by itself displays all four states.
+
+'show commands'
+     Display the last ten commands in the command history.
+
+'show commands N'
+     Print ten commands centered on command number N.
+
+'show commands +'
+     Print ten commands just after the commands last printed.
+
+
+File: gdb.info,  Node: Screen Size,  Next: Output Styling,  Prev: Command History,  Up: Controlling GDB
+
+22.4 Screen Size
+================
+
+Certain commands to GDB may produce large amounts of information output
+to the screen.  To help you read all of it, GDB pauses and asks you for
+input at the end of each page of output.  Type <RET> when you want to
+see one more page of output, 'q' to discard the remaining output, or 'c'
+to continue without paging for the rest of the current command.  Also,
+the screen width setting determines when to wrap lines of output.
+Depending on what is being printed, GDB tries to break the line at a
+readable place, rather than simply letting it overflow onto the
+following line.
+
+   Normally GDB knows the size of the screen from the terminal driver
+software.  For example, on Unix GDB uses the termcap data base together
+with the value of the 'TERM' environment variable and the 'stty rows'
+and 'stty cols' settings.  If this is not correct, you can override it
+with the 'set height' and 'set width' commands:
+
+'set height LPP'
+'set height unlimited'
+'show height'
+'set width CPL'
+'set width unlimited'
+'show width'
+     These 'set' commands specify a screen height of LPP lines and a
+     screen width of CPL characters.  The associated 'show' commands
+     display the current settings.
+
+     If you specify a height of either 'unlimited' or zero lines, GDB
+     does not pause during output no matter how long the output is.
+     This is useful if output is to a file or to an editor buffer.
+
+     Likewise, you can specify 'set width unlimited' or 'set width 0' to
+     prevent GDB from wrapping its output.
+
+'set pagination on'
+'set pagination off'
+     Turn the output pagination on or off; the default is on.  Turning
+     pagination off is the alternative to 'set height unlimited'.  Note
+     that running GDB with the '--batch' option (*note -batch: Mode
+     Options.) also automatically disables pagination.
+
+'show pagination'
+     Show the current pagination mode.
+
+
+File: gdb.info,  Node: Output Styling,  Next: Numbers,  Prev: Screen Size,  Up: Controlling GDB
+
+22.5 Output Styling
+===================
+
+GDB can style its output on a capable terminal.  This is enabled by
+default on most systems, but disabled by default when in batch mode
+(*note Mode Options::).  Various style settings are available; and
+styles can also be disabled entirely.
+
+'set style enabled 'on|off''
+     Enable or disable all styling.  The default is host-dependent, with
+     most hosts defaulting to 'on'.
+
+'show style enabled'
+     Show the current state of styling.
+
+'set style sources 'on|off''
+     Enable or disable source code styling.  This affects whether source
+     code, such as the output of the 'list' command, is styled.  Note
+     that source styling only works if styling in general is enabled,
+     and if GDB was linked with the GNU Source Highlight library.  The
+     default is 'on'.
+
+'show style sources'
+     Show the current state of source code styling.
+
+   Subcommands of 'set style' control specific forms of styling.  These
+subcommands all follow the same pattern: each style-able object can be
+styled with a foreground color, a background color, and an intensity.
+
+   For example, the style of file names can be controlled using the 'set
+style filename' group of commands:
+
+'set style filename background COLOR'
+     Set the background to COLOR.  Valid colors are 'none' (meaning the
+     terminal's default color), 'black', 'red', 'green', 'yellow',
+     'blue', 'magenta', 'cyan', and'white'.
+
+'set style filename foreground COLOR'
+     Set the foreground to COLOR.  Valid colors are 'none' (meaning the
+     terminal's default color), 'black', 'red', 'green', 'yellow',
+     'blue', 'magenta', 'cyan', and'white'.
+
+'set style filename intensity VALUE'
+     Set the intensity to VALUE.  Valid intensities are 'normal' (the
+     default), 'bold', and 'dim'.
+
+   The 'show style' command and its subcommands are styling a style name
+in their output using its own style.  So, use 'show style' to see the
+complete list of styles, their characteristics and the visual aspect of
+each style.
+
+   The style-able objects are:
+'filename'
+     Control the styling of file names.  By default, this style's
+     foreground color is green.
+
+'function'
+     Control the styling of function names.  These are managed with the
+     'set style function' family of commands.  By default, this style's
+     foreground color is yellow.
+
+'variable'
+     Control the styling of variable names.  These are managed with the
+     'set style variable' family of commands.  By default, this style's
+     foreground color is cyan.
+
+'address'
+     Control the styling of addresses.  These are managed with the 'set
+     style address' family of commands.  By default, this style's
+     foreground color is blue.
+
+'title'
+     Control the styling of titles.  These are managed with the 'set
+     style title' family of commands.  By default, this style's
+     intensity is bold.  Commands are using the title style to improve
+     the readability of large output.  For example, the commands
+     'apropos' and 'help' are using the title style for the command
+     names.
+
+'highlight'
+     Control the styling of highlightings.  These are managed with the
+     'set style highlight' family of commands.  By default, this style's
+     foreground color is red.  Commands are using the highlight style to
+     draw the user attention to some specific parts of their output.
+     For example, the command 'apropos -v REGEXP' uses the highlight
+     style to mark the documentation parts matching REGEXP.
+
+'tui-border'
+     Control the styling of the TUI border.  Note that, unlike other
+     styling options, only the color of the border can be controlled via
+     'set style'.  This was done for compatibility reasons, as TUI
+     controls to set the border's intensity predated the addition of
+     general styling to GDB.  *Note TUI Configuration::.
+
+'tui-active-border'
+     Control the styling of the active TUI border; that is, the TUI
+     window that has the focus.
+
+
+File: gdb.info,  Node: Numbers,  Next: ABI,  Prev: Output Styling,  Up: Controlling GDB
+
+22.6 Numbers
+============
+
+You can always enter numbers in octal, decimal, or hexadecimal in GDB by
+the usual conventions: octal numbers begin with '0', decimal numbers end
+with '.', and hexadecimal numbers begin with '0x'.  Numbers that neither
+begin with '0' or '0x', nor end with a '.' are, by default, entered in
+base 10; likewise, the default display for numbers--when no particular
+format is specified--is base 10.  You can change the default base for
+both input and output with the commands described below.
+
+'set input-radix BASE'
+     Set the default base for numeric input.  Supported choices for BASE
+     are decimal 8, 10, or 16.  The base must itself be specified either
+     unambiguously or using the current input radix; for example, any of
+
+          set input-radix 012
+          set input-radix 10.
+          set input-radix 0xa
+
+     sets the input base to decimal.  On the other hand, 'set
+     input-radix 10' leaves the input radix unchanged, no matter what it
+     was, since '10', being without any leading or trailing signs of its
+     base, is interpreted in the current radix.  Thus, if the current
+     radix is 16, '10' is interpreted in hex, i.e. as 16 decimal, which
+     doesn't change the radix.
+
+'set output-radix BASE'
+     Set the default base for numeric display.  Supported choices for
+     BASE are decimal 8, 10, or 16.  The base must itself be specified
+     either unambiguously or using the current input radix.
+
+'show input-radix'
+     Display the current default base for numeric input.
+
+'show output-radix'
+     Display the current default base for numeric display.
+
+'set radix [BASE]'
+'show radix'
+     These commands set and show the default base for both input and
+     output of numbers.  'set radix' sets the radix of input and output
+     to the same base; without an argument, it resets the radix back to
+     its default value of 10.
+
+
+File: gdb.info,  Node: ABI,  Next: Auto-loading,  Prev: Numbers,  Up: Controlling GDB
+
+22.7 Configuring the Current ABI
+================================
+
+GDB can determine the "ABI" (Application Binary Interface) of your
+application automatically.  However, sometimes you need to override its
+conclusions.  Use these commands to manage GDB's view of the current
+ABI.
+
+   One GDB configuration can debug binaries for multiple operating
+system targets, either via remote debugging or native emulation.  GDB
+will autodetect the "OS ABI" (Operating System ABI) in use, but you can
+override its conclusion using the 'set osabi' command.  One example
+where this is useful is in debugging of binaries which use an alternate
+C library (e.g. UCLIBC for GNU/Linux) which does not have the same
+identifying marks that the standard C library for your platform
+provides.
+
+   When GDB is debugging the AArch64 architecture, it provides a
+"Newlib" OS ABI. This is useful for handling 'setjmp' and 'longjmp' when
+debugging binaries that use the NEWLIB C library.  The "Newlib" OS ABI
+can be selected by 'set osabi Newlib'.
+
+'show osabi'
+     Show the OS ABI currently in use.
+
+'set osabi'
+     With no argument, show the list of registered available OS ABI's.
+
+'set osabi ABI'
+     Set the current OS ABI to ABI.
+
+   Generally, the way that an argument of type 'float' is passed to a
+function depends on whether the function is prototyped.  For a
+prototyped (i.e. ANSI/ISO style) function, 'float' arguments are passed
+unchanged, according to the architecture's convention for 'float'.  For
+unprototyped (i.e. K&R style) functions, 'float' arguments are first
+promoted to type 'double' and then passed.
+
+   Unfortunately, some forms of debug information do not reliably
+indicate whether a function is prototyped.  If GDB calls a function that
+is not marked as prototyped, it consults 'set coerce-float-to-double'.
+
+'set coerce-float-to-double'
+'set coerce-float-to-double on'
+     Arguments of type 'float' will be promoted to 'double' when passed
+     to an unprototyped function.  This is the default setting.
+
+'set coerce-float-to-double off'
+     Arguments of type 'float' will be passed directly to unprototyped
+     functions.
+
+'show coerce-float-to-double'
+     Show the current setting of promoting 'float' to 'double'.
+
+   GDB needs to know the ABI used for your program's C++ objects.  The
+correct C++ ABI depends on which C++ compiler was used to build your
+application.  GDB only fully supports programs with a single C++ ABI; if
+your program contains code using multiple C++ ABI's or if GDB can not
+identify your program's ABI correctly, you can tell GDB which ABI to
+use.  Currently supported ABI's include "gnu-v2", for 'g++' versions
+before 3.0, "gnu-v3", for 'g++' versions 3.0 and later, and "hpaCC" for
+the HP ANSI C++ compiler.  Other C++ compilers may use the "gnu-v2" or
+"gnu-v3" ABI's as well.  The default setting is "auto".
+
+'show cp-abi'
+     Show the C++ ABI currently in use.
+
+'set cp-abi'
+     With no argument, show the list of supported C++ ABI's.
+
+'set cp-abi ABI'
+'set cp-abi auto'
+     Set the current C++ ABI to ABI, or return to automatic detection.
+
+
+File: gdb.info,  Node: Auto-loading,  Next: Messages/Warnings,  Prev: ABI,  Up: Controlling GDB
+
+22.8 Automatically Loading Associated Files
+===========================================
+
+GDB sometimes reads files with commands and settings automatically,
+without being explicitly told so by the user.  We call this feature
+"auto-loading".  While auto-loading is useful for automatically adapting
+GDB to the needs of your project, it can sometimes produce unexpected
+results or introduce security risks (e.g., if the file comes from
+untrusted sources).
+
+* Menu:
+
+* Init File in the Current Directory:: 'set/show/info auto-load local-gdbinit'
+* libthread_db.so.1 file::             'set/show/info auto-load libthread-db'
+
+* Auto-loading safe path::             'set/show/info auto-load safe-path'
+* Auto-loading verbose mode::          'set/show debug auto-load'
+
+   There are various kinds of files GDB can automatically load.  In
+addition to these files, GDB supports auto-loading code written in
+various extension languages.  *Note Auto-loading extensions::.
+
+   Note that loading of these associated files (including the local
+'.gdbinit' file) requires accordingly configured 'auto-load safe-path'
+(*note Auto-loading safe path::).
+
+   For these reasons, GDB includes commands and options to let you
+control when to auto-load files and which files should be auto-loaded.
+
+'set auto-load off'
+     Globally disable loading of all auto-loaded files.  You may want to
+     use this command with the '-iex' option (*note Option
+     -init-eval-command::) such as:
+          $ gdb -iex "set auto-load off" untrusted-executable corefile
+
+     Be aware that system init file (*note System-wide configuration::)
+     and init files from your home directory (*note Home Directory Init
+     File::) still get read (as they come from generally trusted
+     directories).  To prevent GDB from auto-loading even those init
+     files, use the '-nx' option (*note Mode Options::), in addition to
+     'set auto-load no'.
+
+'show auto-load'
+     Show whether auto-loading of each specific 'auto-load' file(s) is
+     enabled or disabled.
+
+          (gdb) show auto-load
+          gdb-scripts:  Auto-loading of canned sequences of commands scripts is on.
+          libthread-db:  Auto-loading of inferior specific libthread_db is on.
+          local-gdbinit:  Auto-loading of .gdbinit script from current directory
+                          is on.
+          python-scripts:  Auto-loading of Python scripts is on.
+          safe-path:  List of directories from which it is safe to auto-load files
+                      is $debugdir:$datadir/auto-load.
+          scripts-directory:  List of directories from which to load auto-loaded scripts
+                              is $debugdir:$datadir/auto-load.
+
+'info auto-load'
+     Print whether each specific 'auto-load' file(s) have been
+     auto-loaded or not.
+
+          (gdb) info auto-load
+          gdb-scripts:
+          Loaded  Script
+          Yes     /home/user/gdb/gdb-gdb.gdb
+          libthread-db:  No auto-loaded libthread-db.
+          local-gdbinit:  Local .gdbinit file "/home/user/gdb/.gdbinit" has been
+                          loaded.
+          python-scripts:
+          Loaded  Script
+          Yes     /home/user/gdb/gdb-gdb.py
+
+   These are GDB control commands for the auto-loading:
+
+*Note set auto-load off::.           Disable auto-loading globally.
+*Note show auto-load::.              Show setting of all kinds of
+                                     files.
+*Note info auto-load::.              Show state of all kinds of files.
+*Note set auto-load gdb-scripts::.   Control for GDB command scripts.
+*Note show auto-load gdb-scripts::.  Show setting of GDB command
+                                     scripts.
+*Note info auto-load gdb-scripts::.  Show state of GDB command scripts.
+*Note set auto-load python-scripts::.Control for GDB Python scripts.
+*Note show auto-load python-scripts::.Show setting of GDB Python
+                                     scripts.
+*Note info auto-load python-scripts::.Show state of GDB Python scripts.
+*Note set auto-load guile-scripts::. Control for GDB Guile scripts.
+*Note show auto-load guile-scripts::.Show setting of GDB Guile scripts.
+*Note info auto-load guile-scripts::.Show state of GDB Guile scripts.
+*Note set auto-load scripts-directory::.Control for GDB auto-loaded
+                                     scripts location.
+*Note show auto-load scripts-directory::.Show GDB auto-loaded scripts
+                                     location.
+*Note add-auto-load-scripts-directory::.Add directory for auto-loaded
+                                     scripts location list.
+*Note set auto-load local-gdbinit::. Control for init file in the
+                                     current directory.
+*Note show auto-load local-gdbinit::.Show setting of init file in the
+                                     current directory.
+*Note info auto-load local-gdbinit::.Show state of init file in the
+                                     current directory.
+*Note set auto-load libthread-db::.  Control for thread debugging
+                                     library.
+*Note show auto-load libthread-db::. Show setting of thread debugging
+                                     library.
+*Note info auto-load libthread-db::. Show state of thread debugging
+                                     library.
+*Note set auto-load safe-path::.     Control directories trusted for
+                                     automatic loading.
+*Note show auto-load safe-path::.    Show directories trusted for
+                                     automatic loading.
+*Note add-auto-load-safe-path::.     Add directory trusted for
+                                     automatic loading.
+
+
+File: gdb.info,  Node: Init File in the Current Directory,  Next: libthread_db.so.1 file,  Up: Auto-loading
+
+22.8.1 Automatically Loading Init File in the Current Directory
+---------------------------------------------------------------
+
+By default, GDB reads and executes the canned sequences of commands from
+init file (if any) in the current working directory, see *note Init File
+in the Current Directory during Startup::.
+
+   Note that loading of this local '.gdbinit' file also requires
+accordingly configured 'auto-load safe-path' (*note Auto-loading safe
+path::).
+
+'set auto-load local-gdbinit [on|off]'
+     Enable or disable the auto-loading of canned sequences of commands
+     (*note Sequences::) found in init file in the current directory.
+
+'show auto-load local-gdbinit'
+     Show whether auto-loading of canned sequences of commands from init
+     file in the current directory is enabled or disabled.
+
+'info auto-load local-gdbinit'
+     Print whether canned sequences of commands from init file in the
+     current directory have been auto-loaded.
+
+
+File: gdb.info,  Node: libthread_db.so.1 file,  Next: Auto-loading safe path,  Prev: Init File in the Current Directory,  Up: Auto-loading
+
+22.8.2 Automatically Loading Thread Debugging Library
+-----------------------------------------------------
+
+This feature is currently present only on GNU/Linux native hosts.
+
+   GDB reads in some cases thread debugging library from places specific
+to the inferior (*note set libthread-db-search-path::).
+
+   The special 'libthread-db-search-path' entry '$sdir' is processed
+without checking this 'set auto-load libthread-db' switch as system
+libraries have to be trusted in general.  In all other cases of
+'libthread-db-search-path' entries GDB checks first if 'set auto-load
+libthread-db' is enabled before trying to open such thread debugging
+library.
+
+   Note that loading of this debugging library also requires accordingly
+configured 'auto-load safe-path' (*note Auto-loading safe path::).
+
+'set auto-load libthread-db [on|off]'
+     Enable or disable the auto-loading of inferior specific thread
+     debugging library.
+
+'show auto-load libthread-db'
+     Show whether auto-loading of inferior specific thread debugging
+     library is enabled or disabled.
+
+'info auto-load libthread-db'
+     Print the list of all loaded inferior specific thread debugging
+     libraries and for each such library print list of inferior PIDs
+     using it.
+
+
+File: gdb.info,  Node: Auto-loading safe path,  Next: Auto-loading verbose mode,  Prev: libthread_db.so.1 file,  Up: Auto-loading
+
+22.8.3 Security Restriction for Auto-Loading
+--------------------------------------------
+
+As the files of inferior can come from untrusted source (such as
+submitted by an application user) GDB does not always load any files
+automatically.  GDB provides the 'set auto-load safe-path' setting to
+list directories trusted for loading files not explicitly requested by
+user.  Each directory can also be a shell wildcard pattern.
+
+   If the path is not set properly you will see a warning and the file
+will not get loaded:
+
+     $ ./gdb -q ./gdb
+     Reading symbols from /home/user/gdb/gdb...
+     warning: File "/home/user/gdb/gdb-gdb.gdb" auto-loading has been
+              declined by your `auto-load safe-path' set
+              to "$debugdir:$datadir/auto-load".
+     warning: File "/home/user/gdb/gdb-gdb.py" auto-loading has been
+              declined by your `auto-load safe-path' set
+              to "$debugdir:$datadir/auto-load".
+
+To instruct GDB to go ahead and use the init files anyway, invoke GDB
+like this:
+
+     $ gdb -q -iex "set auto-load safe-path /home/user/gdb" ./gdb
+
+   The list of trusted directories is controlled by the following
+commands:
+
+'set auto-load safe-path [DIRECTORIES]'
+     Set the list of directories (and their subdirectories) trusted for
+     automatic loading and execution of scripts.  You can also enter a
+     specific trusted file.  Each directory can also be a shell wildcard
+     pattern; wildcards do not match directory separator - see
+     'FNM_PATHNAME' for system function 'fnmatch' (*note fnmatch:
+     (libc)Wildcard Matching.).  If you omit DIRECTORIES, 'auto-load
+     safe-path' will be reset to its default value as specified during
+     GDB compilation.
+
+     The list of directories uses path separator (':' on GNU and Unix
+     systems, ';' on MS-Windows and MS-DOS) to separate directories,
+     similarly to the 'PATH' environment variable.
+
+'show auto-load safe-path'
+     Show the list of directories trusted for automatic loading and
+     execution of scripts.
+
+'add-auto-load-safe-path'
+     Add an entry (or list of entries) to the list of directories
+     trusted for automatic loading and execution of scripts.  Multiple
+     entries may be delimited by the host platform path separator in
+     use.
+
+   This variable defaults to what '--with-auto-load-dir' has been
+configured to (*note with-auto-load-dir::).  '$debugdir' and '$datadir'
+substitution applies the same as for *note set auto-load
+scripts-directory::.  The default 'set auto-load safe-path' value can be
+also overriden by GDB configuration option '--with-auto-load-safe-path'.
+
+   Setting this variable to '/' disables this security protection,
+corresponding GDB configuration option is
+'--without-auto-load-safe-path'.  This variable is supposed to be set to
+the system directories writable by the system superuser only.  Users can
+add their source directories in init files in their home directories
+(*note Home Directory Init File::).  See also deprecated init file in
+the current directory (*note Init File in the Current Directory during
+Startup::).
+
+   To force GDB to load the files it declined to load in the previous
+example, you could use one of the following ways:
+
+'~/.gdbinit': 'add-auto-load-safe-path ~/src/gdb'
+     Specify this trusted directory (or a file) as additional component
+     of the list.  You have to specify also any existing directories
+     displayed by by 'show auto-load safe-path' (such as '/usr:/bin' in
+     this example).
+
+'gdb -iex "set auto-load safe-path /usr:/bin:~/src/gdb" ...'
+     Specify this directory as in the previous case but just for a
+     single GDB session.
+
+'gdb -iex "set auto-load safe-path /" ...'
+     Disable auto-loading safety for a single GDB session.  This assumes
+     all the files you debug during this GDB session will come from
+     trusted sources.
+
+'./configure --without-auto-load-safe-path'
+     During compilation of GDB you may disable any auto-loading safety.
+     This assumes all the files you will ever debug with this GDB come
+     from trusted sources.
+
+   On the other hand you can also explicitly forbid automatic files
+loading which also suppresses any such warning messages:
+
+'gdb -iex "set auto-load no" ...'
+     You can use GDB command-line option for a single GDB session.
+
+'~/.gdbinit': 'set auto-load no'
+     Disable auto-loading globally for the user (*note Home Directory
+     Init File::).  While it is improbable, you could also use system
+     init file instead (*note System-wide configuration::).
+
+   This setting applies to the file names as entered by user.  If no
+entry matches GDB tries as a last resort to also resolve all the file
+names into their canonical form (typically resolving symbolic links) and
+compare the entries again.  GDB already canonicalizes most of the
+filenames on its own before starting the comparison so a canonical form
+of directories is recommended to be entered.
+
+
+File: gdb.info,  Node: Auto-loading verbose mode,  Prev: Auto-loading safe path,  Up: Auto-loading
+
+22.8.4 Displaying Files Tried for Auto-Load
+-------------------------------------------
+
+For better visibility of all the file locations where you can place
+scripts to be auto-loaded with inferior -- or to protect yourself
+against accidental execution of untrusted scripts -- GDB provides a
+feature for printing all the files attempted to be loaded.  Both
+existing and non-existing files may be printed.
+
+   For example the list of directories from which it is safe to
+auto-load files (*note Auto-loading safe path::) applies also to
+canonicalized filenames which may not be too obvious while setting it
+up.
+
+     (gdb) set debug auto-load on
+     (gdb) file ~/src/t/true
+     auto-load: Loading canned sequences of commands script "/tmp/true-gdb.gdb"
+                for objfile "/tmp/true".
+     auto-load: Updating directories of "/usr:/opt".
+     auto-load: Using directory "/usr".
+     auto-load: Using directory "/opt".
+     warning: File "/tmp/true-gdb.gdb" auto-loading has been declined
+              by your `auto-load safe-path' set to "/usr:/opt".
+
+'set debug auto-load [on|off]'
+     Set whether to print the filenames attempted to be auto-loaded.
+
+'show debug auto-load'
+     Show whether printing of the filenames attempted to be auto-loaded
+     is turned on or off.
+
+
+File: gdb.info,  Node: Messages/Warnings,  Next: Debugging Output,  Prev: Auto-loading,  Up: Controlling GDB
+
+22.9 Optional Warnings and Messages
+===================================
+
+By default, GDB is silent about its inner workings.  If you are running
+on a slow machine, you may want to use the 'set verbose' command.  This
+makes GDB tell you when it does a lengthy internal operation, so you
+will not think it has crashed.
+
+   Currently, the messages controlled by 'set verbose' are those which
+announce that the symbol table for a source file is being read; see
+'symbol-file' in *note Commands to Specify Files: Files.
+
+'set verbose on'
+     Enables GDB output of certain informational messages.
+
+'set verbose off'
+     Disables GDB output of certain informational messages.
+
+'show verbose'
+     Displays whether 'set verbose' is on or off.
+
+   By default, if GDB encounters bugs in the symbol table of an object
+file, it is silent; but if you are debugging a compiler, you may find
+this information useful (*note Errors Reading Symbol Files: Symbol
+Errors.).
+
+'set complaints LIMIT'
+     Permits GDB to output LIMIT complaints about each type of unusual
+     symbols before becoming silent about the problem.  Set LIMIT to
+     zero to suppress all complaints; set it to a large number to
+     prevent complaints from being suppressed.
+
+'show complaints'
+     Displays how many symbol complaints GDB is permitted to produce.
+
+   By default, GDB is cautious, and asks what sometimes seems to be a
+lot of stupid questions to confirm certain commands.  For example, if
+you try to run a program which is already running:
+
+     (gdb) run
+     The program being debugged has been started already.
+     Start it from the beginning? (y or n)
+
+   If you are willing to unflinchingly face the consequences of your own
+commands, you can disable this "feature":
+
+'set confirm off'
+     Disables confirmation requests.  Note that running GDB with the
+     '--batch' option (*note -batch: Mode Options.) also automatically
+     disables confirmation requests.
+
+'set confirm on'
+     Enables confirmation requests (the default).
+
+'show confirm'
+     Displays state of confirmation requests.
+
+   If you need to debug user-defined commands or sourced files you may
+find it useful to enable "command tracing".  In this mode each command
+will be printed as it is executed, prefixed with one or more '+'
+symbols, the quantity denoting the call depth of each command.
+
+'set trace-commands on'
+     Enable command tracing.
+'set trace-commands off'
+     Disable command tracing.
+'show trace-commands'
+     Display the current state of command tracing.
+
+
+File: gdb.info,  Node: Debugging Output,  Next: Other Misc Settings,  Prev: Messages/Warnings,  Up: Controlling GDB
+
+22.10 Optional Messages about Internal Happenings
+=================================================
+
+GDB has commands that enable optional debugging messages from various
+GDB subsystems; normally these commands are of interest to GDB
+maintainers, or when reporting a bug.  This section documents those
+commands.
+
+'set exec-done-display'
+     Turns on or off the notification of asynchronous commands'
+     completion.  When on, GDB will print a message when an asynchronous
+     command finishes its execution.  The default is off.
+'show exec-done-display'
+     Displays the current setting of asynchronous command completion
+     notification.
+'set debug aarch64'
+     Turns on or off display of debugging messages related to ARM
+     AArch64.  The default is off.
+'show debug aarch64'
+     Displays the current state of displaying debugging messages related
+     to ARM AArch64.
+'set debug arch'
+     Turns on or off display of gdbarch debugging info.  The default is
+     off
+'show debug arch'
+     Displays the current state of displaying gdbarch debugging info.
+'set debug aix-solib'
+     Control display of debugging messages from the AIX shared library
+     support module.  The default is off.
+'show debug aix-thread'
+     Show the current state of displaying AIX shared library debugging
+     messages.
+'set debug aix-thread'
+     Display debugging messages about inner workings of the AIX thread
+     module.
+'show debug aix-thread'
+     Show the current state of AIX thread debugging info display.
+'set debug check-physname'
+     Check the results of the "physname" computation.  When reading
+     DWARF debugging information for C++, GDB attempts to compute each
+     entity's name.  GDB can do this computation in two different ways,
+     depending on exactly what information is present.  When enabled,
+     this setting causes GDB to compute the names both ways and display
+     any discrepancies.
+'show debug check-physname'
+     Show the current state of "physname" checking.
+'set debug coff-pe-read'
+     Control display of debugging messages related to reading of COFF/PE
+     exported symbols.  The default is off.
+'show debug coff-pe-read'
+     Displays the current state of displaying debugging messages related
+     to reading of COFF/PE exported symbols.
+'set debug dwarf-die'
+     Dump DWARF DIEs after they are read in.  The value is the number of
+     nesting levels to print.  A value of zero turns off the display.
+'show debug dwarf-die'
+     Show the current state of DWARF DIE debugging.
+'set debug dwarf-line'
+     Turns on or off display of debugging messages related to reading
+     DWARF line tables.  The default is 0 (off).  A value of 1 provides
+     basic information.  A value greater than 1 provides more verbose
+     information.
+'show debug dwarf-line'
+     Show the current state of DWARF line table debugging.
+'set debug dwarf-read'
+     Turns on or off display of debugging messages related to reading
+     DWARF debug info.  The default is 0 (off).  A value of 1 provides
+     basic information.  A value greater than 1 provides more verbose
+     information.
+'show debug dwarf-read'
+     Show the current state of DWARF reader debugging.
+'set debug displaced'
+     Turns on or off display of GDB debugging info for the displaced
+     stepping support.  The default is off.
+'show debug displaced'
+     Displays the current state of displaying GDB debugging info related
+     to displaced stepping.
+'set debug event'
+     Turns on or off display of GDB event debugging info.  The default
+     is off.
+'show debug event'
+     Displays the current state of displaying GDB event debugging info.
+'set debug expression'
+     Turns on or off display of debugging info about GDB expression
+     parsing.  The default is off.
+'show debug expression'
+     Displays the current state of displaying debugging info about GDB
+     expression parsing.
+'set debug fbsd-lwp'
+     Turns on or off debugging messages from the FreeBSD LWP debug
+     support.
+'show debug fbsd-lwp'
+     Show the current state of FreeBSD LWP debugging messages.
+'set debug fbsd-nat'
+     Turns on or off debugging messages from the FreeBSD native target.
+'show debug fbsd-nat'
+     Show the current state of FreeBSD native target debugging messages.
+'set debug frame'
+     Turns on or off display of GDB frame debugging info.  The default
+     is off.
+'show debug frame'
+     Displays the current state of displaying GDB frame debugging info.
+'set debug gnu-nat'
+     Turn on or off debugging messages from the GNU/Hurd debug support.
+'show debug gnu-nat'
+     Show the current state of GNU/Hurd debugging messages.
+'set debug infrun'
+     Turns on or off display of GDB debugging info for running the
+     inferior.  The default is off.  'infrun.c' contains GDB's runtime
+     state machine used for implementing operations such as
+     single-stepping the inferior.
+'show debug infrun'
+     Displays the current state of GDB inferior debugging.
+'set debug jit'
+     Turn on or off debugging messages from JIT debug support.
+'show debug jit'
+     Displays the current state of GDB JIT debugging.
+'set debug lin-lwp'
+     Turn on or off debugging messages from the Linux LWP debug support.
+'show debug lin-lwp'
+     Show the current state of Linux LWP debugging messages.
+'set debug linux-namespaces'
+     Turn on or off debugging messages from the Linux namespaces debug
+     support.
+'show debug linux-namespaces'
+     Show the current state of Linux namespaces debugging messages.
+'set debug mach-o'
+     Control display of debugging messages related to Mach-O symbols
+     processing.  The default is off.
+'show debug mach-o'
+     Displays the current state of displaying debugging messages related
+     to reading of COFF/PE exported symbols.
+'set debug notification'
+     Turn on or off debugging messages about remote async notification.
+     The default is off.
+'show debug notification'
+     Displays the current state of remote async notification debugging
+     messages.
+'set debug observer'
+     Turns on or off display of GDB observer debugging.  This includes
+     info such as the notification of observable events.
+'show debug observer'
+     Displays the current state of observer debugging.
+'set debug overload'
+     Turns on or off display of GDB C++ overload debugging info.  This
+     includes info such as ranking of functions, etc.  The default is
+     off.
+'show debug overload'
+     Displays the current state of displaying GDB C++ overload debugging
+     info.
+'set debug parser'
+     Turns on or off the display of expression parser debugging output.
+     Internally, this sets the 'yydebug' variable in the expression
+     parser.  *Note Tracing Your Parser: (bison)Tracing, for details.
+     The default is off.
+'show debug parser'
+     Show the current state of expression parser debugging.
+'set debug remote'
+     Turns on or off display of reports on all packets sent back and
+     forth across the serial line to the remote machine.  The info is
+     printed on the GDB standard output stream.  The default is off.
+'show debug remote'
+     Displays the state of display of remote packets.
+
+'set debug remote-packet-max-chars'
+     Sets the maximum number of characters to display for each remote
+     packet when 'set debug remote' is on.  This is useful to prevent
+     GDB from displaying lengthy remote packets and polluting the
+     console.
+
+     The default value is '512', which means GDB will truncate each
+     remote packet after 512 bytes.
+
+     Setting this option to 'unlimited' will disable truncation and will
+     output the full length of the remote packets.
+'show debug remote-packet-max-chars'
+     Displays the number of bytes to output for remote packet debugging.
+
+'set debug separate-debug-file'
+     Turns on or off display of debug output about separate debug file
+     search.
+'show debug separate-debug-file'
+     Displays the state of separate debug file search debug output.
+
+'set debug serial'
+     Turns on or off display of GDB serial debugging info.  The default
+     is off.
+'show debug serial'
+     Displays the current state of displaying GDB serial debugging info.
+'set debug solib-frv'
+     Turn on or off debugging messages for FR-V shared-library code.
+'show debug solib-frv'
+     Display the current state of FR-V shared-library code debugging
+     messages.
+'set debug symbol-lookup'
+     Turns on or off display of debugging messages related to symbol
+     lookup.  The default is 0 (off).  A value of 1 provides basic
+     information.  A value greater than 1 provides more verbose
+     information.
+'show debug symbol-lookup'
+     Show the current state of symbol lookup debugging messages.
+'set debug symfile'
+     Turns on or off display of debugging messages related to symbol
+     file functions.  The default is off.  *Note Files::.
+'show debug symfile'
+     Show the current state of symbol file debugging messages.
+'set debug symtab-create'
+     Turns on or off display of debugging messages related to symbol
+     table creation.  The default is 0 (off).  A value of 1 provides
+     basic information.  A value greater than 1 provides more verbose
+     information.
+'show debug symtab-create'
+     Show the current state of symbol table creation debugging.
+'set debug target'
+     Turns on or off display of GDB target debugging info.  This info
+     includes what is going on at the target level of GDB, as it
+     happens.  The default is 0.  Set it to 1 to track events, and to 2
+     to also track the value of large memory transfers.
+'show debug target'
+     Displays the current state of displaying GDB target debugging info.
+'set debug timestamp'
+     Turns on or off display of timestamps with GDB debugging info.
+     When enabled, seconds and microseconds are displayed before each
+     debugging message.
+'show debug timestamp'
+     Displays the current state of displaying timestamps with GDB
+     debugging info.
+'set debug varobj'
+     Turns on or off display of GDB variable object debugging info.  The
+     default is off.
+'show debug varobj'
+     Displays the current state of displaying GDB variable object
+     debugging info.
+'set debug xml'
+     Turn on or off debugging messages for built-in XML parsers.
+'show debug xml'
+     Displays the current state of XML debugging messages.
 
 
 File: gdb.info,  Node: Other Misc Settings,  Prev: Debugging Output,  Up: Controlling GDB
@@ -127,7 +1275,7 @@ execution as a unit: user-defined commands and command files.
 
 File: gdb.info,  Node: Define,  Next: Hooks,  Up: Sequences
 
-23.1.1 User-defined Commands
+23.1.1 User-Defined Commands
 ----------------------------
 
 A "user-defined command" is a sequence of GDB commands to which you
@@ -178,9 +1326,10 @@ process a variable number of arguments:
      Define a command named COMMANDNAME.  If there is already a command
      by that name, you are asked to confirm that you want to redefine
      it.  The argument COMMANDNAME may be a bare command name consisting
-     of letters, numbers, dashes, and underscores.  It may also start
-     with any predefined prefix command.  For example, 'define target
-     my-target' creates a user-defined 'target my-target' command.
+     of letters, numbers, dashes, dots, and underscores.  It may also
+     start with any predefined or user-defined prefix command.  For
+     example, 'define target my-target' creates a user-defined 'target
+     my-target' command.
 
      The definition of the command is made up of other GDB command
      lines, which are given following the 'define' command.  The end of
@@ -198,6 +1347,42 @@ process a variable number of arguments:
      documentation of a command.  Redefining the command with 'define'
      does not change the documentation.
 
+'define-prefix COMMANDNAME'
+     Define or mark the command COMMANDNAME as a user-defined prefix
+     command.  Once marked, COMMANDNAME can be used as prefix command by
+     the 'define' command.  Note that 'define-prefix' can be used with a
+     not yet defined COMMANDNAME.  In such a case, COMMANDNAME is
+     defined as an empty user-defined command.  In case you redefine a
+     command that was marked as a user-defined prefix command, the
+     subcommands of the redefined command are kept (and GDB indicates so
+     to the user).
+
+     Example:
+          (gdb) define-prefix abc
+          (gdb) define-prefix abc def
+          (gdb) define abc def
+          Type commands for definition of "abc def".
+          End with a line saying just "end".
+          >echo command initial def\n
+          >end
+          (gdb) define abc def ghi
+          Type commands for definition of "abc def ghi".
+          End with a line saying just "end".
+          >echo command ghi\n
+          >end
+          (gdb) define abc def
+          Keeping subcommands of prefix command "def".
+          Redefine command "def"? (y or n) y
+          Type commands for definition of "abc def".
+          End with a line saying just "end".
+          >echo command def\n
+          >end
+          (gdb) abc def ghi
+          command ghi
+          (gdb) abc def
+          command def
+          (gdb)
+
 'dont-repeat'
      Used inside a user-defined command, this tells GDB that this
      command should not be repeated when the user hits <RET> (*note
@@ -205,8 +1390,8 @@ process a variable number of arguments:
 
 'help user-defined'
      List all user-defined commands and all python commands defined in
-     class COMAND_USER. The first line of the documentation or docstring
-     is included (if any).
+     class COMMAND_USER. The first line of the documentation or
+     docstring is included (if any).
 
 'show user'
 'show user COMMANDNAME'
@@ -237,7 +1422,7 @@ omit the messages when used in a user-defined command.
 
 File: gdb.info,  Node: Hooks,  Next: Command Files,  Prev: Define,  Up: Sequences
 
-23.1.2 User-defined Command Hooks
+23.1.2 User-Defined Command Hooks
 ---------------------------------
 
 You may define "hooks", which are a special kind of user-defined
@@ -536,7 +1721,7 @@ want.
 
 File: gdb.info,  Node: Auto-loading sequences,  Prev: Output,  Up: Sequences
 
-23.1.5 Controlling auto-loading native GDB scripts
+23.1.5 Controlling Auto-Loading Native GDB Scripts
 --------------------------------------------------
 
 When a new object file is read (for example, due to the 'file' command,
@@ -633,8 +1818,6 @@ related setting:
      'end'.  For example:
 
           (gdb) python
-          Type python script
-          End with a line saying just "end".
           >print 23
           >end
           23
@@ -705,6 +1888,8 @@ optional arguments while skipping others.  Example:
                                 using Python.
 * Lazy Strings In Python::      Python representation of lazy strings.
 * Architectures In Python::     Python representation of architectures.
+* Registers In Python::         Python representation of registers.
+* TUI Windows In Python::       Implementing new TUI windows.
 
 
 File: gdb.info,  Node: Basic Python,  Next: Exception Handling,  Up: Python API
@@ -1171,7 +2356,7 @@ function, call it like so:
           Python::), then the lazy string's 'value' method is called,
           and its result is used.
 
- -- Function: Value.__init__ (VAL, [, type ])
+ -- Function: Value.__init__ (VAL, TYPE)
      This second form of the 'gdb.Value' constructor returns a
      'gdb.Value' of type TYPE where the value contents are taken from
      the Python buffer object specified by VAL.  The number of bytes in
@@ -1201,7 +2386,7 @@ function, call it like so:
      pointed to by 'foo'.
 
      A similar function 'Value.referenced_value' exists which also
-     returns 'gdb.Value' objects corresonding to the values pointed to
+     returns 'gdb.Value' objects corresponding to the values pointed to
      by pointer values (and additionally, values referenced by reference
      values).  However, the behavior of 'Value.dereference' differs from
      'Value.referenced_value' by the fact that the behavior of
@@ -1277,6 +2462,90 @@ function, call it like so:
  -- Function: Value.reinterpret_cast (type)
      Like 'Value.cast', but works as if the C++ 'reinterpret_cast'
      operator were used.  Consult a C++ reference for details.
+
+ -- Function: Value.format_string (...)
+     Convert a 'gdb.Value' to a string, similarly to what the 'print'
+     command does.  Invoked with no arguments, this is equivalent to
+     calling the 'str' function on the 'gdb.Value'.  The representation
+     of the same value may change across different versions of GDB, so
+     you shouldn't, for instance, parse the strings returned by this
+     method.
+
+     All the arguments are keyword only.  If an argument is not
+     specified, the current global default setting is used.
+
+     'raw'
+          'True' if pretty-printers (*note Pretty Printing::) should not
+          be used to format the value.  'False' if enabled
+          pretty-printers matching the type represented by the
+          'gdb.Value' should be used to format it.
+
+     'pretty_arrays'
+          'True' if arrays should be pretty printed to be more
+          convenient to read, 'False' if they shouldn't (see 'set print
+          array' in *note Print Settings::).
+
+     'pretty_structs'
+          'True' if structs should be pretty printed to be more
+          convenient to read, 'False' if they shouldn't (see 'set print
+          pretty' in *note Print Settings::).
+
+     'array_indexes'
+          'True' if array indexes should be included in the string
+          representation of arrays, 'False' if they shouldn't (see 'set
+          print array-indexes' in *note Print Settings::).
+
+     'symbols'
+          'True' if the string representation of a pointer should
+          include the corresponding symbol name (if one exists), 'False'
+          if it shouldn't (see 'set print symbol' in *note Print
+          Settings::).
+
+     'unions'
+          'True' if unions which are contained in other structures or
+          unions should be expanded, 'False' if they shouldn't (see 'set
+          print union' in *note Print Settings::).
+
+     'deref_refs'
+          'True' if C++ references should be resolved to the value they
+          refer to, 'False' (the default) if they shouldn't.  Note that,
+          unlike for the 'print' command, references are not
+          automatically expanded when using the 'format_string' method
+          or the 'str' function.  There is no global 'print' setting to
+          change the default behaviour.
+
+     'actual_objects'
+          'True' if the representation of a pointer to an object should
+          identify the _actual_ (derived) type of the object rather than
+          the _declared_ type, using the virtual function table.
+          'False' if the _declared_ type should be used.  (See 'set
+          print object' in *note Print Settings::).
+
+     'static_members'
+          'True' if static members should be included in the string
+          representation of a C++ object, 'False' if they shouldn't (see
+          'set print static-members' in *note Print Settings::).
+
+     'max_elements'
+          Number of array elements to print, or '0' to print an
+          unlimited number of elements (see 'set print elements' in
+          *note Print Settings::).
+
+     'max_depth'
+          The maximum depth to print for nested structs and unions, or
+          '-1' to print an unlimited number of elements (see 'set print
+          max-depth' in *note Print Settings::).
+
+     'repeat_threshold'
+          Set the threshold for suppressing display of repeated array
+          elements, or '0' to represent all elements, even if repeated.
+          (See 'set print repeats' in *note Print Settings::).
+
+     'format'
+          A string containing a single character representing the format
+          to use for the returned string.  For instance, ''x'' is
+          equivalent to using the GDB command 'print' with the '/x'
+          option and formats the value as a hexadecimal number.
 
  -- Function: Value.string ([encoding[, errors[, length]]])
      If this 'gdb.Value' represents a string, then this method converts
@@ -1385,6 +2654,26 @@ of the 'Type.fields' method for a description of the 'gdb.Field' class.
      The type code for this type.  The type code will be one of the
      'TYPE_CODE_' constants defined below.
 
+ -- Variable: Type.dynamic
+     A boolean indicating whether this type is dynamic.  In some
+     situations, such as Rust 'enum' types or Ada variant records, the
+     concrete type of a value may vary depending on its contents.  That
+     is, the declared type of a variable, or the type returned by
+     'gdb.lookup_type' may be dynamic; while the type of the variable's
+     value will be a concrete instance of that dynamic type.
+
+     For example, consider this code:
+          int n;
+          int array[n];
+
+     Here, at least conceptually (whether your compiler actually does
+     this is a separate issue), examining
+     'gdb.lookup_symbol("array", ...).type' could yield a 'gdb.Type'
+     which reports a size of 'None'.  This is the dynamic type.
+
+     However, examining 'gdb.parse_and_eval("array").type' would yield a
+     concrete type, whose length would be known.
+
  -- Variable: Type.name
      The name of this type.  If this type has no name, then 'None' is
      returned.
@@ -1392,13 +2681,19 @@ of the 'Type.fields' method for a description of the 'gdb.Field' class.
  -- Variable: Type.sizeof
      The size of this type, in target 'char' units.  Usually, a target's
      'char' type will be an 8-bit byte.  However, on some unusual
-     platforms, this type may have a different size.
+     platforms, this type may have a different size.  A dynamic type may
+     not have a fixed size; in this case, this attribute's value will be
+     'None'.
 
  -- Variable: Type.tag
      The tag name for this type.  The tag name is the name after
      'struct', 'union', or 'enum' in C and C++; not all languages have
      this concept.  If this type has no tag name, then 'None' is
      returned.
+
+ -- Variable: Type.objfile
+     The 'gdb.Objfile' that this type was defined in, or 'None' if there
+     is no associated objfile.
 
    The following methods are provided:
 
@@ -1416,7 +2711,11 @@ of the 'Type.fields' method for a description of the 'gdb.Field' class.
      'bitpos'
           This attribute is not available for 'enum' or 'static' (as in
           C++) fields.  The value is the position, counting in bits,
-          from the start of the containing type.
+          from the start of the containing type.  Note that, in a
+          dynamic type, the position of a field may not be constant.  In
+          this case, the value will be 'None'.  Also, a dynamic type may
+          have fields that do not appear in a corresponding concrete
+          type.
 
      'enumval'
           This attribute is only available for 'enum' fields, and its
@@ -1648,6 +2947,15 @@ Pretty Printing::).
      This method is optional.  If it does not exist, GDB will act as
      though the value has no children.
 
+     For efficiency, the 'children' method should lazily compute its
+     results.  This will let GDB read as few elements as necessary, for
+     example when various print settings (*note Print Settings::) or
+     '-var-list-children' (*note GDB/MI Variable Objects::) limit the
+     number of elements to be displayed.
+
+     Children may be hidden from display based on the value of 'set
+     print max-depth' (*note Print Settings::).
+
  -- Function: pretty_printer.display_hint (self)
      The CLI may call this method and use its result to change the
      formatting of a value.  The result will also be supplied to an MI
@@ -1655,7 +2963,7 @@ Pretty Printing::).
      printed.
 
      This method is optional.  If it does exist, this method must return
-     a string.
+     a string or the special value 'None'.
 
      Some display hints are predefined by GDB:
 
@@ -1676,6 +2984,9 @@ Pretty Printing::).
           string-printing function to format the string.  For the CLI
           this means adding quotation marks, possibly escaping some
           characters, respecting 'set print elements', and the like.
+
+     The special value 'None' causes GDB to apply the default display
+     rules.
 
  -- Function: pretty_printer.to_string (self)
      GDB will call this method to display the string representation of
@@ -1720,12 +3031,20 @@ File: gdb.info,  Node: Selecting Pretty-Printers,  Next: Writing a Pretty-Printe
 23.2.2.6 Selecting Pretty-Printers
 ..................................
 
-The Python list 'gdb.pretty_printers' contains an array of functions or
-callable objects that have been registered via addition as a
-pretty-printer.  Printers in this list are called 'global' printers,
-they're available when debugging all inferiors.  Each 'gdb.Progspace'
-contains a 'pretty_printers' attribute.  Each 'gdb.Objfile' also
-contains a 'pretty_printers' attribute.
+GDB provides several ways to register a pretty-printer: globally, per
+program space, and per objfile.  When choosing how to register your
+pretty-printer, a good rule is to register it with the smallest scope
+possible: that is prefer a specific objfile first, then a program space,
+and only register a printer globally as a last resort.
+
+ -- Variable: gdb.pretty_printers
+     The Python list 'gdb.pretty_printers' contains an array of
+     functions or callable objects that have been registered via
+     addition as a pretty-printer.  Printers in this list are called
+     'global' printers, they're available when debugging all inferiors.
+
+   Each 'gdb.Progspace' contains a 'pretty_printers' attribute.  Each
+'gdb.Objfile' also contains a 'pretty_printers' attribute.
 
    Each function on these lists is passed a single 'gdb.Value' argument
 and should return a pretty-printer object conforming to the interface
@@ -2597,11 +3916,10 @@ a method to read frame's registers:
 
  -- Function: PendingFrame.read_register (reg)
      This method returns the contents of the register REG in the frame
-     as a 'gdb.Value' object.  REG can be either a register number or a
-     register name; the values are platform-specific.  They are usually
-     found in the corresponding 'PLATFORM-tdep.h' file in the GDB source
-     tree.  If REG does not name a register for the current
-     architecture, this method will throw an exception.
+     as a 'gdb.Value' object.  For a description of the acceptable
+     values of REG see *note Frame.read_register:
+     gdbpy_frame_read_register.  If REG does not name a register for the
+     current architecture, this method will throw an exception.
 
      Note that this method will always return a 'gdb.Value' for a valid
      register name.  This does not mean that the value will be valid.
@@ -2653,6 +3971,11 @@ instance to be returned to GDB:
 
      Each attribute value should be an instance of 'gdb.Value'.
 
+ -- Function: PendingFrame.architecture ()
+     Return the 'gdb.Architecture' (*note Architectures In Python::) for
+     this 'gdb.PendingFrame'.  This represents the architecture of the
+     particular frame being unwound.
+
 Unwinder Output: UnwindInfo
 ---------------------------
 
@@ -2661,9 +3984,9 @@ Use 'PendingFrame.create_unwind_info' method described above to create a
 registers that have been saved in this frame:
 
  -- Function: gdb.UnwindInfo.add_saved_register (reg, value)
-     REG identifies the register.  It can be a number or a name, just as
-     for the 'PendingFrame.read_register' method above.  VALUE is a
-     register value (a 'gdb.Value' object).
+     REG identifies the register, for a description of the acceptable
+     values see *note Frame.read_register: gdbpy_frame_read_register.
+     VALUE is a register value (a 'gdb.Value' object).
 
 Unwinder Skeleton Code
 ----------------------
@@ -2681,7 +4004,7 @@ your unwinder class from it and structure the code as follows:
 
      class MyUnwinder(Unwinder):
          def __init__(....):
-             supe(MyUnwinder, self).__init___(<expects unwinder name argument>)
+             super(MyUnwinder, self).__init___(<expects unwinder name argument>)
 
          def __call__(pending_frame):
              if not <we recognize frame>:
@@ -3056,9 +4379,9 @@ File: gdb.info,  Node: Inferiors In Python,  Next: Events In Python,  Prev: Writ
 .............................
 
 Programs which are being run under GDB are called inferiors (*note
-Inferiors and Programs::).  Python scripts can access information about
-and manipulate inferiors controlled by GDB via objects of the
-'gdb.Inferior' class.
+Inferiors Connections and Programs::).  Python scripts can access
+information about and manipulate inferiors controlled by GDB via objects
+of the 'gdb.Inferior' class.
 
    The following inferior-related functions are available in the 'gdb'
 module:
@@ -3129,10 +4452,14 @@ module:
      where the pattern was found, or 'None' if the pattern could not be
      found.
 
- -- Function: Inferior.thread_from_thread_handle (thread_handle)
-     Return the thread object corresponding to THREAD_HANDLE, a thread
-     library specific data structure such as 'pthread_t' for pthreads
-     library implementations.
+ -- Function: Inferior.thread_from_handle (handle)
+     Return the thread object corresponding to HANDLE, a thread library
+     specific data structure such as 'pthread_t' for pthreads library
+     implementations.
+
+     The function 'Inferior.thread_from_thread_handle' provides the same
+     functionality, but use of 'Inferior.thread_from_thread_handle' is
+     deprecated.
 
 
 File: gdb.info,  Node: Events In Python,  Next: Threads In Python,  Prev: Inferiors In Python,  Up: Python API
@@ -3376,6 +4703,9 @@ module:
      This function returns the thread object for the selected thread.
      If there is no selected thread, this will return 'None'.
 
+   To get the list of threads for an inferior, use the
+'Inferior.threads()' method.  *Note Inferiors In Python::.
+
    A 'gdb.InferiorThread' object has the following attributes:
 
  -- Variable: InferiorThread.name
@@ -3429,6 +4759,13 @@ module:
 
  -- Function: InferiorThread.is_exited ()
      Return a Boolean indicating whether the thread is exited.
+
+ -- Function: InferiorThread.handle ()
+     Return the thread object's handle, represented as a Python 'bytes'
+     object.  A 'gdb.Value' representation of the handle may be
+     constructed via 'gdb.Value(bufobj, type)' where BUFOBJ is the
+     Python 'bytes' representation of the handle and TYPE is a
+     'gdb.Type' for the handle type.
 
 
 File: gdb.info,  Node: Recordings In Python,  Next: Commands In Python,  Prev: Threads In Python,  Up: Python API
@@ -3791,6 +5128,11 @@ defined in the 'gdb' module:
      tracepoints' at the GDB prompt to see a list of commands in this
      category.
 
+'gdb.COMMAND_TUI'
+     The command has to do with the text user interface (*note TUI::).
+     Type 'help tui' at the GDB prompt to see a list of commands in this
+     category.
+
 'gdb.COMMAND_USER'
      The command is a general purpose command for the user, and
      typically does not fit in one of the other categories.  Type 'help
@@ -4083,17 +5425,17 @@ File: gdb.info,  Node: Progspaces In Python,  Next: Objfiles In Python,  Prev: F
 
 A program space, or "progspace", represents a symbolic view of an
 address space.  It consists of all of the objfiles of the program.
-*Note Objfiles In Python::.  *Note program spaces: Inferiors and
-Programs, for more details about program spaces.
+*Note Objfiles In Python::.  *Note program spaces: Inferiors Connections
+and Programs, for more details about program spaces.
 
    The following progspace-related functions are available in the 'gdb'
 module:
 
  -- Function: gdb.current_progspace ()
      This function returns the program space of the currently selected
-     inferior.  *Note Inferiors and Programs::.  This is identical to
-     'gdb.selected_inferior().progspace' (*note Inferiors In Python::)
-     and is included for historical compatibility.
+     inferior.  *Note Inferiors Connections and Programs::.  This is
+     identical to 'gdb.selected_inferior().progspace' (*note Inferiors
+     In Python::) and is included for historical compatibility.
 
  -- Function: gdb.progspaces ()
      Return a sequence of all the progspaces currently known to GDB.
@@ -4181,7 +5523,7 @@ will be loaded.
      gdb.events.new_objfile.connect(new_objfile_handler)
      end
      (gdb) file /tmp/hello
-     Reading symbols from /tmp/hello...done.
+     Reading symbols from /tmp/hello...
      Computing the answer to the ultimate question ...
      (gdb) python print gdb.current_progspace().expensive_computation
      42
@@ -4304,7 +5646,7 @@ objfile.
      gdb.events.new_objfile.connect(new_objfile_handler)
      end
      (gdb) file ./hello
-     Reading symbols from ./hello...done.
+     Reading symbols from ./hello...
      (gdb) python print gdb.objfiles()[0].time_loaded
      2014-10-09 11:41:36.770345
 
@@ -4325,6 +5667,21 @@ objfile.
      (*note Separate Debug Files::), but if the file doesn't live in one
      of the standard places that GDB searches then this function can be
      used to add a debug info file from a different place.
+
+ -- Function: Objfile.lookup_global_symbol (name [, domain])
+     Search for a global symbol named NAME in this objfile.  Optionally,
+     the search scope can be restricted with the DOMAIN argument.  The
+     DOMAIN argument must be a domain constant defined in the 'gdb'
+     module and described in *note Symbols In Python::.  This function
+     is similar to 'gdb.lookup_global_symbol', except that the search is
+     limited to this objfile.
+
+     The result is a 'gdb.Symbol' object or 'None' if the symbol is not
+     found.
+
+ -- Function: Objfile.lookup_static_symbol (name [, domain])
+     Like 'Objfile.lookup_global_symbol', but searches for a global
+     symbol with static linkage named NAME in this objfile.
 
 
 File: gdb.info,  Node: Frames In Python,  Next: Blocks In Python,  Prev: Objfiles In Python,  Up: Python API
@@ -4486,9 +5843,24 @@ module:
      Python::.
 
  -- Function: Frame.read_register (register)
-     Return the value of REGISTER in this frame.  The REGISTER argument
-     must be a string (e.g., ''sp'' or ''rax'').  Returns a 'Gdb.Value'
-     object.  Throws an exception if REGISTER does not exist.
+     Return the value of REGISTER in this frame.  Returns a 'Gdb.Value'
+     object.  Throws an exception if REGISTER does not exist.  The
+     REGISTER argument must be one of the following:
+       1. A string that is the name of a valid register (e.g., ''sp'' or
+          ''rax'').
+       2. A 'gdb.RegisterDescriptor' object (*note Registers In
+          Python::).
+       3. A GDB internal, platform specific number.  Using these numbers
+          is supported for historic reasons, but is not recommended as
+          future changes to GDB could change the mapping between numbers
+          and the registers they represent, breaking any Python code
+          that uses the platform-specific numbers.  The numbers are
+          usually found in the corresponding 'PLATFORM-tdep.h' file in
+          the GDB source tree.
+     Using a string to access registers will be slightly slower than the
+     other two methods as GDB must look up the mapping between name and
+     internal register number.  If performance is critical consider
+     looking up and caching a 'gdb.RegisterDescriptor' object.
 
  -- Function: Frame.read_var (variable [, block])
      Return the value of VARIABLE in this frame.  If the optional
@@ -4558,7 +5930,10 @@ over all the blocks in a symbol table (*note Symbol Tables In Python::).
 Symbols In Python::) local to the block.  Python programs should not
 assume that a specific block object will always contain a given symbol,
 since changes in GDB features and infrastructure may cause symbols move
-across blocks in a symbol table.
+across blocks in a symbol table.  You can also use Python's "dictionary
+syntax" to access variables in this block, e.g.:
+
+     symbol = some_block['variable']  # symbol is of type gdb.Symbol
 
    The following block-related functions are available in the 'gdb'
 module:
@@ -4664,6 +6039,51 @@ module:
 
      The result is a 'gdb.Symbol' object or 'None' if the symbol is not
      found.
+
+ -- Function: gdb.lookup_static_symbol (name [, domain])
+     This function searches for a global symbol with static linkage by
+     name.  The search scope can be restricted to by the domain
+     argument.
+
+     NAME is the name of the symbol.  It must be a string.  The optional
+     DOMAIN argument restricts the search to the domain type.  The
+     DOMAIN argument must be a domain constant defined in the 'gdb'
+     module and described later in this chapter.
+
+     The result is a 'gdb.Symbol' object or 'None' if the symbol is not
+     found.
+
+     Note that this function will not find function-scoped static
+     variables.  To look up such variables, iterate over the variables
+     of the function's 'gdb.Block' and check that 'block.addr_class' is
+     'gdb.SYMBOL_LOC_STATIC'.
+
+     There can be multiple global symbols with static linkage with the
+     same name.  This function will only return the first matching
+     symbol that it finds.  Which symbol is found depends on where GDB
+     is currently stopped, as GDB will first search for matching symbols
+     in the current object file, and then search all other object files.
+     If the application is not yet running then GDB will search all
+     object files in the order they appear in the debug information.
+
+ -- Function: gdb.lookup_static_symbols (name [, domain])
+     Similar to 'gdb.lookup_static_symbol', this function searches for
+     global symbols with static linkage by name, and optionally
+     restricted by the domain argument.  However, this function returns
+     a list of all matching symbols found, not just the first one.
+
+     NAME is the name of the symbol.  It must be a string.  The optional
+     DOMAIN argument restricts the search to the domain type.  The
+     DOMAIN argument must be a domain constant defined in the 'gdb'
+     module and described later in this chapter.
+
+     The result is a list of 'gdb.Symbol' objects which could be empty
+     if no matching symbols were found.
+
+     Note that this function will not find function-scoped static
+     variables.  To look up such variables, iterate over the variables
+     of the function's 'gdb.Block' and check that 'block.addr_class' is
+     'gdb.SYMBOL_LOC_STATIC'.
 
    A 'gdb.Symbol' object has the following attributes:
 
@@ -5277,7 +6697,7 @@ string is immediately retrieved and encoded on creation.
      writable.
 
 
-File: gdb.info,  Node: Architectures In Python,  Prev: Lazy Strings In Python,  Up: Python API
+File: gdb.info,  Node: Architectures In Python,  Next: Registers In Python,  Prev: Lazy Strings In Python,  Up: Python API
 
 23.2.2.33 Python representation of architectures
 ................................................
@@ -5322,6 +6742,163 @@ of the 'gdb.Architecture' class.
      'length'
           The value corresponding to this key is the length (integer
           value) of the instruction in bytes.
+
+ -- Function: Architecture.registers ([ REGGROUP ])
+     Return a 'gdb.RegisterDescriptorIterator' (*note Registers In
+     Python::) for all of the registers in REGGROUP, a string that is
+     the name of a register group.  If REGGROUP is omitted, or is the
+     empty string, then the register group 'all' is assumed.
+
+ -- Function: Architecture.register_groups ()
+     Return a 'gdb.RegisterGroupsIterator' (*note Registers In Python::)
+     for all of the register groups available for the
+     'gdb.Architecture'.
+
+
+File: gdb.info,  Node: Registers In Python,  Next: TUI Windows In Python,  Prev: Architectures In Python,  Up: Python API
+
+23.2.2.34 Registers In Python
+.............................
+
+Python code can request from a 'gdb.Architecture' information about the
+set of registers available (*note 'Architecture.registers':
+gdbpy_architecture_registers.).  The register information is returned as
+a 'gdb.RegisterDescriptorIterator', which is an iterator that in turn
+returns 'gdb.RegisterDescriptor' objects.
+
+   A 'gdb.RegisterDescriptor' does not provide the value of a register
+(*note 'Frame.read_register': gdbpy_frame_read_register. for reading a
+register's value), instead the 'RegisterDescriptor' is a way to discover
+which registers are available for a particular architecture.
+
+   A 'gdb.RegisterDescriptor' has the following read-only properties:
+
+ -- Variable: RegisterDescriptor.name
+     The name of this register.
+
+   It is also possible to lookup a register descriptor based on its name
+using the following 'gdb.RegisterDescriptorIterator' function:
+
+ -- Function: RegisterDescriptorIterator.find (NAME)
+     Takes NAME as an argument, which must be a string, and returns a
+     'gdb.RegisterDescriptor' for the register with that name, or 'None'
+     if there is no register with that name.
+
+   Python code can also request from a 'gdb.Architecture' information
+about the set of register groups available on a given architecture
+(*note 'Architecture.register_groups': gdbpy_architecture_reggroups.).
+
+   Every register can be a member of zero or more register groups.  Some
+register groups are used internally within GDB to control things like
+which registers must be saved when calling into the program being
+debugged (*note Calling Program Functions: Calling.).  Other register
+groups exist to allow users to easily see related sets of registers in
+commands like 'info registers' (*note 'info registers REGGROUP':
+info_registers_reggroup.).
+
+   The register groups information is returned as a
+'gdb.RegisterGroupsIterator', which is an iterator that in turn returns
+'gdb.RegisterGroup' objects.
+
+   A 'gdb.RegisterGroup' object has the following read-only properties:
+
+ -- Variable: RegisterGroup.name
+     A string that is the name of this register group.
+
+
+File: gdb.info,  Node: TUI Windows In Python,  Prev: Registers In Python,  Up: Python API
+
+23.2.2.35 Implementing new TUI windows
+......................................
+
+New TUI (*note TUI::) windows can be implemented in Python.
+
+ -- Function: gdb.register_window_type (NAME, FACTORY)
+     Because TUI windows are created and destroyed depending on the
+     layout the user chooses, new window types are implemented by
+     registering a factory function with GDB.
+
+     NAME is the name of the new window.  It's an error to try to
+     replace one of the built-in windows, but other window types can be
+     replaced.
+
+     FUNCTION is a factory function that is called to create the TUI
+     window.  This is called with a single argument of type
+     'gdb.TuiWindow', described below.  It should return an object that
+     implements the TUI window protocol, also described below.
+
+   As mentioned above, when a factory function is called, it is passed a
+an object of type 'gdb.TuiWindow'.  This object has these methods and
+attributes:
+
+ -- Function: TuiWindow.is_valid ()
+     This method returns 'True' when this window is valid.  When the
+     user changes the TUI layout, windows no longer visible in the new
+     layout will be destroyed.  At this point, the 'gdb.TuiWindow' will
+     no longer be valid, and methods (and attributes) other than
+     'is_valid' will throw an exception.
+
+ -- Variable: TuiWindow.width
+     This attribute holds the width of the window.  It is not writable.
+
+ -- Variable: TuiWindow.height
+     This attribute holds the height of the window.  It is not writable.
+
+ -- Variable: TuiWindow.title
+     This attribute holds the window's title, a string.  This is
+     normally displayed above the window.  This attribute can be
+     modified.
+
+ -- Function: TuiWindow.erase ()
+     Remove all the contents of the window.
+
+ -- Function: TuiWindow.write (STRING)
+     Write STRING to the window.  STRING can contain ANSI terminal
+     escape styling sequences; GDB will translate these as appropriate
+     for the terminal.
+
+   The factory function that you supply should return an object
+conforming to the TUI window protocol.  These are the method that can be
+called on this object, which is referred to below as the "window
+object".  The methods documented below are optional; if the object does
+not implement one of these methods, GDB will not attempt to call it.
+Additional new methods may be added to the window protocol in the
+future.  GDB guarantees that they will begin with a lower-case letter,
+so you can start implementation methods with upper-case letters or
+underscore to avoid any future conflicts.
+
+ -- Function: Window.close ()
+     When the TUI window is closed, the 'gdb.TuiWindow' object will be
+     put into an invalid state.  At this time, GDB will call 'close'
+     method on the window object.
+
+     After this method is called, GDB will discard any references it
+     holds on this window object, and will no longer call methods on
+     this object.
+
+ -- Function: Window.render ()
+     In some situations, a TUI window can change size.  For example,
+     this can happen if the user resizes the terminal, or changes the
+     layout.  When this happens, GDB will call the 'render' method on
+     the window object.
+
+     If your window is intended to update in response to changes in the
+     inferior, you will probably also want to register event listeners
+     and send output to the 'gdb.TuiWindow'.
+
+ -- Function: Window.hscroll (NUM)
+     This is a request to scroll the window horizontally.  NUM is the
+     amount by which to scroll, with negative numbers meaning to scroll
+     right.  In the TUI model, it is the viewport that moves, not the
+     contents.  A positive argument should cause the viewport to move
+     right, and so the content should appear to move to the left.
+
+ -- Function: Window.vscroll (NUM)
+     This is a request to scroll the window vertically.  NUM is the
+     amount by which to scroll, with negative numbers meaning to scroll
+     backward.  In the TUI model, it is the viewport that moves, not the
+     contents.  A positive argument should cause the viewport to move
+     down, and so the content should appear to move up.
 
 
 File: gdb.info,  Node: Python Auto-loading,  Next: Python modules,  Prev: Python API,  Up: Python
@@ -5556,12 +7133,11 @@ This module provides a method for prompt value-substitution.
 
      For example:
 
-          substitute_prompt (``frame: \f,
-                             print arguments: \p{print frame-arguments}'')
+          substitute_prompt ("frame: \f, args: \p{print frame-arguments}")
 
 will return the string:
 
-          "frame: main, print arguments: scalars"
+          "frame: main, args: scalars"
 
 
 File: gdb.info,  Node: Guile,  Next: Auto-loading extensions,  Prev: Python,  Up: Extending GDB
@@ -5594,8 +7170,7 @@ GNU project's official extension language.
 closely, so concepts there should carry over.  However, some things are
 done differently where it makes sense.
 
-   GDB requires Guile version 2.0 or greater.  Older versions are not
-supported.
+   GDB requires Guile version 3.0, 2.2, or 2.0.
 
    Guile scripts used by GDB should be installed in
 'DATA-DIRECTORY/guile', where DATA-DIRECTORY is the data directory as
@@ -5660,1637 +7235,4 @@ interpreter:
      argument that is the name of the script to load.  See the Guile
      documentation for a description of this function.  (*note
      (guile)Loading::).
-
-
-File: gdb.info,  Node: Guile API,  Next: Guile Auto-loading,  Prev: Guile Commands,  Up: Guile
-
-23.3.3 Guile API
-----------------
-
-You can get quick online help for GDB's Guile API by issuing the command
-'help guile', or by issuing the command ',help' from an interactive
-Guile session.  Furthermore, most Guile procedures provided by GDB have
-doc strings which can be obtained with ',describe PROCEDURE-NAME' or ',d
-PROCEDURE-NAME' from the Guile interactive prompt.
-
-* Menu:
-
-* Basic Guile::              Basic Guile Functions
-* Guile Configuration::      Guile configuration variables
-* GDB Scheme Data Types::    Scheme representations of GDB objects
-* Guile Exception Handling:: How Guile exceptions are translated
-* Values From Inferior In Guile:: Guile representation of values
-* Arithmetic In Guile::      Arithmetic in Guile
-* Types In Guile::           Guile representation of types
-* Guile Pretty Printing API:: Pretty-printing values with Guile
-* Selecting Guile Pretty-Printers:: How GDB chooses a pretty-printer
-* Writing a Guile Pretty-Printer:: Writing a pretty-printer
-* Commands In Guile::        Implementing new commands in Guile
-* Parameters In Guile::      Adding new GDB parameters
-* Progspaces In Guile::      Program spaces
-* Objfiles In Guile::        Object files in Guile
-* Frames In Guile::          Accessing inferior stack frames from Guile
-* Blocks In Guile::          Accessing blocks from Guile
-* Symbols In Guile::         Guile representation of symbols
-* Symbol Tables In Guile::   Guile representation of symbol tables
-* Breakpoints In Guile::     Manipulating breakpoints using Guile
-* Lazy Strings In Guile::    Guile representation of lazy strings
-* Architectures In Guile::   Guile representation of architectures
-* Disassembly In Guile::     Disassembling instructions from Guile
-* I/O Ports in Guile::       GDB I/O ports
-* Memory Ports in Guile::    Accessing memory through ports and bytevectors
-* Iterators In Guile::       Basic iterator support
-
-
-File: gdb.info,  Node: Basic Guile,  Next: Guile Configuration,  Up: Guile API
-
-23.3.3.1 Basic Guile
-....................
-
-At startup, GDB overrides Guile's 'current-output-port' and
-'current-error-port' to print using GDB's output-paging streams.  A
-Guile program which outputs to one of these streams may have its output
-interrupted by the user (*note Screen Size::).  In this situation, a
-Guile 'signal' exception is thrown with value 'SIGINT'.
-
-   Guile's history mechanism uses the same naming as GDB's, namely the
-user of dollar-variables (e.g., $1, $2, etc.).  The results of
-evaluations in Guile and in GDB are counted separately, '$1' in Guile is
-not the same value as '$1' in GDB.
-
-   GDB is not thread-safe.  If your Guile program uses multiple threads,
-you must be careful to only call GDB-specific functions in the GDB
-thread.
-
-   Some care must be taken when writing Guile code to run in GDB.  Two
-things are worth noting in particular:
-
-   * GDB installs handlers for 'SIGCHLD' and 'SIGINT'.  Guile code must
-     not override these, or even change the options using 'sigaction'.
-     If your program changes the handling of these signals, GDB will
-     most likely stop working correctly.  Note that it is unfortunately
-     common for GUI toolkits to install a 'SIGCHLD' handler.
-
-   * GDB takes care to mark its internal file descriptors as
-     close-on-exec.  However, this cannot be done in a thread-safe way
-     on all platforms.  Your Guile programs should be aware of this and
-     should both create new file descriptors with the close-on-exec flag
-     set and arrange to close unneeded file descriptors before starting
-     a child process.
-
-   GDB introduces a new Guile module, named 'gdb'.  All methods and
-classes added by GDB are placed in this module.  GDB does not
-automatically 'import' the 'gdb' module, scripts must do this
-themselves.  There are various options for how to import a module, so
-GDB leaves the choice of how the 'gdb' module is imported to the user.
-To simplify interactive use, it is recommended to add one of the
-following to your ~/.gdbinit.
-
-     guile (use-modules (gdb))
-
-     guile (use-modules ((gdb) #:renamer (symbol-prefix-proc 'gdb:)))
-
-   Which one to choose depends on your preference.  The second one adds
-'gdb:' as a prefix to all module functions and variables.
-
-   The rest of this manual assumes the 'gdb' module has been imported
-without any prefix.  See the Guile documentation for 'use-modules' for
-more information (*note (guile)Using Guile Modules::).
-
-   Example:
-
-     (gdb) guile (value-type (make-value 1))
-     ERROR: Unbound variable: value-type
-     Error while executing Scheme code.
-     (gdb) guile (use-modules (gdb))
-     (gdb) guile (value-type (make-value 1))
-     int
-     (gdb)
-
-   The '(gdb)' module provides these basic Guile functions.
-
- -- Scheme Procedure: execute command [#:from-tty boolean] [#:to-string
-          boolean]
-     Evaluate COMMAND, a string, as a GDB CLI command.  If a GDB
-     exception happens while COMMAND runs, it is translated as described
-     in *note Guile Exception Handling: Guile Exception Handling.
-
-     FROM-TTY specifies whether GDB ought to consider this command as
-     having originated from the user invoking it interactively.  It must
-     be a boolean value.  If omitted, it defaults to '#f'.
-
-     By default, any output produced by COMMAND is sent to GDB's
-     standard output (and to the log output if logging is turned on).
-     If the TO-STRING parameter is '#t', then output will be collected
-     by 'execute' and returned as a string.  The default is '#f', in
-     which case the return value is unspecified.  If TO-STRING is '#t',
-     the GDB virtual terminal will be temporarily set to unlimited width
-     and height, and its pagination will be disabled; *note Screen
-     Size::.
-
- -- Scheme Procedure: history-ref number
-     Return a value from GDB's value history (*note Value History::).
-     The NUMBER argument indicates which history element to return.  If
-     NUMBER is negative, then GDB will take its absolute value and count
-     backward from the last element (i.e., the most recent element) to
-     find the value to return.  If NUMBER is zero, then GDB will return
-     the most recent element.  If the element specified by NUMBER
-     doesn't exist in the value history, a 'gdb:error' exception will be
-     raised.
-
-     If no exception is raised, the return value is always an instance
-     of '<gdb:value>' (*note Values From Inferior In Guile::).
-
-     _Note:_ GDB's value history is independent of Guile's.  '$1' in
-     GDB's value history contains the result of evaluating an expression
-     from GDB's command line and '$1' from Guile's history contains the
-     result of evaluating an expression from Guile's command line.
-
- -- Scheme Procedure: history-append! value
-     Append VALUE, an instance of '<gdb:value>', to GDB's value history.
-     Return its index in the history.
-
-     Putting into history values returned by Guile extensions will allow
-     the user convenient access to those values via CLI history
-     facilities.
-
- -- Scheme Procedure: parse-and-eval expression
-     Parse EXPRESSION as an expression in the current language, evaluate
-     it, and return the result as a '<gdb:value>'.  The EXPRESSION must
-     be a string.
-
-     This function can be useful when implementing a new command (*note
-     Commands In Guile::), as it provides a way to parse the command's
-     arguments as an expression.  It is also is useful when computing
-     values.  For example, it is the only way to get the value of a
-     convenience variable (*note Convenience Vars::) as a '<gdb:value>'.
-
-
-File: gdb.info,  Node: Guile Configuration,  Next: GDB Scheme Data Types,  Prev: Basic Guile,  Up: Guile API
-
-23.3.3.2 Guile Configuration
-............................
-
-GDB provides these Scheme functions to access various configuration
-parameters.
-
- -- Scheme Procedure: data-directory
-     Return a string containing GDB's data directory.  This directory
-     contains GDB's ancillary files.
-
- -- Scheme Procedure: guile-data-directory
-     Return a string containing GDB's Guile data directory.  This
-     directory contains the Guile modules provided by GDB.
-
- -- Scheme Procedure: gdb-version
-     Return a string containing the GDB version.
-
- -- Scheme Procedure: host-config
-     Return a string containing the host configuration.  This is the
-     string passed to '--host' when GDB was configured.
-
- -- Scheme Procedure: target-config
-     Return a string containing the target configuration.  This is the
-     string passed to '--target' when GDB was configured.
-
-
-File: gdb.info,  Node: GDB Scheme Data Types,  Next: Guile Exception Handling,  Prev: Guile Configuration,  Up: Guile API
-
-23.3.3.3 GDB Scheme Data Types
-..............................
-
-The values exposed by GDB to Guile are known as "GDB objects".  There
-are several kinds of GDB object, and each is disjoint from all other
-types known to Guile.
-
- -- Scheme Procedure: gdb-object-kind object
-     Return the kind of the GDB object, e.g., '<gdb:breakpoint>', as a
-     symbol.
-
-   GDB defines the following object types:
-
-'<gdb:arch>'
-     *Note Architectures In Guile::.
-
-'<gdb:block>'
-     *Note Blocks In Guile::.
-
-'<gdb:block-symbols-iterator>'
-     *Note Blocks In Guile::.
-
-'<gdb:breakpoint>'
-     *Note Breakpoints In Guile::.
-
-'<gdb:command>'
-     *Note Commands In Guile::.
-
-'<gdb:exception>'
-     *Note Guile Exception Handling::.
-
-'<gdb:frame>'
-     *Note Frames In Guile::.
-
-'<gdb:iterator>'
-     *Note Iterators In Guile::.
-
-'<gdb:lazy-string>'
-     *Note Lazy Strings In Guile::.
-
-'<gdb:objfile>'
-     *Note Objfiles In Guile::.
-
-'<gdb:parameter>'
-     *Note Parameters In Guile::.
-
-'<gdb:pretty-printer>'
-     *Note Guile Pretty Printing API::.
-
-'<gdb:pretty-printer-worker>'
-     *Note Guile Pretty Printing API::.
-
-'<gdb:progspace>'
-     *Note Progspaces In Guile::.
-
-'<gdb:symbol>'
-     *Note Symbols In Guile::.
-
-'<gdb:symtab>'
-     *Note Symbol Tables In Guile::.
-
-'<gdb:sal>'
-     *Note Symbol Tables In Guile::.
-
-'<gdb:type>'
-     *Note Types In Guile::.
-
-'<gdb:field>'
-     *Note Types In Guile::.
-
-'<gdb:value>'
-     *Note Values From Inferior In Guile::.
-
-   The following GDB objects are managed internally so that the Scheme
-function 'eq?' may be applied to them.
-
-'<gdb:arch>'
-'<gdb:block>'
-'<gdb:breakpoint>'
-'<gdb:frame>'
-'<gdb:objfile>'
-'<gdb:progspace>'
-'<gdb:symbol>'
-'<gdb:symtab>'
-'<gdb:type>'
-
-
-File: gdb.info,  Node: Guile Exception Handling,  Next: Values From Inferior In Guile,  Prev: GDB Scheme Data Types,  Up: Guile API
-
-23.3.3.4 Guile Exception Handling
-.................................
-
-When executing the 'guile' command, Guile exceptions uncaught within the
-Guile code are translated to calls to the GDB error-reporting mechanism.
-If the command that called 'guile' does not handle the error, GDB will
-terminate it and report the error according to the setting of the 'guile
-print-stack' parameter.
-
-   The 'guile print-stack' parameter has three settings:
-
-'none'
-     Nothing is printed.
-
-'message'
-     An error message is printed containing the Guile exception name,
-     the associated value, and the Guile call stack backtrace at the
-     point where the exception was raised.  Example:
-
-          (gdb) guile (display foo)
-          ERROR: In procedure memoize-variable-access!:
-          ERROR: Unbound variable: foo
-          Error while executing Scheme code.
-
-'full'
-     In addition to an error message a full backtrace is printed.
-
-          (gdb) set guile print-stack full
-          (gdb) guile (display foo)
-          Guile Backtrace:
-          In ice-9/boot-9.scm:
-           157: 10 [catch #t #<catch-closure 2c76e20> ...]
-          In unknown file:
-             ?: 9 [apply-smob/1 #<catch-closure 2c76e20>]
-          In ice-9/boot-9.scm:
-           157: 8 [catch #t #<catch-closure 2c76d20> ...]
-          In unknown file:
-             ?: 7 [apply-smob/1 #<catch-closure 2c76d20>]
-             ?: 6 [call-with-input-string "(display foo)" ...]
-          In ice-9/boot-9.scm:
-          2320: 5 [save-module-excursion #<procedure 2c2dc30 ... ()>]
-          In ice-9/eval-string.scm:
-            44: 4 [read-and-eval #<input: string 27cb410> #:lang ...]
-            37: 3 [lp (display foo)]
-          In ice-9/eval.scm:
-           387: 2 [eval # ()]
-           393: 1 [eval #<memoized foo> ()]
-          In unknown file:
-             ?: 0 [memoize-variable-access! #<memoized foo> ...]
-
-          ERROR: In procedure memoize-variable-access!:
-          ERROR: Unbound variable: foo
-          Error while executing Scheme code.
-
-   GDB errors that happen in GDB commands invoked by Guile code are
-converted to Guile exceptions.  The type of the Guile exception depends
-on the error.
-
-   Guile procedures provided by GDB can throw the standard Guile
-exceptions like 'wrong-type-arg' and 'out-of-range'.
-
-   User interrupt (via 'C-c' or by typing 'q' at a pagination prompt) is
-translated to a Guile 'signal' exception with value 'SIGINT'.
-
-   GDB Guile procedures can also throw these exceptions:
-
-'gdb:error'
-     This exception is a catch-all for errors generated from within GDB.
-
-'gdb:invalid-object'
-     This exception is thrown when accessing Guile objects that wrap
-     underlying GDB objects have become invalid.  For example, a
-     '<gdb:breakpoint>' object becomes invalid if the user deletes it
-     from the command line.  The object still exists in Guile, but the
-     object it represents is gone.  Further operations on this
-     breakpoint will throw this exception.
-
-'gdb:memory-error'
-     This exception is thrown when an operation tried to access invalid
-     memory in the inferior.
-
-'gdb:pp-type-error'
-     This exception is thrown when a Guile pretty-printer passes a bad
-     object to GDB.
-
-   The following exception-related procedures are provided by the
-'(gdb)' module.
-
- -- Scheme Procedure: make-exception key args
-     Return a '<gdb:exception>' object given by its KEY and ARGS, which
-     are the standard Guile parameters of an exception.  See the Guile
-     documentation for more information (*note (guile)Exceptions::).
-
- -- Scheme Procedure: exception? object
-     Return '#t' if OBJECT is a '<gdb:exception>' object.  Otherwise
-     return '#f'.
-
- -- Scheme Procedure: exception-key exception
-     Return the ARGS field of a '<gdb:exception>' object.
-
- -- Scheme Procedure: exception-args exception
-     Return the ARGS field of a '<gdb:exception>' object.
-
-
-File: gdb.info,  Node: Values From Inferior In Guile,  Next: Arithmetic In Guile,  Prev: Guile Exception Handling,  Up: Guile API
-
-23.3.3.5 Values From Inferior In Guile
-......................................
-
-GDB provides values it obtains from the inferior program in an object of
-type '<gdb:value>'.  GDB uses this object for its internal bookkeeping
-of the inferior's values, and for fetching values when necessary.
-
-   GDB does not memoize '<gdb:value>' objects.  'make-value' always
-returns a fresh object.
-
-     (gdb) guile (eq? (make-value 1) (make-value 1))
-     $1 = #f
-     (gdb) guile (equal? (make-value 1) (make-value 1))
-     $1 = #t
-
-   A '<gdb:value>' that represents a function can be executed via
-inferior function call with 'value-call'.  Any arguments provided to the
-call must match the function's prototype, and must be provided in the
-order specified by that prototype.
-
-   For example, 'some-val' is a '<gdb:value>' instance representing a
-function that takes two integers as arguments.  To execute this
-function, call it like so:
-
-     (define result (value-call some-val 10 20))
-
-   Any values returned from a function call are '<gdb:value>' objects.
-
-   Note: Unlike Python scripting in GDB, inferior values that are simple
-scalars cannot be used directly in Scheme expressions that are valid for
-the value's data type.  For example, '(+ (parse-and-eval "int_variable")
-2)' does not work.  And inferior values that are structures or instances
-of some class cannot be accessed using any special syntax, instead
-'value-field' must be used.
-
-   The following value-related procedures are provided by the '(gdb)'
-module.
-
- -- Scheme Procedure: value? object
-     Return '#t' if OBJECT is a '<gdb:value>' object.  Otherwise return
-     '#f'.
-
- -- Scheme Procedure: make-value value [#:type type]
-     Many Scheme values can be converted directly to a '<gdb:value>'
-     with this procedure.  If TYPE is specified, the result is a value
-     of this type, and if VALUE can't be represented with this type an
-     exception is thrown.  Otherwise the type of the result is
-     determined from VALUE as described below.
-
-     *Note Architectures In Guile::, for a list of the builtin types for
-     an architecture.
-
-     Here's how Scheme values are converted when TYPE argument to
-     'make-value' is not specified:
-
-     Scheme boolean
-          A Scheme boolean is converted the boolean type for the current
-          language.
-
-     Scheme integer
-          A Scheme integer is converted to the first of a C 'int',
-          'unsigned int', 'long', 'unsigned long', 'long long' or
-          'unsigned long long' type for the current architecture that
-          can represent the value.
-
-          If the Scheme integer cannot be represented as a target
-          integer an 'out-of-range' exception is thrown.
-
-     Scheme real
-          A Scheme real is converted to the C 'double' type for the
-          current architecture.
-
-     Scheme string
-          A Scheme string is converted to a string in the current target
-          language using the current target encoding.  Characters that
-          cannot be represented in the current target encoding are
-          replaced with the corresponding escape sequence.  This is
-          Guile's 'SCM_FAILED_CONVERSION_ESCAPE_SEQUENCE' conversion
-          strategy (*note (guile)Strings::).
-
-          Passing TYPE is not supported in this case, if it is provided
-          a 'wrong-type-arg' exception is thrown.
-
-     '<gdb:lazy-string>'
-          If VALUE is a '<gdb:lazy-string>' object (*note Lazy Strings
-          In Guile::), then the 'lazy-string->value' procedure is
-          called, and its result is used.
-
-          Passing TYPE is not supported in this case, if it is provided
-          a 'wrong-type-arg' exception is thrown.
-
-     Scheme bytevector
-          If VALUE is a Scheme bytevector and TYPE is provided, VALUE
-          must be the same size, in bytes, of values of type TYPE, and
-          the result is essentially created by using 'memcpy'.
-
-          If VALUE is a Scheme bytevector and TYPE is not provided, the
-          result is an array of type 'uint8' of the same length.
-
- -- Scheme Procedure: value-optimized-out? value
-     Return '#t' if the compiler optimized out VALUE, thus it is not
-     available for fetching from the inferior.  Otherwise return '#f'.
-
- -- Scheme Procedure: value-address value
-     If VALUE is addressable, returns a '<gdb:value>' object
-     representing the address.  Otherwise, '#f' is returned.
-
- -- Scheme Procedure: value-type value
-     Return the type of VALUE as a '<gdb:type>' object (*note Types In
-     Guile::).
-
- -- Scheme Procedure: value-dynamic-type value
-     Return the dynamic type of VALUE.  This uses C++ run-time type
-     information (RTTI) to determine the dynamic type of the value.  If
-     the value is of class type, it will return the class in which the
-     value is embedded, if any.  If the value is of pointer or reference
-     to a class type, it will compute the dynamic type of the referenced
-     object, and return a pointer or reference to that type,
-     respectively.  In all other cases, it will return the value's
-     static type.
-
-     Note that this feature will only work when debugging a C++ program
-     that includes RTTI for the object in question.  Otherwise, it will
-     just return the static type of the value as in 'ptype foo'.  *Note
-     ptype: Symbols.
-
- -- Scheme Procedure: value-cast value type
-     Return a new instance of '<gdb:value>' that is the result of
-     casting VALUE to the type described by TYPE, which must be a
-     '<gdb:type>' object.  If the cast cannot be performed for some
-     reason, this method throws an exception.
-
- -- Scheme Procedure: value-dynamic-cast value type
-     Like 'value-cast', but works as if the C++ 'dynamic_cast' operator
-     were used.  Consult a C++ reference for details.
-
- -- Scheme Procedure: value-reinterpret-cast value type
-     Like 'value-cast', but works as if the C++ 'reinterpret_cast'
-     operator were used.  Consult a C++ reference for details.
-
- -- Scheme Procedure: value-dereference value
-     For pointer data types, this method returns a new '<gdb:value>'
-     object whose contents is the object pointed to by VALUE.  For
-     example, if 'foo' is a C pointer to an 'int', declared in your C
-     program as
-
-          int *foo;
-
-     then you can use the corresponding '<gdb:value>' to access what
-     'foo' points to like this:
-
-          (define bar (value-dereference foo))
-
-     The result 'bar' will be a '<gdb:value>' object holding the value
-     pointed to by 'foo'.
-
-     A similar function 'value-referenced-value' exists which also
-     returns '<gdb:value>' objects corresonding to the values pointed to
-     by pointer values (and additionally, values referenced by reference
-     values).  However, the behavior of 'value-dereference' differs from
-     'value-referenced-value' by the fact that the behavior of
-     'value-dereference' is identical to applying the C unary operator
-     '*' on a given value.  For example, consider a reference to a
-     pointer 'ptrref', declared in your C++ program as
-
-          typedef int *intptr;
-          ...
-          int val = 10;
-          intptr ptr = &val;
-          intptr &ptrref = ptr;
-
-     Though 'ptrref' is a reference value, one can apply the method
-     'value-dereference' to the '<gdb:value>' object corresponding to it
-     and obtain a '<gdb:value>' which is identical to that corresponding
-     to 'val'.  However, if you apply the method
-     'value-referenced-value', the result would be a '<gdb:value>'
-     object identical to that corresponding to 'ptr'.
-
-          (define scm-ptrref (parse-and-eval "ptrref"))
-          (define scm-val (value-dereference scm-ptrref))
-          (define scm-ptr (value-referenced-value scm-ptrref))
-
-     The '<gdb:value>' object 'scm-val' is identical to that
-     corresponding to 'val', and 'scm-ptr' is identical to that
-     corresponding to 'ptr'.  In general, 'value-dereference' can be
-     applied whenever the C unary operator '*' can be applied to the
-     corresponding C value.  For those cases where applying both
-     'value-dereference' and 'value-referenced-value' is allowed, the
-     results obtained need not be identical (as we have seen in the
-     above example).  The results are however identical when applied on
-     '<gdb:value>' objects corresponding to pointers ('<gdb:value>'
-     objects with type code 'TYPE_CODE_PTR') in a C/C++ program.
-
- -- Scheme Procedure: value-referenced-value value
-     For pointer or reference data types, this method returns a new
-     '<gdb:value>' object corresponding to the value referenced by the
-     pointer/reference value.  For pointer data types,
-     'value-dereference' and 'value-referenced-value' produce identical
-     results.  The difference between these methods is that
-     'value-dereference' cannot get the values referenced by reference
-     values.  For example, consider a reference to an 'int', declared in
-     your C++ program as
-
-          int val = 10;
-          int &ref = val;
-
-     then applying 'value-dereference' to the '<gdb:value>' object
-     corresponding to 'ref' will result in an error, while applying
-     'value-referenced-value' will result in a '<gdb:value>' object
-     identical to that corresponding to 'val'.
-
-          (define scm-ref (parse-and-eval "ref"))
-          (define err-ref (value-dereference scm-ref))      ;; error
-          (define scm-val (value-referenced-value scm-ref)) ;; ok
-
-     The '<gdb:value>' object 'scm-val' is identical to that
-     corresponding to 'val'.
-
- -- Scheme Procedure: value-field value field-name
-     Return field FIELD-NAME from '<gdb:value>' object VALUE.
-
- -- Scheme Procedure: value-subscript value index
-     Return the value of array VALUE at index INDEX.  The VALUE argument
-     must be a subscriptable '<gdb:value>' object.
-
- -- Scheme Procedure: value-call value arg-list
-     Perform an inferior function call, taking VALUE as a pointer to the
-     function to call.  Each element of list ARG-LIST must be a
-     <gdb:value> object or an object that can be converted to a value.
-     The result is the value returned by the function.
-
- -- Scheme Procedure: value->bool value
-     Return the Scheme boolean representing '<gdb:value>' VALUE.  The
-     value must be "integer like".  Pointers are ok.
-
- -- Scheme Procedure: value->integer
-     Return the Scheme integer representing '<gdb:value>' VALUE.  The
-     value must be "integer like".  Pointers are ok.
-
- -- Scheme Procedure: value->real
-     Return the Scheme real number representing '<gdb:value>' VALUE.
-     The value must be a number.
-
- -- Scheme Procedure: value->bytevector
-     Return a Scheme bytevector with the raw contents of '<gdb:value>'
-     VALUE.  No transformation, endian or otherwise, is performed.
-
- -- Scheme Procedure: value->string value [#:encoding encoding]
-          [#:errors errors] [#:length length]
-     If VALUE> represents a string, then this method converts the
-     contents to a Guile string.  Otherwise, this method will throw an
-     exception.
-
-     Values are interpreted as strings according to the rules of the
-     current language.  If the optional length argument is given, the
-     string will be converted to that length, and will include any
-     embedded zeroes that the string may contain.  Otherwise, for
-     languages where the string is zero-terminated, the entire string
-     will be converted.
-
-     For example, in C-like languages, a value is a string if it is a
-     pointer to or an array of characters or ints of type 'wchar_t',
-     'char16_t', or 'char32_t'.
-
-     If the optional ENCODING argument is given, it must be a string
-     naming the encoding of the string in the '<gdb:value>', such as
-     '"ascii"', '"iso-8859-6"' or '"utf-8"'.  It accepts the same
-     encodings as the corresponding argument to Guile's
-     'scm_from_stringn' function, and the Guile codec machinery will be
-     used to convert the string.  If ENCODING is not given, or if
-     ENCODING is the empty string, then either the 'target-charset'
-     (*note Character Sets::) will be used, or a language-specific
-     encoding will be used, if the current language is able to supply
-     one.
-
-     The optional ERRORS argument is one of '#f', 'error' or
-     'substitute'.  'error' and 'substitute' must be symbols.  If ERRORS
-     is not specified, or if its value is '#f', then the default
-     conversion strategy is used, which is set with the Scheme function
-     'set-port-conversion-strategy!'.  If the value is ''error' then an
-     exception is thrown if there is any conversion error.  If the value
-     is ''substitute' then any conversion error is replaced with
-     question marks.  *Note (guile)Strings::.
-
-     If the optional LENGTH argument is given, the string will be
-     fetched and converted to the given length.  The length must be a
-     Scheme integer and not a '<gdb:value>' integer.
-
- -- Scheme Procedure: value->lazy-string value [#:encoding encoding]
-          [#:length length]
-     If this '<gdb:value>' represents a string, then this method
-     converts VALUE to a '<gdb:lazy-string' (*note Lazy Strings In
-     Guile::).  Otherwise, this method will throw an exception.
-
-     If the optional ENCODING argument is given, it must be a string
-     naming the encoding of the '<gdb:lazy-string'.  Some examples are:
-     '"ascii"', '"iso-8859-6"' or '"utf-8"'.  If the ENCODING argument
-     is an encoding that GDB does not recognize, GDB will raise an
-     error.
-
-     When a lazy string is printed, the GDB encoding machinery is used
-     to convert the string during printing.  If the optional ENCODING
-     argument is not provided, or is an empty string, GDB will
-     automatically select the encoding most suitable for the string
-     type.  For further information on encoding in GDB please see *note
-     Character Sets::.
-
-     If the optional LENGTH argument is given, the string will be
-     fetched and encoded to the length of characters specified.  If the
-     LENGTH argument is not provided, the string will be fetched and
-     encoded until a null of appropriate width is found.  The length
-     must be a Scheme integer and not a '<gdb:value>' integer.
-
- -- Scheme Procedure: value-lazy? value
-     Return '#t' if VALUE has not yet been fetched from the inferior.
-     Otherwise return '#f'.  GDB does not fetch values until necessary,
-     for efficiency.  For example:
-
-          (define myval (parse-and-eval "somevar"))
-
-     The value of 'somevar' is not fetched at this time.  It will be
-     fetched when the value is needed, or when the 'fetch-lazy'
-     procedure is invoked.
-
- -- Scheme Procedure: make-lazy-value type address
-     Return a '<gdb:value>' that will be lazily fetched from the target.
-     The object of type '<gdb:type>' whose value to fetch is specified
-     by its TYPE and its target memory ADDRESS, which is a Scheme
-     integer.
-
- -- Scheme Procedure: value-fetch-lazy! value
-     If VALUE is a lazy value ('(value-lazy? value)' is '#t'), then the
-     value is fetched from the inferior.  Any errors that occur in the
-     process will produce a Guile exception.
-
-     If VALUE is not a lazy value, this method has no effect.
-
-     The result of this function is unspecified.
-
- -- Scheme Procedure: value-print value
-     Return the string representation (print form) of '<gdb:value>'
-     VALUE.
-
-
-File: gdb.info,  Node: Arithmetic In Guile,  Next: Types In Guile,  Prev: Values From Inferior In Guile,  Up: Guile API
-
-23.3.3.6 Arithmetic In Guile
-............................
-
-The '(gdb)' module provides several functions for performing arithmetic
-on '<gdb:value>' objects.  The arithmetic is performed as if it were
-done by the target, and therefore has target semantics which are not
-necessarily those of Scheme.  For example operations work with a fixed
-precision, not the arbitrary precision of Scheme.
-
-   Wherever a function takes an integer or pointer as an operand, GDB
-will convert appropriate Scheme values to perform the operation.
-
- -- Scheme Procedure: value-add a b
-
- -- Scheme Procedure: value-sub a b
-
- -- Scheme Procedure: value-mul a b
-
- -- Scheme Procedure: value-div a b
-
- -- Scheme Procedure: value-rem a b
-
- -- Scheme Procedure: value-mod a b
-
- -- Scheme Procedure: value-pow a b
-
- -- Scheme Procedure: value-not a
-
- -- Scheme Procedure: value-neg a
-
- -- Scheme Procedure: value-pos a
-
- -- Scheme Procedure: value-abs a
-
- -- Scheme Procedure: value-lsh a b
-
- -- Scheme Procedure: value-rsh a b
-
- -- Scheme Procedure: value-min a b
-
- -- Scheme Procedure: value-max a b
-
- -- Scheme Procedure: value-lognot a
-
- -- Scheme Procedure: value-logand a b
-
- -- Scheme Procedure: value-logior a b
-
- -- Scheme Procedure: value-logxor a b
-
- -- Scheme Procedure: value=? a b
-
- -- Scheme Procedure: value<? a b
-
- -- Scheme Procedure: value<=? a b
-
- -- Scheme Procedure: value>? a b
-
- -- Scheme Procedure: value>=? a b
-
-   Scheme does not provide a 'not-equal' function, and thus Guile
-support in GDB does not either.
-
-
-File: gdb.info,  Node: Types In Guile,  Next: Guile Pretty Printing API,  Prev: Arithmetic In Guile,  Up: Guile API
-
-23.3.3.7 Types In Guile
-.......................
-
-GDB represents types from the inferior in objects of type '<gdb:type>'.
-
-   The following type-related procedures are provided by the '(gdb)'
-module.
-
- -- Scheme Procedure: type? object
-     Return '#t' if OBJECT is an object of type '<gdb:type>'.  Otherwise
-     return '#f'.
-
- -- Scheme Procedure: lookup-type name [#:block block]
-     This function looks up a type by its NAME, which must be a string.
-
-     If BLOCK is given, it is an object of type '<gdb:block>', and NAME
-     is looked up in that scope.  Otherwise, it is searched for
-     globally.
-
-     Ordinarily, this function will return an instance of '<gdb:type>'.
-     If the named type cannot be found, it will throw an exception.
-
- -- Scheme Procedure: type-code type
-     Return the type code of TYPE.  The type code will be one of the
-     'TYPE_CODE_' constants defined below.
-
- -- Scheme Procedure: type-tag type
-     Return the tag name of TYPE.  The tag name is the name after
-     'struct', 'union', or 'enum' in C and C++; not all languages have
-     this concept.  If this type has no tag name, then '#f' is returned.
-
- -- Scheme Procedure: type-name type
-     Return the name of TYPE.  If this type has no name, then '#f' is
-     returned.
-
- -- Scheme Procedure: type-print-name type
-     Return the print name of TYPE.  This returns something even for
-     anonymous types.  For example, for an anonymous C struct '"struct
-     {...}"' is returned.
-
- -- Scheme Procedure: type-sizeof type
-     Return the size of this type, in target 'char' units.  Usually, a
-     target's 'char' type will be an 8-bit byte.  However, on some
-     unusual platforms, this type may have a different size.
-
- -- Scheme Procedure: type-strip-typedefs type
-     Return a new '<gdb:type>' that represents the real type of TYPE,
-     after removing all layers of typedefs.
-
- -- Scheme Procedure: type-array type n1 [n2]
-     Return a new '<gdb:type>' object which represents an array of this
-     type.  If one argument is given, it is the inclusive upper bound of
-     the array; in this case the lower bound is zero.  If two arguments
-     are given, the first argument is the lower bound of the array, and
-     the second argument is the upper bound of the array.  An array's
-     length must not be negative, but the bounds can be.
-
- -- Scheme Procedure: type-vector type n1 [n2]
-     Return a new '<gdb:type>' object which represents a vector of this
-     type.  If one argument is given, it is the inclusive upper bound of
-     the vector; in this case the lower bound is zero.  If two arguments
-     are given, the first argument is the lower bound of the vector, and
-     the second argument is the upper bound of the vector.  A vector's
-     length must not be negative, but the bounds can be.
-
-     The difference between an 'array' and a 'vector' is that arrays
-     behave like in C: when used in expressions they decay to a pointer
-     to the first element whereas vectors are treated as first class
-     values.
-
- -- Scheme Procedure: type-pointer type
-     Return a new '<gdb:type>' object which represents a pointer to
-     TYPE.
-
- -- Scheme Procedure: type-range type
-     Return a list of two elements: the low bound and high bound of
-     TYPE.  If TYPE does not have a range, an exception is thrown.
-
- -- Scheme Procedure: type-reference type
-     Return a new '<gdb:type>' object which represents a reference to
-     TYPE.
-
- -- Scheme Procedure: type-target type
-     Return a new '<gdb:type>' object which represents the target type
-     of TYPE.
-
-     For a pointer type, the target type is the type of the pointed-to
-     object.  For an array type (meaning C-like arrays), the target type
-     is the type of the elements of the array.  For a function or method
-     type, the target type is the type of the return value.  For a
-     complex type, the target type is the type of the elements.  For a
-     typedef, the target type is the aliased type.
-
-     If the type does not have a target, this method will throw an
-     exception.
-
- -- Scheme Procedure: type-const type
-     Return a new '<gdb:type>' object which represents a
-     'const'-qualified variant of TYPE.
-
- -- Scheme Procedure: type-volatile type
-     Return a new '<gdb:type>' object which represents a
-     'volatile'-qualified variant of TYPE.
-
- -- Scheme Procedure: type-unqualified type
-     Return a new '<gdb:type>' object which represents an unqualified
-     variant of TYPE.  That is, the result is neither 'const' nor
-     'volatile'.
-
- -- Scheme Procedure: type-num-fields
-     Return the number of fields of '<gdb:type>' TYPE.
-
- -- Scheme Procedure: type-fields type
-     Return the fields of TYPE as a list.  For structure and union
-     types, 'fields' has the usual meaning.  Range types have two
-     fields, the minimum and maximum values.  Enum types have one field
-     per enum constant.  Function and method types have one field per
-     parameter.  The base types of C++ classes are also represented as
-     fields.  If the type has no fields, or does not fit into one of
-     these categories, an empty list will be returned.  *Note Fields of
-     a type in Guile::.
-
- -- Scheme Procedure: make-field-iterator type
-     Return the fields of TYPE as a <gdb:iterator> object.  *Note
-     Iterators In Guile::.
-
- -- Scheme Procedure: type-field type field-name
-     Return field named FIELD-NAME in TYPE.  The result is an object of
-     type '<gdb:field>'.  *Note Fields of a type in Guile::.  If the
-     type does not have fields, or FIELD-NAME is not a field of TYPE, an
-     exception is thrown.
-
-     For example, if 'some-type' is a '<gdb:type>' instance holding a
-     structure type, you can access its 'foo' field with:
-
-          (define bar (type-field some-type "foo"))
-
-     'bar' will be a '<gdb:field>' object.
-
- -- Scheme Procedure: type-has-field? type name
-     Return '#t' if '<gdb:type>' TYPE has field named NAME.  Otherwise
-     return '#f'.
-
-   Each type has a code, which indicates what category this type falls
-into.  The available type categories are represented by constants
-defined in the '(gdb)' module:
-
-'TYPE_CODE_PTR'
-     The type is a pointer.
-
-'TYPE_CODE_ARRAY'
-     The type is an array.
-
-'TYPE_CODE_STRUCT'
-     The type is a structure.
-
-'TYPE_CODE_UNION'
-     The type is a union.
-
-'TYPE_CODE_ENUM'
-     The type is an enum.
-
-'TYPE_CODE_FLAGS'
-     A bit flags type, used for things such as status registers.
-
-'TYPE_CODE_FUNC'
-     The type is a function.
-
-'TYPE_CODE_INT'
-     The type is an integer type.
-
-'TYPE_CODE_FLT'
-     A floating point type.
-
-'TYPE_CODE_VOID'
-     The special type 'void'.
-
-'TYPE_CODE_SET'
-     A Pascal set type.
-
-'TYPE_CODE_RANGE'
-     A range type, that is, an integer type with bounds.
-
-'TYPE_CODE_STRING'
-     A string type.  Note that this is only used for certain languages
-     with language-defined string types; C strings are not represented
-     this way.
-
-'TYPE_CODE_BITSTRING'
-     A string of bits.  It is deprecated.
-
-'TYPE_CODE_ERROR'
-     An unknown or erroneous type.
-
-'TYPE_CODE_METHOD'
-     A method type, as found in C++.
-
-'TYPE_CODE_METHODPTR'
-     A pointer-to-member-function.
-
-'TYPE_CODE_MEMBERPTR'
-     A pointer-to-member.
-
-'TYPE_CODE_REF'
-     A reference type.
-
-'TYPE_CODE_CHAR'
-     A character type.
-
-'TYPE_CODE_BOOL'
-     A boolean type.
-
-'TYPE_CODE_COMPLEX'
-     A complex float type.
-
-'TYPE_CODE_TYPEDEF'
-     A typedef to some other type.
-
-'TYPE_CODE_NAMESPACE'
-     A C++ namespace.
-
-'TYPE_CODE_DECFLOAT'
-     A decimal floating point type.
-
-'TYPE_CODE_INTERNAL_FUNCTION'
-     A function internal to GDB.  This is the type used to represent
-     convenience functions (*note Convenience Funs::).
-
-   Further support for types is provided in the '(gdb types)' Guile
-module (*note Guile Types Module::).
-
-   Each field is represented as an object of type '<gdb:field>'.
-
-   The following field-related procedures are provided by the '(gdb)'
-module:
-
- -- Scheme Procedure: field? object
-     Return '#t' if OBJECT is an object of type '<gdb:field>'.
-     Otherwise return '#f'.
-
- -- Scheme Procedure: field-name field
-     Return the name of the field, or '#f' for anonymous fields.
-
- -- Scheme Procedure: field-type field
-     Return the type of the field.  This is usually an instance of
-     '<gdb:type>', but it can be '#f' in some situations.
-
- -- Scheme Procedure: field-enumval field
-     Return the enum value represented by '<gdb:field>' FIELD.
-
- -- Scheme Procedure: field-bitpos field
-     Return the bit position of '<gdb:field>' FIELD.  This attribute is
-     not available for 'static' fields (as in C++).
-
- -- Scheme Procedure: field-bitsize field
-     If the field is packed, or is a bitfield, return the size of
-     '<gdb:field>' FIELD in bits.  Otherwise, zero is returned; in which
-     case the field's size is given by its type.
-
- -- Scheme Procedure: field-artificial? field
-     Return '#t' if the field is artificial, usually meaning that it was
-     provided by the compiler and not the user.  Otherwise return '#f'.
-
- -- Scheme Procedure: field-base-class? field
-     Return '#t' if the field represents a base class of a C++
-     structure.  Otherwise return '#f'.
-
-
-File: gdb.info,  Node: Guile Pretty Printing API,  Next: Selecting Guile Pretty-Printers,  Prev: Types In Guile,  Up: Guile API
-
-23.3.3.8 Guile Pretty Printing API
-..................................
-
-An example output is provided (*note Pretty Printing::).
-
-   A pretty-printer is represented by an object of type
-<gdb:pretty-printer>.  Pretty-printer objects are created with
-'make-pretty-printer'.
-
-   The following pretty-printer-related procedures are provided by the
-'(gdb)' module:
-
- -- Scheme Procedure: make-pretty-printer name lookup-function
-     Return a '<gdb:pretty-printer>' object named NAME.
-
-     LOOKUP-FUNCTION is a function of one parameter: the value to be
-     printed.  If the value is handled by this pretty-printer, then
-     LOOKUP-FUNCTION returns an object of type
-     <gdb:pretty-printer-worker> to perform the actual pretty-printing.
-     Otherwise LOOKUP-FUNCTION returns '#f'.
-
- -- Scheme Procedure: pretty-printer? object
-     Return '#t' if OBJECT is a '<gdb:pretty-printer>' object.
-     Otherwise return '#f'.
-
- -- Scheme Procedure: pretty-printer-enabled? pretty-printer
-     Return '#t' if PRETTY-PRINTER is enabled.  Otherwise return '#f'.
-
- -- Scheme Procedure: set-pretty-printer-enabled! pretty-printer flag
-     Set the enabled flag of PRETTY-PRINTER to FLAG.  The value returned
-     is unspecified.
-
- -- Scheme Procedure: pretty-printers
-     Return the list of global pretty-printers.
-
- -- Scheme Procedure: set-pretty-printers! pretty-printers
-     Set the list of global pretty-printers to PRETTY-PRINTERS.  The
-     value returned is unspecified.
-
- -- Scheme Procedure: make-pretty-printer-worker display-hint to-string
-          children
-     Return an object of type '<gdb:pretty-printer-worker>'.
-
-     This function takes three parameters:
-
-     'display-hint'
-          DISPLAY-HINT provides a hint to GDB or GDB front end via MI to
-          change the formatting of the value being printed.  The value
-          must be a string or '#f' (meaning there is no hint).  Several
-          values for DISPLAY-HINT are predefined by GDB:
-
-          'array'
-               Indicate that the object being printed is "array-like".
-               The CLI uses this to respect parameters such as 'set
-               print elements' and 'set print array'.
-
-          'map'
-               Indicate that the object being printed is "map-like", and
-               that the children of this value can be assumed to
-               alternate between keys and values.
-
-          'string'
-               Indicate that the object being printed is "string-like".
-               If the printer's 'to-string' function returns a Guile
-               string of some kind, then GDB will call its internal
-               language-specific string-printing function to format the
-               string.  For the CLI this means adding quotation marks,
-               possibly escaping some characters, respecting 'set print
-               elements', and the like.
-
-     'to-string'
-          TO-STRING is either a function of one parameter, the
-          '<gdb:pretty-printer-worker>' object, or '#f'.
-
-          When printing from the CLI, if the 'to-string' method exists,
-          then GDB will prepend its result to the values returned by
-          'children'.  Exactly how this formatting is done is dependent
-          on the display hint, and may change as more hints are added.
-          Also, depending on the print settings (*note Print
-          Settings::), the CLI may print just the result of 'to-string'
-          in a stack trace, omitting the result of 'children'.
-
-          If this method returns a string, it is printed verbatim.
-
-          Otherwise, if this method returns an instance of
-          '<gdb:value>', then GDB prints this value.  This may result in
-          a call to another pretty-printer.
-
-          If instead the method returns a Guile value which is
-          convertible to a '<gdb:value>', then GDB performs the
-          conversion and prints the resulting value.  Again, this may
-          result in a call to another pretty-printer.  Guile scalars
-          (integers, floats, and booleans) and strings are convertible
-          to '<gdb:value>'; other types are not.
-
-          Finally, if this method returns '#f' then no further
-          operations are peformed in this method and nothing is printed.
-
-          If the result is not one of these types, an exception is
-          raised.
-
-          TO-STRING may also be '#f' in which case it is left to
-          CHILDREN to print the value.
-
-     'children'
-          CHILDREN is either a function of one parameter, the
-          '<gdb:pretty-printer-worker>' object, or '#f'.
-
-          GDB will call this function on a pretty-printer to compute the
-          children of the pretty-printer's value.
-
-          This function must return a <gdb:iterator> object.  Each item
-          returned by the iterator must be a tuple holding two elements.
-          The first element is the "name" of the child; the second
-          element is the child's value.  The value can be any Guile
-          object which is convertible to a GDB value.
-
-          If CHILDREN is '#f', GDB will act as though the value has no
-          children.
-
-   GDB provides a function which can be used to look up the default
-pretty-printer for a '<gdb:value>':
-
- -- Scheme Procedure: default-visualizer value
-     This function takes a '<gdb:value>' object as an argument.  If a
-     pretty-printer for this value exists, then it is returned.  If no
-     such printer exists, then this returns '#f'.
-
-
-File: gdb.info,  Node: Selecting Guile Pretty-Printers,  Next: Writing a Guile Pretty-Printer,  Prev: Guile Pretty Printing API,  Up: Guile API
-
-23.3.3.9 Selecting Guile Pretty-Printers
-........................................
-
-There are three sets of pretty-printers that GDB searches:
-
-   * Per-objfile list of pretty-printers (*note Objfiles In Guile::).
-   * Per-progspace list of pretty-printers (*note Progspaces In
-     Guile::).
-   * The global list of pretty-printers (*note Guile Pretty Printing
-     API::).  These printers are available when debugging any inferior.
-
-   Pretty-printer lookup is done by passing the value to be printed to
-the lookup function of each enabled object in turn.  Lookup stops when a
-lookup function returns a non-'#f' value or when the list is exhausted.
-Lookup functions must return either a '<gdb:pretty-printer-worker>'
-object or '#f'.  Otherwise an exception is thrown.
-
-   GDB first checks the result of 'objfile-pretty-printers' of each
-'<gdb:objfile>' in the current program space and iteratively calls each
-enabled lookup function in the list for that '<gdb:objfile>' until a
-non-'#f' object is returned.  If no pretty-printer is found in the
-objfile lists, GDB then searches the result of
-'progspace-pretty-printers' of the current program space, calling each
-enabled function until a non-'#f' object is returned.  After these lists
-have been exhausted, it tries the global pretty-printers list, obtained
-with 'pretty-printers', again calling each enabled function until a
-non-'#f' object is returned.
-
-   The order in which the objfiles are searched is not specified.  For a
-given list, functions are always invoked from the head of the list, and
-iterated over sequentially until the end of the list, or a
-'<gdb:pretty-printer-worker>' object is returned.
-
-   For various reasons a pretty-printer may not work.  For example, the
-underlying data structure may have changed and the pretty-printer is out
-of date.
-
-   The consequences of a broken pretty-printer are severe enough that
-GDB provides support for enabling and disabling individual printers.
-For example, if 'print frame-arguments' is on, a backtrace can become
-highly illegible if any argument is printed with a broken printer.
-
-   Pretty-printers are enabled and disabled from Scheme by calling
-'set-pretty-printer-enabled!'.  *Note Guile Pretty Printing API::.
-
-
-File: gdb.info,  Node: Writing a Guile Pretty-Printer,  Next: Commands In Guile,  Prev: Selecting Guile Pretty-Printers,  Up: Guile API
-
-23.3.3.10 Writing a Guile Pretty-Printer
-........................................
-
-A pretty-printer consists of two basic parts: a lookup function to
-determine if the type is supported, and the printer itself.
-
-   Here is an example showing how a 'std::string' printer might be
-written.  *Note Guile Pretty Printing API::, for details.
-
-     (define (make-my-string-printer value)
-       "Print a my::string string"
-       (make-pretty-printer-worker
-        "string"
-        (lambda (printer)
-          (value-field value "_data"))
-        #f))
-
-   And here is an example showing how a lookup function for the printer
-example above might be written.
-
-     (define (str-lookup-function pretty-printer value)
-       (let ((tag (type-tag (value-type value))))
-         (and tag
-              (string-prefix? "std::string<" tag)
-              (make-my-string-printer value))))
-
-   Then to register this printer in the global printer list:
-
-     (append-pretty-printer!
-      (make-pretty-printer "my-string" str-lookup-function))
-
-   The example lookup function extracts the value's type, and attempts
-to match it to a type that it can pretty-print.  If it is a type the
-printer can pretty-print, it will return a <gdb:pretty-printer-worker>
-object.  If not, it returns '#f'.
-
-   We recommend that you put your core pretty-printers into a Guile
-package.  If your pretty-printers are for use with a library, we further
-recommend embedding a version number into the package name.  This
-practice will enable GDB to load multiple versions of your
-pretty-printers at the same time, because they will have different
-names.
-
-   You should write auto-loaded code (*note Guile Auto-loading::) such
-that it can be evaluated multiple times without changing its meaning.
-An ideal auto-load file will consist solely of 'import's of your printer
-modules, followed by a call to a register pretty-printers with the
-current objfile.
-
-   Taken as a whole, this approach will scale nicely to multiple
-inferiors, each potentially using a different library version.
-Embedding a version number in the Guile package name will ensure that
-GDB is able to load both sets of printers simultaneously.  Then, because
-the search for pretty-printers is done by objfile, and because your
-auto-loaded code took care to register your library's printers with a
-specific objfile, GDB will find the correct printers for the specific
-version of the library used by each inferior.
-
-   To continue the 'my::string' example, this code might appear in
-'(my-project my-library v1)':
-
-     (use-modules (gdb))
-     (define (register-printers objfile)
-       (append-objfile-pretty-printer!
-        (make-pretty-printer "my-string" str-lookup-function)))
-
-And then the corresponding contents of the auto-load file would be:
-
-     (use-modules (gdb) (my-project my-library v1))
-     (register-printers (current-objfile))
-
-   The previous example illustrates a basic pretty-printer.  There are a
-few things that can be improved on.  The printer only handles one type,
-whereas a library typically has several types.  One could install a
-lookup function for each desired type in the library, but one could also
-have a single lookup function recognize several types.  The latter is
-the conventional way this is handled.  If a pretty-printer can handle
-multiple data types, then its "subprinters" are the printers for the
-individual data types.
-
-   The '(gdb printing)' module provides a formal way of solving this
-problem (*note Guile Printing Module::).  Here is another example that
-handles multiple types.
-
-   These are the types we are going to pretty-print:
-
-     struct foo { int a, b; };
-     struct bar { struct foo x, y; };
-
-   Here are the printers:
-
-     (define (make-foo-printer value)
-       "Print a foo object"
-       (make-pretty-printer-worker
-        "foo"
-        (lambda (printer)
-          (format #f "a=<~a> b=<~a>"
-                  (value-field value "a") (value-field value "a")))
-        #f))
-
-     (define (make-bar-printer value)
-       "Print a bar object"
-       (make-pretty-printer-worker
-        "foo"
-        (lambda (printer)
-          (format #f "x=<~a> y=<~a>"
-                  (value-field value "x") (value-field value "y")))
-        #f))
-
-   This example doesn't need a lookup function, that is handled by the
-'(gdb printing)' module.  Instead a function is provided to build up the
-object that handles the lookup.
-
-     (use-modules (gdb printing))
-
-     (define (build-pretty-printer)
-       (let ((pp (make-pretty-printer-collection "my-library")))
-         (pp-collection-add-tag-printer "foo" make-foo-printer)
-         (pp-collection-add-tag-printer "bar" make-bar-printer)
-         pp))
-
-   And here is the autoload support:
-
-     (use-modules (gdb) (my-library))
-     (append-objfile-pretty-printer! (current-objfile) (build-pretty-printer))
-
-   Finally, when this printer is loaded into GDB, here is the
-corresponding output of 'info pretty-printer':
-
-     (gdb) info pretty-printer
-     my_library.so:
-       my-library
-         foo
-         bar
-
-
-File: gdb.info,  Node: Commands In Guile,  Next: Parameters In Guile,  Prev: Writing a Guile Pretty-Printer,  Up: Guile API
-
-23.3.3.11 Commands In Guile
-...........................
-
-You can implement new GDB CLI commands in Guile.  A CLI command object
-is created with the 'make-command' Guile function, and added to GDB with
-the 'register-command!' Guile function.  This two-step approach is taken
-to separate out the side-effect of adding the command to GDB from
-'make-command'.
-
-   There is no support for multi-line commands, that is commands that
-consist of multiple lines and are terminated with 'end'.
-
- -- Scheme Procedure: (make-command name [#:invoke invoke]
-          [#:command-class command-class] [#:completer-class completer]
-          [#:prefix? prefix] [#:doc doc-string])
-
-     The argument NAME is the name of the command.  If NAME consists of
-     multiple words, then the initial words are looked for as prefix
-     commands.  In this case, if one of the prefix commands does not
-     exist, an exception is raised.
-
-     The result is the '<gdb:command>' object representing the command.
-     The command is not usable until it has been registered with GDB
-     with 'register-command!'.
-
-     The rest of the arguments are optional.
-
-     The argument INVOKE is a procedure of three arguments: SELF, ARGS
-     and FROM-TTY.  The argument SELF is the '<gdb:command>' object
-     representing the command.  The argument ARGS is a string
-     representing the arguments passed to the command, after leading and
-     trailing whitespace has been stripped.  The argument FROM-TTY is a
-     boolean flag and specifies whether the command should consider
-     itself to have been originated from the user invoking it
-     interactively.  If this function throws an exception, it is turned
-     into a GDB 'error' call.  Otherwise, the return value is ignored.
-
-     The argument COMMAND-CLASS is one of the 'COMMAND_' constants
-     defined below.  This argument tells GDB how to categorize the new
-     command in the help system.  The default is 'COMMAND_NONE'.
-
-     The argument COMPLETER is either '#f', one of the 'COMPLETE_'
-     constants defined below, or a procedure, also defined below.  This
-     argument tells GDB how to perform completion for this command.  If
-     not provided or if the value is '#f', then no completion is
-     performed on the command.
-
-     The argument PREFIX is a boolean flag indicating whether the new
-     command is a prefix command; sub-commands of this command may be
-     registered.
-
-     The argument DOC-STRING is help text for the new command.  If no
-     documentation string is provided, the default value "This command
-     is not documented."  is used.
-
- -- Scheme Procedure: register-command! command
-     Add COMMAND, a '<gdb:command>' object, to GDB's list of commands.
-     It is an error to register a command more than once.  The result is
-     unspecified.
-
- -- Scheme Procedure: command? object
-     Return '#t' if OBJECT is a '<gdb:command>' object.  Otherwise
-     return '#f'.
-
- -- Scheme Procedure: dont-repeat
-     By default, a GDB command is repeated when the user enters a blank
-     line at the command prompt.  A command can suppress this behavior
-     by invoking the 'dont-repeat' function.  This is similar to the
-     user command 'dont-repeat', see *note dont-repeat: Define.
-
- -- Scheme Procedure: string->argv string
-     Convert a string to a list of strings split up according to GDB's
-     argv parsing rules.  It is recommended to use this for consistency.
-     Arguments are separated by spaces and may be quoted.  Example:
-
-          scheme@(guile-user)> (string->argv "1 2\\ \\\"3 '4 \"5' \"6 '7\"")
-          $1 = ("1" "2 \"3" "4 \"5" "6 '7")
-
- -- Scheme Procedure: throw-user-error message . args
-     Throw a 'gdb:user-error' exception.  The argument MESSAGE is the
-     error message as a format string, like the FMT argument to the
-     'format' Scheme function.  *Note (guile)Formatted Output::.  The
-     argument ARGS is a list of the optional arguments of MESSAGE.
-
-     This is used when the command detects a user error of some kind,
-     say a bad command argument.
-
-          (gdb) guile (use-modules (gdb))
-          (gdb) guile
-          (register-command! (make-command "test-user-error"
-            #:command-class COMMAND_OBSCURE
-            #:invoke (lambda (self arg from-tty)
-              (throw-user-error "Bad argument ~a" arg))))
-          end
-          (gdb) test-user-error ugh
-          ERROR: Bad argument ugh
-
- -- completer: self text word
-     If the COMPLETER option to 'make-command' is a procedure, it takes
-     three arguments: SELF which is the '<gdb:command>' object, and TEXT
-     and WORD which are both strings.  The argument TEXT holds the
-     complete command line up to the cursor's location.  The argument
-     WORD holds the last word of the command line; this is computed
-     using a word-breaking heuristic.
-
-     All forms of completion are handled by this function, that is, the
-     <TAB> and <M-?> key bindings (*note Completion::), and the
-     'complete' command (*note complete: Help.).
-
-     This procedure can return several kinds of values:
-
-        * If the return value is a list, the contents of the list are
-          used as the completions.  It is up to COMPLETER to ensure that
-          the contents actually do complete the word.  An empty list is
-          allowed, it means that there were no completions available.
-          Only string elements of the list are used; other elements in
-          the list are ignored.
-
-        * If the return value is a '<gdb:iterator>' object, it is
-          iterated over to obtain the completions.  It is up to
-          'completer-procedure' to ensure that the results actually do
-          complete the word.  Only string elements of the result are
-          used; other elements in the sequence are ignored.
-
-        * All other results are treated as though there were no
-          available completions.
-
-   When a new command is registered, it will have been declared as a
-member of some general class of commands.  This is used to classify
-top-level commands in the on-line help system; note that prefix commands
-are not listed under their own category but rather that of their
-top-level command.  The available classifications are represented by
-constants defined in the 'gdb' module:
-
-'COMMAND_NONE'
-     The command does not belong to any particular class.  A command in
-     this category will not be displayed in any of the help categories.
-     This is the default.
-
-'COMMAND_RUNNING'
-     The command is related to running the inferior.  For example,
-     'start', 'step', and 'continue' are in this category.  Type 'help
-     running' at the GDB prompt to see a list of commands in this
-     category.
-
-'COMMAND_DATA'
-     The command is related to data or variables.  For example, 'call',
-     'find', and 'print' are in this category.  Type 'help data' at the
-     GDB prompt to see a list of commands in this category.
-
-'COMMAND_STACK'
-     The command has to do with manipulation of the stack.  For example,
-     'backtrace', 'frame', and 'return' are in this category.  Type
-     'help stack' at the GDB prompt to see a list of commands in this
-     category.
-
-'COMMAND_FILES'
-     This class is used for file-related commands.  For example, 'file',
-     'list' and 'section' are in this category.  Type 'help files' at
-     the GDB prompt to see a list of commands in this category.
-
-'COMMAND_SUPPORT'
-     This should be used for "support facilities", generally meaning
-     things that are useful to the user when interacting with GDB, but
-     not related to the state of the inferior.  For example, 'help',
-     'make', and 'shell' are in this category.  Type 'help support' at
-     the GDB prompt to see a list of commands in this category.
-
-'COMMAND_STATUS'
-     The command is an 'info'-related command, that is, related to the
-     state of GDB itself.  For example, 'info', 'macro', and 'show' are
-     in this category.  Type 'help status' at the GDB prompt to see a
-     list of commands in this category.
-
-'COMMAND_BREAKPOINTS'
-     The command has to do with breakpoints.  For example, 'break',
-     'clear', and 'delete' are in this category.  Type 'help
-     breakpoints' at the GDB prompt to see a list of commands in this
-     category.
-
-'COMMAND_TRACEPOINTS'
-     The command has to do with tracepoints.  For example, 'trace',
-     'actions', and 'tfind' are in this category.  Type 'help
-     tracepoints' at the GDB prompt to see a list of commands in this
-     category.
-
-'COMMAND_USER'
-     The command is a general purpose command for the user, and
-     typically does not fit in one of the other categories.  Type 'help
-     user-defined' at the GDB prompt to see a list of commands in this
-     category, as well as the list of gdb macros (*note Sequences::).
-
-'COMMAND_OBSCURE'
-     The command is only used in unusual circumstances, or is not of
-     general interest to users.  For example, 'checkpoint', 'fork', and
-     'stop' are in this category.  Type 'help obscure' at the GDB prompt
-     to see a list of commands in this category.
-
-'COMMAND_MAINTENANCE'
-     The command is only useful to GDB maintainers.  The 'maintenance'
-     and 'flushregs' commands are in this category.  Type 'help
-     internals' at the GDB prompt to see a list of commands in this
-     category.
-
-   A new command can use a predefined completion function, either by
-specifying it via an argument at initialization, or by returning it from
-the 'completer' procedure.  These predefined completion constants are
-all defined in the 'gdb' module:
-
-'COMPLETE_NONE'
-     This constant means that no completion should be done.
-
-'COMPLETE_FILENAME'
-     This constant means that filename completion should be performed.
-
-'COMPLETE_LOCATION'
-     This constant means that location completion should be done.  *Note
-     Specify Location::.
-
-'COMPLETE_COMMAND'
-     This constant means that completion should examine GDB command
-     names.
-
-'COMPLETE_SYMBOL'
-     This constant means that completion should be done using symbol
-     names as the source.
-
-'COMPLETE_EXPRESSION'
-     This constant means that completion should be done on expressions.
-     Often this means completing on symbol names, but some language
-     parsers also have support for completing on field names.
-
-   The following code snippet shows how a trivial CLI command can be
-implemented in Guile:
-
-     (gdb) guile
-     (register-command! (make-command "hello-world"
-       #:command-class COMMAND_USER
-       #:doc "Greet the whole world."
-       #:invoke (lambda (self args from-tty) (display "Hello, World!\n"))))
-     end
-     (gdb) hello-world
-     Hello, World!
 

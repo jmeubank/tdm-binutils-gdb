@@ -1,6 +1,6 @@
 /* Native-dependent code for GNU/Linux x86-64.
 
-   Copyright (C) 2001-2019 Free Software Foundation, Inc.
+   Copyright (C) 2001-2021 Free Software Foundation, Inc.
    Contributed by Jiri Smid, SuSE Labs.
 
    This file is part of GDB.
@@ -33,7 +33,7 @@
 #include "amd64-tdep.h"
 #include "amd64-linux-tdep.h"
 #include "i386-linux-tdep.h"
-#include "common/x86-xstate.h"
+#include "gdbsupport/x86-xstate.h"
 
 #include "x86-linux-nat.h"
 #include "nat/linux-ptrace.h"
@@ -238,6 +238,12 @@ amd64_linux_nat_target::fetch_registers (struct regcache *regcache, int regnum)
 	  char xstateregs[X86_XSTATE_MAX_SIZE];
 	  struct iovec iov;
 
+	  /* Pre-4.14 kernels have a bug (fixed by commit 0852b374173b
+	     "x86/fpu: Add FPU state copying quirk to handle XRSTOR failure on
+	     Intel Skylake CPUs") that sometimes causes the mxcsr location in
+	     xstateregs not to be copied by PTRACE_GETREGSET.  Make sure that
+	     the location is at least initialized with a defined value.  */
+	  memset (xstateregs, 0, sizeof (xstateregs));
 	  iov.iov_base = xstateregs;
 	  iov.iov_len = sizeof (xstateregs);
 	  if (ptrace (PTRACE_GETREGSET, tid,
@@ -253,30 +259,6 @@ amd64_linux_nat_target::fetch_registers (struct regcache *regcache, int regnum)
 
 	  amd64_supply_fxsave (regcache, -1, &fpregs);
 	}
-#ifndef HAVE_STRUCT_USER_REGS_STRUCT_FS_BASE
-      {
-	/* PTRACE_ARCH_PRCTL is obsolete since 2.6.25, where the
-	   fs_base and gs_base fields of user_regs_struct can be
-	   used directly.  */
-	unsigned long base;
-
-	if (regnum == -1 || regnum == AMD64_FSBASE_REGNUM)
-	  {
-	    if (ptrace (PTRACE_ARCH_PRCTL, tid, &base, ARCH_GET_FS) < 0)
-	      perror_with_name (_("Couldn't get segment register fs_base"));
-
-	    regcache->raw_supply (AMD64_FSBASE_REGNUM, &base);
-	  }
-
-	if (regnum == -1 || regnum == AMD64_GSBASE_REGNUM)
-	  {
-	    if (ptrace (PTRACE_ARCH_PRCTL, tid, &base, ARCH_GET_GS) < 0)
-	      perror_with_name (_("Couldn't get segment register gs_base"));
-
-	    regcache->raw_supply (AMD64_GSBASE_REGNUM, &base);
-	  }
-      }
-#endif
     }
 }
 
@@ -342,30 +324,6 @@ amd64_linux_nat_target::store_registers (struct regcache *regcache, int regnum)
 	  if (ptrace (PTRACE_SETFPREGS, tid, 0, (long) &fpregs) < 0)
 	    perror_with_name (_("Couldn't write floating point status"));
 	}
-
-#ifndef HAVE_STRUCT_USER_REGS_STRUCT_FS_BASE
-      {
-	/* PTRACE_ARCH_PRCTL is obsolete since 2.6.25, where the
-	   fs_base and gs_base fields of user_regs_struct can be
-	   used directly.  */
-	void *base;
-
-	if (regnum == -1 || regnum == AMD64_FSBASE_REGNUM)
-	  {
-	    regcache->raw_collect (AMD64_FSBASE_REGNUM, &base);
-
-	    if (ptrace (PTRACE_ARCH_PRCTL, tid, base, ARCH_SET_FS) < 0)
-	      perror_with_name (_("Couldn't write segment register fs_base"));
-	  }
-	if (regnum == -1 || regnum == AMD64_GSBASE_REGNUM)
-	  {
-
-	    regcache->raw_collect (AMD64_GSBASE_REGNUM, &base);
-	    if (ptrace (PTRACE_ARCH_PRCTL, tid, base, ARCH_SET_GS) < 0)
-	      perror_with_name (_("Couldn't write segment register gs_base"));
-	  }
-      }
-#endif
     }
 }
 
@@ -377,7 +335,7 @@ ps_err_e
 ps_get_thread_area (struct ps_prochandle *ph,
                     lwpid_t lwpid, int idx, void **base)
 {
-  if (gdbarch_bfd_arch_info (target_gdbarch ())->bits_per_word == 32)
+  if (gdbarch_bfd_arch_info (ph->thread->inf->gdbarch)->bits_per_word == 32)
     {
       unsigned int base_addr;
       ps_err_e result;
@@ -402,11 +360,7 @@ ps_get_thread_area (struct ps_prochandle *ph,
       switch (idx)
 	{
 	case FS:
-#ifdef HAVE_STRUCT_USER_REGS_STRUCT_FS_BASE
 	    {
-	      /* PTRACE_ARCH_PRCTL is obsolete since 2.6.25, where the
-		 fs_base and gs_base fields of user_regs_struct can be
-		 used directly.  */
 	      unsigned long fs;
 	      errno = 0;
 	      fs = ptrace (PTRACE_PEEKUSER, lwpid,
@@ -417,12 +371,10 @@ ps_get_thread_area (struct ps_prochandle *ph,
 		  return PS_OK;
 		}
 	    }
-#endif
-	  if (ptrace (PTRACE_ARCH_PRCTL, lwpid, base, ARCH_GET_FS) == 0)
-	    return PS_OK;
+
 	  break;
+
 	case GS:
-#ifdef HAVE_STRUCT_USER_REGS_STRUCT_GS_BASE
 	    {
 	      unsigned long gs;
 	      errno = 0;
@@ -434,10 +386,8 @@ ps_get_thread_area (struct ps_prochandle *ph,
 		  return PS_OK;
 		}
 	    }
-#endif
-	  if (ptrace (PTRACE_ARCH_PRCTL, lwpid, base, ARCH_GET_GS) == 0)
-	    return PS_OK;
 	  break;
+
 	default:                   /* Should not happen.  */
 	  return PS_BADADDR;
 	}
@@ -472,8 +422,9 @@ amd64_linux_nat_target::low_siginfo_fixup (siginfo_t *ptrace,
     return false;
 }
 
+void _initialize_amd64_linux_nat ();
 void
-_initialize_amd64_linux_nat (void)
+_initialize_amd64_linux_nat ()
 {
   amd64_native_gregset32_reg_offset = amd64_linux_gregset32_reg_offset;
   amd64_native_gregset32_num_regs = I386_LINUX_NUM_REGS;

@@ -1,6 +1,6 @@
-This is gdb.info, produced by makeinfo version 6.5 from gdb.texinfo.
+This is gdb.info, produced by makeinfo version 6.7 from gdb.texinfo.
 
-Copyright (C) 1988-2019 Free Software Foundation, Inc.
+Copyright (C) 1988-2021 Free Software Foundation, Inc.
 
    Permission is granted to copy, distribute and/or modify this document
 under the terms of the GNU Free Documentation License, Version 1.3 or
@@ -21,9 +21,9 @@ END-INFO-DIR-ENTRY
    This file documents the GNU debugger GDB.
 
    This is the Tenth Edition, of 'Debugging with GDB: the GNU
-Source-Level Debugger' for GDB (GDB) Version 8.3.1.
+Source-Level Debugger' for GDB (GDB) Version 10.2.
 
-   Copyright (C) 1988-2019 Free Software Foundation, Inc.
+   Copyright (C) 1988-2021 Free Software Foundation, Inc.
 
    Permission is granted to copy, distribute and/or modify this document
 under the terms of the GNU Free Documentation License, Version 1.3 or
@@ -37,16 +37,16 @@ this GNU Manual.  Buying copies from GNU Press supports the FSF in
 developing GNU and promoting software freedom."
 
 
-File: gdb.info,  Node: Top,  Next: Summary,  Prev: (dir),  Up: (dir)
+File: gdb.info,  Node: Top,  Next: Summary,  Up: (dir)
 
 Debugging with GDB
 ******************
 
 This file describes GDB, the GNU symbolic debugger.
 
-   This is the Tenth Edition, for GDB (GDB) Version 8.3.1.
+   This is the Tenth Edition, for GDB (GDB) Version 10.2.
 
-   Copyright (C) 1988-2019 Free Software Foundation, Inc.
+   Copyright (C) 1988-2021 Free Software Foundation, Inc.
 
    This edition of the GDB manual is dedicated to the memory of Fred
 Fish.  Fred was a long-standing contributor to GDB and to Free software
@@ -87,7 +87,7 @@ in general.  We will miss him.
 * GDB/MI::                      GDB's Machine Interface.
 * Annotations::                 GDB's annotation interface.
 * JIT Interface::               Using the JIT debugging interface.
-* In-Process Agent::            In-Process Agent
+* In-process Agent::            In-process Agent
 
 * GDB Bugs::                    Reporting bugs in GDB
 
@@ -461,6 +461,10 @@ Alessandro Forin and Per Bothner.  More recent ports have been the work
 of Jeremy Bennett, Franck Jullien, Stefan Wallentowitz and Stafford
 Horne.
 
+   Weimin Pan, David Faust and Jose E. Marchesi contributed support for
+the Linux kernel BPF virtual architecture.  This work was sponsored by
+Oracle.
+
 
 File: gdb.info,  Node: Sample Session,  Next: Invocation,  Prev: Summary,  Up: Top
 
@@ -507,7 +511,7 @@ Let us use GDB to try to see what is going on.
      There is absolutely no warranty for GDB; type "show warranty"
       for details.
 
-     GDB 8.3.1, Copyright 1999 Free Software Foundation, Inc...
+     GDB 10.2, Copyright 1999 Free Software Foundation, Inc...
      (gdb)
 
 GDB reads only enough symbol data to know where to find the rest when
@@ -715,13 +719,14 @@ specified:
 
      gdb PROGRAM CORE
 
-   You can, instead, specify a process ID as a second argument, if you
-want to debug a running process:
+   You can, instead, specify a process ID as a second argument or use
+option '-p', if you want to debug a running process:
 
      gdb PROGRAM 1234
+     gdb -p 1234
 
-would attach GDB to process '1234' (unless you also have a file named
-'1234'; GDB does check for a core file first).
+would attach GDB to process '1234'.  With option '-p' you can omit the
+PROGRAM filename.
 
    Taking advantage of the second command-line argument requires a
 fairly complete operating system; when you use GDB as a remote debugger
@@ -876,6 +881,17 @@ or quiet mode.
           with the '--with-system-gdbinit' configure option (*note
           System-wide configuration::).  It is loaded first when GDB
           starts, before command line options have been processed.
+     'system.gdbinit.d'
+          This is the system-wide init directory.  Its location is
+          specified with the '--with-system-gdbinit-dir' configure
+          option (*note System-wide configuration::).  Files in this
+          directory are loaded in alphabetical order immediately after
+          system.gdbinit (if enabled) when GDB starts, before command
+          line options have been processed.  Files need to have a
+          recognized scripting language extension ('.py'/'.scm') or be
+          named with a '.gdb' extension to be interpreted as regular GDB
+          commands.  GDB will not recurse into any subdirectories of
+          this directory.
      '~/.gdbinit'
           This is the init file in your home directory.  It is loaded
           next, after 'system.gdbinit', and before command options have
@@ -1021,11 +1037,11 @@ or quiet mode.
      which communicate with GDB using it as a back end.  *Note Command
      Interpreters: Interpreters.
 
-     '--interpreter=mi' (or '--interpreter=mi2') causes GDB to use the
-     "GDB/MI interface" (*note The GDB/MI Interface: GDB/MI.) included
-     since GDB version 6.0.  The previous GDB/MI interface, included in
-     GDB version 5.3 and selected with '--interpreter=mi1', is
-     deprecated.  Earlier GDB/MI interfaces are no longer supported.
+     '--interpreter=mi' (or '--interpreter=mi3') causes GDB to use the
+     "GDB/MI interface" version 3 (*note The GDB/MI Interface: GDB/MI.)
+     included since GDB version 9.1.  GDB/MI version 2 ('mi2'), included
+     in GDB 6.0 and version 1 ('mi1'), included in GDB 5.3, are also
+     available.  Earlier GDB/MI interfaces are no longer supported.
 
 '-write'
      Open the executable and core files for both reading and writing.
@@ -1048,7 +1064,7 @@ or quiet mode.
 
 File: gdb.info,  Node: Startup,  Prev: Mode Options,  Up: Invoking GDB
 
-2.1.3 What GDB Does During Startup
+2.1.3 What GDB Does during Startup
 ----------------------------------
 
 Here's the description of what GDB does during session startup:
@@ -1058,8 +1074,12 @@ Here's the description of what GDB does during session startup:
 
   2. Reads the system-wide "init file" (if '--with-system-gdbinit' was
      used when building GDB; *note System-wide configuration and
-     settings: System-wide configuration.) and executes all the commands
-     in that file.
+     settings: System-wide configuration.) and the files in the
+     system-wide gdbinit directory (if '--with-system-gdbinit-dir' was
+     used) and executes all the commands in those files.  The files need
+     to be named with a '.gdb' extension to be interpreted as GDB
+     commands, or they can be written in a supported scripting language
+     with an appropriate file extension.
 
   3. Reads the init file (if any) in your home directory(1) and executes
      all the commands in that file.
@@ -1157,9 +1177,10 @@ session, there is no need to leave or suspend GDB; you can just use the
 'shell COMMAND-STRING'
 '!COMMAND-STRING'
      Invoke a standard shell to execute COMMAND-STRING.  Note that no
-     space is needed between '!' and COMMAND-STRING.  If it exists, the
-     environment variable 'SHELL' determines which shell to run.
-     Otherwise GDB uses the default shell ('/bin/sh' on Unix systems,
+     space is needed between '!' and COMMAND-STRING.  On GNU and Unix
+     systems, the environment variable 'SHELL', if it exists, determines
+     which shell to run.  Otherwise GDB uses the default shell
+     ('/bin/sh' on GNU and Unix systems, 'cmd.exe' on MS-Windows,
      'COMMAND.COM' on MS-DOS, etc.).
 
    The utility 'make' is often needed in development environments.  You
@@ -1168,6 +1189,52 @@ do not have to use the 'shell' command for this purpose in GDB:
 'make MAKE-ARGS'
      Execute the 'make' program with the specified arguments.  This is
      equivalent to 'shell make MAKE-ARGS'.
+
+'pipe [COMMAND] | SHELL_COMMAND'
+'| [COMMAND] | SHELL_COMMAND'
+'pipe -d DELIM COMMAND DELIM SHELL_COMMAND'
+'| -d DELIM COMMAND DELIM SHELL_COMMAND'
+     Executes COMMAND and sends its output to SHELL_COMMAND.  Note that
+     no space is needed around '|'.  If no COMMAND is provided, the last
+     command executed is repeated.
+
+     In case the COMMAND contains a '|', the option '-d DELIM' can be
+     used to specify an alternate delimiter string DELIM that separates
+     the COMMAND from the SHELL_COMMAND.
+
+     Example:
+          (gdb) p var
+          $1 = {
+            black = 144,
+            red = 233,
+            green = 377,
+            blue = 610,
+            white = 987
+          }
+          (gdb) pipe p var|wc
+                7      19      80
+          (gdb) |p var|wc -l
+          7
+          (gdb) p /x var
+          $4 = {
+            black = 0x90,
+            red = 0xe9,
+            green = 0x179,
+            blue = 0x262,
+            white = 0x3db
+          }
+          (gdb) ||grep red
+            red => 0xe9,
+          (gdb) | -d ! echo this contains a | char\n ! sed -e 's/|/PIPE/'
+          this contains a PIPE char
+          (gdb) | -d xxx echo this contains a | char!\n xxx sed -e 's/|/PIPE/'
+          this contains a PIPE char!
+          (gdb)
+
+   The convenience variables '$_shell_exitcode' and '$_shell_exitsignal'
+can be used to examine the exit status of the last shell command
+launched by 'shell', 'make', 'pipe' and '|'.  *Note Convenience
+Variables: Convenience Vars.
 
 
 File: gdb.info,  Node: Logging Output,  Prev: Shell Commands,  Up: Invocation
@@ -1192,8 +1259,15 @@ several commands to control GDB's logging.
      By default, GDB output will go to both the terminal and the
      logfile.  Set 'redirect' if you want output to go only to the log
      file.
+'set logging debugredirect [on|off]'
+     By default, GDB debug output will go to both the terminal and the
+     logfile.  Set 'debugredirect' if you want debug output to go only
+     to the log file.
 'show logging'
      Show the current values of the logging settings.
+
+   You can also redirect the output of a GDB command to a shell command.
+*Note pipe::.
 
 
 File: gdb.info,  Node: Commands,  Next: Running,  Prev: Invocation,  Up: Top
@@ -1210,11 +1284,14 @@ alternatives available, if there is more than one possibility).
 * Menu:
 
 * Command Syntax::              How to give commands to GDB
+* Command Settings::            How to change default behavior of commands
 * Completion::                  Command completion
+* Command Options::             Command options
+* Command aliases default args::        Automatically prepend default arguments to user-defined aliases
 * Help::                        How to ask GDB for help
 
 
-File: gdb.info,  Node: Command Syntax,  Next: Completion,  Up: Commands
+File: gdb.info,  Node: Command Syntax,  Next: Command Settings,  Up: Commands
 
 3.1 Command Syntax
 ==================
@@ -1260,15 +1337,86 @@ fetches the next line relative to the current line from the history for
 editing.
 
 
-File: gdb.info,  Node: Completion,  Next: Help,  Prev: Command Syntax,  Up: Commands
+File: gdb.info,  Node: Command Settings,  Next: Completion,  Prev: Command Syntax,  Up: Commands
 
-3.2 Command Completion
+3.2 Command Settings
+====================
+
+Many commands change their behavior according to command-specific
+variables or settings.  These settings can be changed with the 'set'
+subcommands.  For example, the 'print' command (*note Examining Data:
+Data.) prints arrays differently depending on settings changeable with
+the commands 'set print elements NUMBER-OF-ELEMENTS' and 'set print
+array-indexes', among others.
+
+   You can change these settings to your preference in the gdbinit files
+loaded at GDB startup.  *Note Startup::.
+
+   The settings can also be changed interactively during the debugging
+session.  For example, to change the limit of array elements to print,
+you can do the following:
+     (GDB) set print elements 10
+     (GDB) print some_array
+     $1 = {0, 10, 20, 30, 40, 50, 60, 70, 80, 90...}
+
+   The above 'set print elements 10' command changes the number of
+elements to print from the default of 200 to 10.  If you only intend
+this limit of 10 to be used for printing 'some_array', then you must
+restore the limit back to 200, with 'set print elements 200'.
+
+   Some commands allow overriding settings with command options.  For
+example, the 'print' command supports a number of options that allow
+overriding relevant global print settings as set by 'set print'
+subcommands.  *Note print options::.  The example above could be
+rewritten as:
+     (GDB) print -elements 10 -- some_array
+     $1 = {0, 10, 20, 30, 40, 50, 60, 70, 80, 90...}
+
+   Alternatively, you can use the 'with' command to change a setting
+temporarily, for the duration of a command invocation.
+
+'with SETTING [VALUE] [-- COMMAND]'
+'w SETTING [VALUE] [-- COMMAND]'
+     Temporarily set SETTING to VALUE for the duration of COMMAND.
+
+     SETTING is any setting you can change with the 'set' subcommands.
+     VALUE is the value to assign to 'setting' while running 'command'.
+
+     If no COMMAND is provided, the last command executed is repeated.
+
+     If a COMMAND is provided, it must be preceded by a double dash
+     ('--') separator.  This is required because some settings accept
+     free-form arguments, such as expressions or filenames.
+
+     For example, the command
+          (GDB) with print array on -- print some_array
+     is equivalent to the following 3 commands:
+          (GDB) set print array on
+          (GDB) print some_array
+          (GDB) set print array off
+
+     The 'with' command is particularly useful when you want to override
+     a setting while running user-defined commands, or commands defined
+     in Python or Guile.  *Note Extending GDB: Extending GDB.
+
+          (GDB) with print pretty on -- my_complex_command
+
+     To change several settings for the same command, you can nest
+     'with' commands.  For example, 'with language ada -- with print
+     elements 10' temporarily changes the language to Ada and sets a
+     limit of 10 elements to print for arrays and strings.
+
+
+File: gdb.info,  Node: Completion,  Next: Command Options,  Prev: Command Settings,  Up: Commands
+
+3.3 Command Completion
 ======================
 
 GDB can fill in the rest of a word in a command for you, if there is
 only one possibility; it can also show you what the valid possibilities
 are for the next word in a command, at any time.  This works for GDB
-commands, GDB subcommands, and the names of symbols in your program.
+commands, GDB subcommands, command options, and the names of symbols in
+your program.
 
    Press the <TAB> key whenever you want GDB to fill out the rest of a
 word.  If there is only one possibility, GDB fills in the word, and
@@ -1428,9 +1576,141 @@ expressions.  Also, it only examines the static type of the expression,
 not the dynamic type.
 
 
-File: gdb.info,  Node: Help,  Prev: Completion,  Up: Commands
+File: gdb.info,  Node: Command Options,  Next: Command aliases default args,  Prev: Completion,  Up: Commands
 
-3.3 Getting Help
+3.4 Command Options
+===================
+
+Some commands accept options starting with a leading dash.  For example,
+'print -pretty'.  Similarly to command names, you can abbreviate a GDB
+option to the first few letters of the option name, if that abbreviation
+is unambiguous, and you can also use the <TAB> key to get GDB to fill
+out the rest of a word in an option (or to show you the alternatives
+available, if there is more than one possibility).
+
+   Some commands take raw input as argument.  For example, the print
+command processes arbitrary expressions in any of the languages
+supported by GDB.  With such commands, because raw input may start with
+a leading dash that would be confused with an option or any of its
+abbreviations, e.g. 'print -p' (short for 'print -pretty' or printing
+negative 'p'?), if you specify any command option, then you must use a
+double-dash ('--') delimiter to indicate the end of options.
+
+   Some options are described as accepting an argument which can be
+either 'on' or 'off'.  These are known as "boolean options".  Similarly
+to boolean settings commands--'on' and 'off' are the typical values, but
+any of '1', 'yes' and 'enable' can also be used as "true" value, and any
+of '0', 'no' and 'disable' can also be used as "false" value.  You can
+also omit a "true" value, as it is implied by default.
+
+   For example, these are equivalent:
+
+     (gdb) print -object on -pretty off -element unlimited -- *myptr
+     (gdb) p -o -p 0 -e u -- *myptr
+
+   You can discover the set of options some command accepts by
+completing on '-' after the command name.  For example:
+
+     (gdb) print -<TAB><TAB>
+     -address         -max-depth       -raw-values      -union
+     -array           -null-stop       -repeats         -vtbl
+     -array-indexes   -object          -static-members
+     -elements        -pretty          -symbol
+
+   Completion will in some cases guide you with a suggestion of what
+kind of argument an option expects.  For example:
+
+     (gdb) print -elements <TAB><TAB>
+     NUMBER     unlimited
+
+   Here, the option expects a number (e.g., '100'), not literal
+'NUMBER'.  Such metasyntactical arguments are always presented in
+uppercase.
+
+   (For more on using the 'print' command, see *note Examining Data:
+Data.)
+
+
+File: gdb.info,  Node: Command aliases default args,  Next: Help,  Prev: Command Options,  Up: Commands
+
+3.5 Automatically Prepend Default Arguments to User-Defined Aliases
+===================================================================
+
+You can tell GDB to always prepend some default arguments to the list of
+arguments provided explicitly by the user when using a user-defined
+alias.
+
+   If you repeatedly use the same arguments or options for a command,
+you can define an alias for this command and tell GDB to automatically
+prepend these arguments or options to the list of arguments you type
+explicitly when using the alias(1).
+
+   For example, if you often use the command 'thread apply all'
+specifying to work on the threads in ascending order and to continue in
+case it encounters an error, you can tell GDB to automatically preprend
+the '-ascending' and '-c' options by using:
+
+     (gdb) alias thread apply asc-all = thread apply all -ascending -c
+
+   Once you have defined this alias with its default args, any time you
+type the 'thread apply asc-all' followed by 'some arguments', GDB will
+execute 'thread apply all -ascending -c some arguments'.
+
+   To have even less to type, you can also define a one word alias:
+     (gdb) alias t_a_c = thread apply all -ascending -c
+
+   As usual, unambiguous abbreviations can be used for ALIAS and
+DEFAULT-ARGS.
+
+   The different aliases of a command do not share their default args.
+For example, you define a new alias 'bt_ALL' showing all possible
+information and another alias 'bt_SMALL' showing very limited
+information using:
+     (gdb) alias bt_ALL = backtrace -entry-values both -frame-arg all \
+        -past-main -past-entry -full
+     (gdb) alias bt_SMALL = backtrace -entry-values no -frame-arg none \
+        -past-main off -past-entry off
+
+   (For more on using the 'alias' command, see *note Aliases::.)
+
+   Default args are not limited to the arguments and options of COMMAND,
+but can specify nested commands if COMMAND accepts such a nested command
+as argument.  For example, the below defines 'faalocalsoftype' that
+lists the frames having locals of a certain type, together with the
+matching local vars:
+     (gdb) alias faalocalsoftype = frame apply all info locals -q -t
+     (gdb) faalocalsoftype int
+     #1  0x55554f5e in sleeper_or_burner (v=0xdf50) at sleepers.c:86
+     i = 0
+     ret = 21845
+
+   This is also very useful to define an alias for a set of nested
+'with' commands to have a particular combination of temporary settings.
+For example, the below defines the alias 'pp10' that pretty prints an
+expression argument, with a maximum of 10 elements if the expression is
+a string or an array:
+     (gdb) alias pp10 = with print pretty -- with print elements 10 -- print
+   This defines the alias 'pp10' as being a sequence of 3 commands.  The
+first part 'with print pretty --' temporarily activates the setting 'set
+print pretty', then launches the command that follows the separator
+'--'.  The command following the first part is also a 'with' command
+that temporarily changes the setting 'set print elements' to 10, then
+launches the command that follows the second separator '--'.  The third
+part 'print' is the command the 'pp10' alias will launch, using the
+temporary values of the settings and the arguments explicitly given by
+the user.  For more information about the 'with' command usage, see
+*note Command Settings::.
+
+   ---------- Footnotes ----------
+
+   (1) GDB could easily accept default arguments for pre-defined
+commands and aliases, but it was deemed this would be confusing, and so
+is not allowed.
+
+
+File: gdb.info,  Node: Help,  Prev: Command aliases default args,  Up: Commands
+
+3.6 Getting Help
 ================
 
 You can always ask GDB itself for information on its commands, using the
@@ -1444,7 +1724,7 @@ command 'help'.
           (gdb) help
           List of classes of commands:
 
-          aliases -- Aliases of other commands
+          aliases -- User-defined aliases of other commands
           breakpoints -- Making program stop at certain points
           data -- Examining data
           files -- Specifying and examining files
@@ -1467,17 +1747,25 @@ command 'help'.
 
 'help CLASS'
      Using one of the general help classes as an argument, you can get a
-     list of the individual commands in that class.  For example, here
-     is the help display for the class 'status':
+     list of the individual commands in that class.  If a command has
+     aliases, the aliases are given after the command name, separated by
+     commas.  If an alias has default arguments, the full definition of
+     the alias is given after the first line.  For example, here is the
+     help display for the class 'status':
 
           (gdb) help status
           Status inquiries.
 
           List of commands:
 
-          info -- Generic command for showing things
+          info, inf, i -- Generic command for showing things
                   about the program being debugged
-          show -- Generic command for showing things
+          info address, iamain  -- Describe where symbol SYM is stored.
+            alias iamain = info address main
+          info all-registers -- List of all registers and their contents,
+                  for selected stack frame.
+          ...
+          show, info set -- Generic command for showing things
                   about the debugger
 
           Type "help" followed by command name for full
@@ -1487,22 +1775,43 @@ command 'help'.
 
 'help COMMAND'
      With a command name as 'help' argument, GDB displays a short
-     paragraph on how to use that command.
+     paragraph on how to use that command.  If that command has one or
+     more aliases, GDB will display a first line with the command name
+     and all its aliases separated by commas.  This first line will be
+     followed by the full definition of all aliases having default
+     arguments.
 
-'apropos ARGS'
+'apropos [-v] REGEXP'
      The 'apropos' command searches through all of the GDB commands, and
      their documentation, for the regular expression specified in ARGS.
-     It prints out all matches found.  For example:
+     It prints out all matches found.  The optional flag '-v', which
+     stands for 'verbose', indicates to output the full documentation of
+     the matching commands and highlight the parts of the documentation
+     matching REGEXP.  For example:
 
           apropos alias
 
      results in:
 
           alias -- Define a new command that is an alias of an existing command
-          aliases -- Aliases of other commands
-          d -- Delete some breakpoints or auto-display expressions
-          del -- Delete some breakpoints or auto-display expressions
-          delete -- Delete some breakpoints or auto-display expressions
+          aliases -- User-defined aliases of other commands
+
+     while
+
+          apropos -v cut.*thread apply
+
+     results in the below output, where 'cut for 'thread apply' is
+     highlighted if styling is enabled.
+
+          taas -- Apply a command to all threads (ignoring errors
+          and empty output).
+          Usage: taas COMMAND
+          shortcut for 'thread apply all -s COMMAND'
+
+          tfaas -- Apply a command to all frames of all threads
+          (ignoring errors and empty output).
+          Usage: tfaas COMMAND
+          shortcut for 'thread apply all -s frame apply all -s COMMAND'
 
 'complete ARGS'
      The 'complete ARGS' command lists all the possible completions for
@@ -1584,7 +1893,7 @@ exceptional in lacking corresponding 'set' commands:
 
 File: gdb.info,  Node: Running,  Next: Stopping,  Prev: Commands,  Up: Top
 
-4 Running Programs Under GDB
+4 Running Programs under GDB
 ****************************
 
 When you run a program under GDB, you must first generate debugging
@@ -1606,8 +1915,8 @@ child process.
 * Input/Output::                Your program's input and output
 * Attach::                      Debugging an already-running process
 * Kill Process::                Killing the child process
-
-* Inferiors and Programs::      Debugging multiple inferiors and programs
+* Inferiors Connections and Programs:: Debugging multiple inferiors
+					 connections and programs
 * Threads::                     Debugging programs with multiple threads
 * Forks::                       Debugging forks
 * Checkpoint/Restart::          Setting a _bookmark_ to return to later
@@ -1662,7 +1971,7 @@ format in GDB.
 
 File: gdb.info,  Node: Starting,  Next: Arguments,  Prev: Compilation,  Up: Running
 
-4.2 Starting your Program
+4.2 Starting Your Program
 =========================
 
 'run'
@@ -1832,25 +2141,25 @@ breakpoints.
 'set auto-connect-native-target off'
 'show auto-connect-native-target'
 
-     By default, if not connected to any target yet (e.g., with 'target
-     remote'), the 'run' command starts your program as a native process
-     under GDB, on your local machine.  If you're sure you don't want to
-     debug programs on your local machine, you can tell GDB to not
-     connect to the native target automatically with the 'set
-     auto-connect-native-target off' command.
+     By default, if the current inferior is not connected to any target
+     yet (e.g., with 'target remote'), the 'run' command starts your
+     program as a native process under GDB, on your local machine.  If
+     you're sure you don't want to debug programs on your local machine,
+     you can tell GDB to not connect to the native target automatically
+     with the 'set auto-connect-native-target off' command.
 
-     If 'on', which is the default, and if GDB is not connected to a
-     target already, the 'run' command automaticaly connects to the
-     native target, if one is available.
+     If 'on', which is the default, and if the current inferior is not
+     connected to a target already, the 'run' command automaticaly
+     connects to the native target, if one is available.
 
-     If 'off', and if GDB is not connected to a target already, the
-     'run' command fails with an error:
+     If 'off', and if the current inferior is not connected to a target
+     already, the 'run' command fails with an error:
 
           (gdb) run
           Don't know how to run.  Try "help target".
 
-     If GDB is already connected to a target, GDB always uses it with
-     the 'run' command.
+     If the current inferior is already connected to a target, GDB
+     always uses it with the 'run' command.
 
      In any case, you can explicitly connect to the native target with
      the 'target native' command.  For example,
@@ -2148,7 +2457,7 @@ program.
 
 File: gdb.info,  Node: Attach,  Next: Kill Process,  Prev: Input/Output,  Up: Running
 
-4.7 Debugging an Already-running Process
+4.7 Debugging an Already-Running Process
 ========================================
 
 'attach PROCESS-ID'
@@ -2172,6 +2481,25 @@ program is not found) by using the source file search path (*note
 Specifying Source Directories: Source Path.).  You can also use the
 'file' command to load the program.  *Note Commands to Specify Files:
 Files.
+
+   If the debugger can determine that the executable file running in the
+process it is attaching to does not match the current exec-file loaded
+by GDB, the option 'exec-file-mismatch' specifies how to handle the
+mismatch.  GDB tries to compare the files by comparing their build IDs
+(*note build ID::), if available.
+
+'set exec-file-mismatch 'ask|warn|off''
+
+     Whether to detect mismatch between the current executable file
+     loaded by GDB and the executable file used to start the process.
+     If 'ask', the default, display a warning and ask the user whether
+     to load the process executable file; if 'warn', just display a
+     warning; if 'off', don't attempt to detect a mismatch.  If the user
+     confirms loading the process executable file, then its symbols will
+     be loaded as well.
+
+'show exec-file-mismatch'
+     Show the current value of 'exec-file-mismatch'.
 
    The first thing GDB does after arranging to debug the specified
 process is to stop it.  You can examine and modify an attached process
@@ -2198,7 +2526,7 @@ things; you can control whether or not you need to confirm by using the
 Messages/Warnings.).
 
 
-File: gdb.info,  Node: Kill Process,  Next: Inferiors and Programs,  Prev: Attach,  Up: Running
+File: gdb.info,  Node: Kill Process,  Next: Inferiors Connections and Programs,  Prev: Attach,  Up: Running
 
 4.8 Killing the Child Process
 =============================
@@ -2223,17 +2551,19 @@ the symbol table again (while trying to preserve your current breakpoint
 settings).
 
 
-File: gdb.info,  Node: Inferiors and Programs,  Next: Threads,  Prev: Kill Process,  Up: Running
+File: gdb.info,  Node: Inferiors Connections and Programs,  Next: Threads,  Prev: Kill Process,  Up: Running
 
-4.9 Debugging Multiple Inferiors and Programs
-=============================================
+4.9 Debugging Multiple Inferiors Connections and Programs
+=========================================================
 
 GDB lets you run and debug multiple programs in a single session.  In
 addition, GDB on some systems may let you run several programs
 simultaneously (otherwise you have to exit from one before starting
-another).  In the most general case, you can have multiple threads of
-execution in each of multiple processes, launched from multiple
-executables.
+another).  On some systems GDB may even let you debug several programs
+simultaneously on different remote systems.  In the most general case,
+you can have multiple threads of execution in each of multiple
+processes, launched from multiple executables, running on different
+machines.
 
    GDB represents the state of each program execution with an object
 called an "inferior".  An inferior typically corresponds to a process,
@@ -2259,7 +2589,11 @@ Each inferior may in turn have multiple threads running in it.
 
        2. the target system's inferior identifier
 
-       3. the name of the executable the inferior is running.
+       3. the target connection the inferior is bound to, including the
+          unique connection number assigned by GDB, and the protocol
+          used by the connection.
+
+       4. the name of the executable the inferior is running.
 
      An asterisk '*' preceding the GDB inferior number indicates the
      current inferior.
@@ -2267,9 +2601,37 @@ Each inferior may in turn have multiple threads running in it.
      For example,
 
      (gdb) info inferiors
-       Num  Description       Executable
-       2    process 2307      hello
-     * 1    process 3401      goodbye
+       Num  Description       Connection                      Executable
+     * 1    process 3401      1 (native)                      goodbye
+       2    process 2307      2 (extended-remote host:10000)  hello
+
+   To find out what open target connections exist at any moment, use
+'info connections':
+
+'info connections'
+     Print a list of all open target connections currently being managed
+     by GDB.  By default all connections are printed, but the argument
+     ID... - a space separated list of connections numbers - can be used
+     to limit the display to just the requested connections.
+
+     GDB displays for each connection (in this order):
+
+       1. the connection number assigned by GDB.
+
+       2. the protocol used by the connection.
+
+       3. a textual description of the protocol used by the connection.
+
+     An asterisk '*' preceding the connection number indicates the
+     connection of the current inferior.
+
+     For example,
+
+     (gdb) info connections
+       Num  What                        Description
+     * 1    extended-remote host:10000  Extended remote serial target in gdb-specific protocol
+       2    native                      Native process
+       3    core                        Local core dump file
 
    To switch focus between inferiors, use the 'inferior' command:
 
@@ -2290,12 +2652,21 @@ add inferiors to the debug session automatically by following calls to
 'fork' and 'exec'.  To remove inferiors from the debugging session use
 the 'remove-inferiors' command.
 
-'add-inferior [ -copies N ] [ -exec EXECUTABLE ]'
+'add-inferior [ -copies N ] [ -exec EXECUTABLE ] [-no-connection ]'
      Adds N inferiors to be run using EXECUTABLE as the executable; N
      defaults to 1.  If no executable is specified, the inferiors begins
      empty, with no program.  You can still assign or change the program
      assigned to the inferior at any time by using the 'file' command
      with the executable name as its argument.
+
+     By default, the new inferior begins connected to the same target
+     connection as the current inferior.  For example, if the current
+     inferior was connected to 'gdbserver' with 'target remote', then
+     the new inferior will be connected to the same 'gdbserver'
+     instance.  The '-no-connection' option starts the new inferior with
+     no connection yet.  You can then for example use the 'target
+     remote' command to connect to some other 'gdbserver' instance, use
+     'run' to spawn a local program, etc.
 
 'clone-inferior [ -copies N ] [ INFNO ]'
      Adds N inferiors ready to execute the same program as inferior
@@ -2304,15 +2675,15 @@ the 'remove-inferiors' command.
      run another instance of the inferior you are debugging.
 
           (gdb) info inferiors
-            Num  Description       Executable
-          * 1    process 29964     helloworld
+            Num  Description       Connection   Executable
+          * 1    process 29964     1 (native)   helloworld
           (gdb) clone-inferior
           Added inferior 2.
           1 inferiors added.
           (gdb) info inferiors
-            Num  Description       Executable
-            2    <null>            helloworld
-          * 1    process 29964     helloworld
+            Num  Description       Connection   Executable
+          * 1    process 29964     1 (native)   helloworld
+            2    <null>            1 (native)   helloworld
 
      You can now simply switch focus to inferior 2 and run it.
 
@@ -2362,7 +2733,7 @@ use 'set print inferior-events':
 single program: e.g., 'print myglobal' will simply display the value of
 'myglobal' in the current inferior.
 
-   Occasionaly, when debugging GDB itself, it may be useful to get more
+   Occasionally, when debugging GDB itself, it may be useful to get more
 info about the relationship of inferiors, programs, address spaces in a
 debug session.  You can do that with the 'maint info program-spaces'
 command.
@@ -2407,7 +2778,7 @@ command.
      call.
 
 
-File: gdb.info,  Node: Threads,  Next: Forks,  Prev: Inferiors and Programs,  Up: Running
+File: gdb.info,  Node: Threads,  Next: Forks,  Prev: Inferiors Connections and Programs,  Up: Running
 
 4.10 Debugging Programs with Multiple Threads
 =============================================
@@ -2549,7 +2920,7 @@ thread that hit the breakpoint.
      For example,
 
      (gdb) info threads
-       Id   Target Id         Frame
+       Id   Target Id             Frame
      * 1    process 35 thread 13  main (argc=1, argv=0x7ffffff8)
        2    process 35 thread 23  0x34e5 in sigpause ()
        3    process 35 thread 27  0x34e5 in sigpause ()
@@ -2628,24 +2999,30 @@ a Solaris-specific command:
 
      Flags '-c' and '-s' cannot be used together.
 
-'taas COMMAND'
-     Shortcut for 'thread apply all -s COMMAND'.  Applies COMMAND on all
-     threads, ignoring errors and empty output.
+'taas [OPTION]... COMMAND'
+     Shortcut for 'thread apply all -s [OPTION]... COMMAND'.  Applies
+     COMMAND on all threads, ignoring errors and empty output.
 
-'tfaas COMMAND'
-     Shortcut for 'thread apply all -s frame apply all -s COMMAND'.
-     Applies COMMAND on all frames of all threads, ignoring errors and
-     empty output.  Note that the flag '-s' is specified twice: The
-     first '-s' ensures that 'thread apply' only shows the thread
-     information of the threads for which 'frame apply' produces some
-     output.  The second '-s' is needed to ensure that 'frame apply'
-     shows the frame information of a frame only if the COMMAND
+     The 'taas' command accepts the same options as the 'thread apply
+     all' command.  *Note thread apply all::.
+
+'tfaas [OPTION]... COMMAND'
+     Shortcut for 'thread apply all -s -- frame apply all -s [OPTION]...
+     COMMAND'.  Applies COMMAND on all frames of all threads, ignoring
+     errors and empty output.  Note that the flag '-s' is specified
+     twice: The first '-s' ensures that 'thread apply' only shows the
+     thread information of the threads for which 'frame apply' produces
+     some output.  The second '-s' is needed to ensure that 'frame
+     apply' shows the frame information of a frame only if the COMMAND
      successfully produced some output.
 
      It can for example be used to print a local variable or a function
      argument without knowing the thread or frame where this variable or
      argument is, using:
           (gdb) tfaas p some_local_var_i_do_not_remember_where_it_is
+
+     The 'tfaas' command accepts the same options as the 'frame apply'
+     command.  *Note frame apply: Frame Apply.
 
 'thread name [NAME]'
      This command assigns a name to the current thread.  If no argument
@@ -2816,13 +3193,14 @@ use the command 'set detach-on-fork'.
 control of all forked processes (including nested forks).  You can list
 the forked processes under the control of GDB by using the
 'info inferiors' command, and switch from one fork to another by using
-the 'inferior' command (*note Debugging Multiple Inferiors and Programs:
-Inferiors and Programs.).
+the 'inferior' command (*note Debugging Multiple Inferiors Connections
+and Programs: Inferiors Connections and Programs.).
 
    To quit debugging one of the forked processes, you can either detach
 from it by using the 'detach inferiors' command (allowing it to run
 independently), or kill it using the 'kill inferiors' command.  *Note
-Debugging Multiple Inferiors and Programs: Inferiors and Programs.
+Debugging Multiple Inferiors Connections and Programs: Inferiors
+Connections and Programs.
 
    If you ask to debug a child process and a 'vfork' is followed by an
 'exec', GDB executes the new target up to the first breakpoint in the
@@ -3085,7 +3463,7 @@ operated on.
 * Disabling::                   Disabling breakpoints
 * Conditions::                  Break conditions
 * Break Commands::              Breakpoint command lists
-* Dynamic Printf::              Dynamic printf
+* Dynamic printf::              Dynamic printf
 * Save Breakpoints::            How to save breakpoints in a file
 * Static Probe Points::         Listing static probe points
 * Error in Breakpoints::        "Cannot insert breakpoints"
@@ -3731,7 +4109,7 @@ shared library.  Use the 'catch' command to set a catchpoint.
 
              * You cannot install an exception handler interactively.
 
-     'exception'
+     'exception [NAME]'
           An Ada exception being raised.  If an exception name is
           specified at the end of the command (eg 'catch exception
           Program_Error'), the debugger will stop only when this
@@ -3748,7 +4126,16 @@ shared library.  Use the 'catch' command to set a catchpoint.
           command to use to catch such exceptions is 'catch exception
           Pck.Constraint_Error'.
 
-     'handlers'
+          The convenience variable '$_ada_exception' holds the address
+          of the exception being thrown.  This can be useful when
+          setting a condition for such a catchpoint.
+
+     'exception unhandled'
+          An exception that was raised but is not handled by the
+          program.  The convenience variable '$_ada_exception' is set as
+          for 'catch exception'.
+
+     'handlers [NAME]'
           An Ada exception being handled.  If an exception name is
           specified at the end of the command (eg 'catch handlers
           Program_Error'), the debugger will stop only when this
@@ -3765,12 +4152,12 @@ shared library.  Use the 'catch' command to set a catchpoint.
           command to use to catch such exceptions handling is 'catch
           handlers Pck.Constraint_Error'.
 
-     'exception unhandled'
-          An exception that was raised but is not handled by the
-          program.
+          The convenience variable '$_ada_exception' is set as for
+          'catch exception'.
 
      'assert'
-          A failed Ada assertion.
+          A failed Ada assertion.  Note that the convenience variable
+          '$_ada_exception' is _not_ set by this catchpoint.
 
      'exec'
           A call to 'exec'.
@@ -3923,8 +4310,8 @@ shared library.  Use the 'catch' command to set a catchpoint.
      'vfork'
           A call to 'vfork'.
 
-     'load [regexp]'
-     'unload [regexp]'
+     'load [REGEXP]'
+     'unload [REGEXP]'
           The loading or unloading of a shared library.  If REGEXP is
           given, then the catchpoint will stop only if the regular
           expression matches one of the affected libraries.
@@ -4198,7 +4585,7 @@ it.
    Ignore counts apply to breakpoints, watchpoints, and catchpoints.
 
 
-File: gdb.info,  Node: Break Commands,  Next: Dynamic Printf,  Prev: Conditions,  Up: Breakpoints
+File: gdb.info,  Node: Break Commands,  Next: Dynamic printf,  Prev: Conditions,  Up: Breakpoints
 
 5.1.7 Breakpoint Command Lists
 ------------------------------
@@ -4277,9 +4664,9 @@ that no output is produced.  Here is an example:
      end
 
 
-File: gdb.info,  Node: Dynamic Printf,  Next: Save Breakpoints,  Prev: Break Commands,  Up: Breakpoints
+File: gdb.info,  Node: Dynamic printf,  Next: Save Breakpoints,  Prev: Break Commands,  Up: Breakpoints
 
-5.1.8 Dynamic Printf
+5.1.8 Dynamic printf
 --------------------
 
 The dynamic printf command 'dprintf' combines a breakpoint with
@@ -4374,9 +4761,9 @@ dynamic prints must be at locations within the scope of those locals.
 If evaluation fails, GDB will report an error.
 
 
-File: gdb.info,  Node: Save Breakpoints,  Next: Static Probe Points,  Prev: Dynamic Printf,  Up: Breakpoints
+File: gdb.info,  Node: Save Breakpoints,  Next: Static Probe Points,  Prev: Dynamic printf,  Up: Breakpoints
 
-5.1.9 How to save breakpoints to a file
+5.1.9 How to Save Breakpoints to a File
 ---------------------------------------
 
 To save breakpoint definitions to a file use the 'save breakpoints'
@@ -4685,6 +5072,13 @@ interesting, until you see the problem happen.
      Contrast this with the 'return' command (*note Returning from a
      Function: Returning.).
 
+'set print finish [on|off]'
+'show print finish'
+     By default the 'finish' command will show the value that is
+     returned by the function.  This can be disabled using 'set print
+     finish off'.  When disabled, the value is still entered into the
+     value history (*note Value History::), but not displayed.
+
 'until'
 'u'
      Continue running until a source line past the current line, in the
@@ -4801,7 +5195,7 @@ can use the following command to turn off range stepping if necessary:
 
 File: gdb.info,  Node: Skipping Over Functions and Files,  Next: Signals,  Prev: Continuing and Stepping,  Up: Stopping
 
-5.3 Skipping Over Functions and Files
+5.3 Skipping over Functions and Files
 =====================================
 
 The program you are debugging may contain some functions which are
@@ -5175,7 +5569,7 @@ displayed.
 
 File: gdb.info,  Node: Thread Stops,  Prev: Signals,  Up: Stopping
 
-5.5 Stopping and Starting Multi-thread Programs
+5.5 Stopping and Starting Multi-Thread Programs
 ===============================================
 
 GDB supports debugging programs with multiple threads (*note Debugging
@@ -5593,7 +5987,7 @@ will still not be able to be placed.
 
 File: gdb.info,  Node: Reverse Execution,  Next: Process Record and Replay,  Prev: Stopping,  Up: Top
 
-6 Running programs backward
+6 Running Programs Backward
 ***************************
 
 When you are debugging a program, it is not unusual to realize that you
@@ -5616,6 +6010,12 @@ of memory and/or registers that were changed by that instruction are
 reverted to their previous states.  After executing a piece of source
 code in reverse, all side effects of that code should be "undone", and
 all variables should be returned to their prior values(1).
+
+   On some platforms, GDB has built-in support for reverse execution,
+activated with the 'record' or 'record btrace' commands.  *Note Process
+Record and Replay::.  Some remote targets, typically full system
+emulators, support reverse execution directly without requiring any
+special command.
 
    If you are debugging in a target environment that supports reverse
 execution, GDB provides the following commands.
@@ -5696,7 +6096,7 @@ only that the target do something reasonable when GDB tells it to
 execute backwards, and then report the results back to GDB.  Whatever
 the target reports back to GDB, GDB will report back to the user.  GDB
 assumes that the memory and registers that the target reports are in a
-consistant state, but GDB accepts whatever it is given.
+consistent state, but GDB accepts whatever it is given.
 
    (2) Unless the code is too heavily optimized.
 
@@ -5735,6 +6135,11 @@ as long as the execution log includes the record for the previous
 instruction; otherwise, it will work in record mode, if the platform
 supports reverse execution, or stop if not.
 
+   Currently, process record and replay is supported on ARM, Aarch64,
+Moxie, PowerPC, PowerPC64, S/390, and x86 (i386/amd64) running
+GNU/Linux.  Process record and replay can be used both when native
+debugging, and when remote debugging via 'gdbserver'.
+
    For architecture environments that support process record and replay,
 GDB provides the following commands:
 
@@ -5750,14 +6155,15 @@ GDB provides the following commands:
           reverse execution.
 
      'btrace FORMAT'
-          Hardware-supported instruction recording.  This method does
-          not record data.  Further, the data is collected in a ring
-          buffer so old data will be overwritten when the buffer is
-          full.  It allows limited reverse execution.  Variables and
-          registers are not available during reverse execution.  In
-          remote debugging, recording continues on disconnect.  Recorded
-          data can be inspected after reconnecting.  The recording may
-          be stopped using 'record stop'.
+          Hardware-supported instruction recording, supported on Intel
+          processors.  This method does not record data.  Further, the
+          data is collected in a ring buffer so old data will be
+          overwritten when the buffer is full.  It allows limited
+          reverse execution.  Variables and registers are not available
+          during reverse execution.  In remote debugging, recording
+          continues on disconnect.  Recorded data can be inspected after
+          reconnecting.  The recording may be stopped using 'record
+          stop'.
 
           The recording format can be specified as parameter.  Without a
           parameter the command chooses the recording format.  The
@@ -5932,7 +6338,7 @@ GDB provides the following commands:
      allows you to do that, and also allows to disable the workarounds.
 
      The argument IDENTIFIER identifies the CPU and is of the form:
-     'VENDOR:PROCESOR IDENTIFIER'.  In addition, there are two special
+     'VENDOR:PROCESSOR IDENTIFIER'.  In addition, there are two special
      identifiers, 'none' and 'auto' (default).
 
      The following vendor identifiers and corresponding processor
@@ -6279,10 +6685,11 @@ for frames in the stack.  By default, all stack frames are printed.  You
 can stop the backtrace at any time by typing the system interrupt
 character, normally 'Ctrl-c'.
 
-'backtrace [ARGS...]'
-'bt [ARGS...]'
-     Print the backtrace of the entire stack.  The optional ARGS can be
-     one of the following:
+'backtrace [OPTION]... [QUALIFIER]... [COUNT]'
+'bt [OPTION]... [QUALIFIER]... [COUNT]'
+     Print the backtrace of the entire stack.
+
+     The optional COUNT can be one of the following:
 
      'N'
      'N'
@@ -6294,23 +6701,66 @@ character, normally 'Ctrl-c'.
           Print only the outermost N frames, where N is a positive
           number.
 
-     'full'
-          Print the values of the local variables also.  This can be
-          combined with a number to limit the number of frames shown.
+     Options:
 
-     'no-filters'
+     '-full'
+          Print the values of the local variables also.  This can be
+          combined with the optional COUNT to limit the number of frames
+          shown.
+
+     '-no-filters'
           Do not run Python frame filters on this backtrace.  *Note
           Frame Filter API::, for more information.  Additionally use
           *note disable frame-filter all:: to turn off all frame
           filters.  This is only relevant when GDB has been configured
           with 'Python' support.
 
-     'hide'
+     '-hide'
           A Python frame filter might decide to "elide" some frames.
           Normally such elided frames are still printed, but they are
           indented relative to the filtered frames that cause them to be
-          elided.  The 'hide' option causes elided frames to not be
+          elided.  The '-hide' option causes elided frames to not be
           printed at all.
+
+     The 'backtrace' command also supports a number of options that
+     allow overriding relevant global print settings as set by 'set
+     backtrace' and 'set print' subcommands:
+
+     '-past-main [on|off]'
+          Set whether backtraces should continue past 'main'.  Related
+          setting: *note set backtrace past-main::.
+
+     '-past-entry [on|off]'
+          Set whether backtraces should continue past the entry point of
+          a program.  Related setting: *note set backtrace past-entry::.
+
+     '-entry-values no|only|preferred|if-needed|both|compact|default'
+          Set printing of function arguments at function entry.  Related
+          setting: *note set print entry-values::.
+
+     '-frame-arguments all|scalars|none'
+          Set printing of non-scalar frame arguments.  Related setting:
+          *note set print frame-arguments::.
+
+     '-raw-frame-arguments [on|off]'
+          Set whether to print frame arguments in raw form.  Related
+          setting: *note set print raw-frame-arguments::.
+
+     '-frame-info auto|source-line|location|source-and-location|location-and-address|short-location'
+          Set printing of frame information.  Related setting: *note set
+          print frame-info::.
+
+     The optional QUALIFIER is maintained for backward compatibility.
+     It can be one of the following:
+
+     'full'
+          Equivalent to the '-full' option.
+
+     'no-filters'
+          Equivalent to the '-no-filters' option.
+
+     'hide'
+          Equivalent to the '-hide' option.
 
    The names 'where' and 'info stack' (abbreviated 'info s') are
 additional aliases for 'backtrace'.
@@ -6347,7 +6797,9 @@ The value of parameter 'data' in frame 1 has been replaced by '...'.  By
 default, GDB prints the value of a parameter only if it is a scalar
 (integer, pointer, enumeration, etc).  See command 'set print
 frame-arguments' in *note Print Settings:: for more details on how to
-configure the way function parameter values are printed.
+configure the way function parameter values are printed.  The command
+'set print frame-info' (*note Print Settings::) controls what frame
+information is printed.
 
    If your program was compiled with optimizations, some compilers will
 optimize away arguments passed to functions if those arguments are never
@@ -6549,445 +7001,4 @@ details.
      display of the new frame.  They are intended primarily for use in
      GDB command scripts, where the output might be unnecessary and
      distracting.
-
-
-File: gdb.info,  Node: Frame Info,  Next: Frame Apply,  Prev: Selection,  Up: Stack
-
-8.4 Information About a Frame
-=============================
-
-There are several other commands to print information about the selected
-stack frame.
-
-'frame'
-'f'
-     When used without any argument, this command does not change which
-     frame is selected, but prints a brief description of the currently
-     selected stack frame.  It can be abbreviated 'f'.  With an
-     argument, this command is used to select a stack frame.  *Note
-     Selecting a Frame: Selection.
-
-'info frame'
-'info f'
-     This command prints a verbose description of the selected stack
-     frame, including:
-
-        * the address of the frame
-        * the address of the next frame down (called by this frame)
-        * the address of the next frame up (caller of this frame)
-        * the language in which the source code corresponding to this
-          frame is written
-        * the address of the frame's arguments
-        * the address of the frame's local variables
-        * the program counter saved in it (the address of execution in
-          the caller frame)
-        * which registers were saved in the frame
-
-     The verbose description is useful when something has gone wrong
-     that has made the stack format fail to fit the usual conventions.
-
-'info frame [ FRAME-SELECTION-SPEC ]'
-'info f [ FRAME-SELECTION-SPEC ]'
-     Print a verbose description of the frame selected by
-     FRAME-SELECTION-SPEC.  The FRAME-SELECTION-SPEC is the same as for
-     the 'frame' command (*note Selecting a Frame: Selection.).  The
-     selected frame remains unchanged by this command.
-
-'info args [-q]'
-     Print the arguments of the selected frame, each on a separate line.
-
-     The optional flag '-q', which stands for 'quiet', disables printing
-     header information and messages explaining why no argument have
-     been printed.
-
-'info args [-q] [-t TYPE_REGEXP] [REGEXP]'
-     Like 'info args', but only print the arguments selected with the
-     provided regexp(s).
-
-     If REGEXP is provided, print only the arguments whose names match
-     the regular expression REGEXP.
-
-     If TYPE_REGEXP is provided, print only the arguments whose types,
-     as printed by the 'whatis' command, match the regular expression
-     TYPE_REGEXP.  If TYPE_REGEXP contains space(s), it should be
-     enclosed in quote characters.  If needed, use backslash to escape
-     the meaning of special characters or quotes.
-
-     If both REGEXP and TYPE_REGEXP are provided, an argument is printed
-     only if its name matches REGEXP and its type matches TYPE_REGEXP.
-
-'info locals [-q]'
-     Print the local variables of the selected frame, each on a separate
-     line.  These are all variables (declared either static or
-     automatic) accessible at the point of execution of the selected
-     frame.
-
-     The optional flag '-q', which stands for 'quiet', disables printing
-     header information and messages explaining why no local variables
-     have been printed.
-
-'info locals [-q] [-t TYPE_REGEXP] [REGEXP]'
-     Like 'info locals', but only print the local variables selected
-     with the provided regexp(s).
-
-     If REGEXP is provided, print only the local variables whose names
-     match the regular expression REGEXP.
-
-     If TYPE_REGEXP is provided, print only the local variables whose
-     types, as printed by the 'whatis' command, match the regular
-     expression TYPE_REGEXP.  If TYPE_REGEXP contains space(s), it
-     should be enclosed in quote characters.  If needed, use backslash
-     to escape the meaning of special characters or quotes.
-
-     If both REGEXP and TYPE_REGEXP are provided, a local variable is
-     printed only if its name matches REGEXP and its type matches
-     TYPE_REGEXP.
-
-     The command 'info locals -q -t TYPE_REGEXP' can usefully be
-     combined with the commands 'frame apply' and 'thread apply'.  For
-     example, your program might use Resource Acquisition Is
-     Initialization types (RAII) such as 'lock_something_t': each local
-     variable of type 'lock_something_t' automatically places a lock
-     that is destroyed when the variable goes out of scope.  You can
-     then list all acquired locks in your program by doing
-          thread apply all -s frame apply all -s info locals -q -t lock_something_t
-     or the equivalent shorter form
-          tfaas i lo -q -t lock_something_t
-
-
-File: gdb.info,  Node: Frame Apply,  Next: Frame Filter Management,  Prev: Frame Info,  Up: Stack
-
-8.5 Applying a Command to Several Frames.
-=========================================
-
-'frame apply [all | COUNT | -COUNT | level LEVEL...] [FLAG]... COMMAND'
-     The 'frame apply' command allows you to apply the named COMMAND to
-     one or more frames.
-
-     'all'
-          Specify 'all' to apply COMMAND to all frames.
-
-     'COUNT'
-          Use COUNT to apply COMMAND to the innermost COUNT frames,
-          where COUNT is a positive number.
-
-     '-COUNT'
-          Use -COUNT to apply COMMAND to the outermost COUNT frames,
-          where COUNT is a positive number.
-
-     'level'
-          Use 'level' to apply COMMAND to the set of frames identified
-          by the LEVEL list.  LEVEL is a frame level or a range of frame
-          levels as LEVEL1-LEVEL2.  The frame level is the number shown
-          in the first field of the 'backtrace' command output.  E.g.,
-          '2-4 6-8 3' indicates to apply COMMAND for the frames at
-          levels 2, 3, 4, 6, 7, 8, and then again on frame at level 3.
-
-   Note that the frames on which 'frame apply' applies a command are
-also influenced by the 'set backtrace' settings such as 'set backtrace
-past-main' and 'set backtrace limit N'.  See *Note Backtraces:
-Backtrace.
-
-   The FLAG arguments control what output to produce and how to handle
-errors raised when applying COMMAND to a frame.  FLAG must start with a
-'-' directly followed by one letter in 'qcs'.  If several flags are
-provided, they must be given individually, such as '-c -q'.
-
-   By default, GDB displays some frame information before the output
-produced by COMMAND, and an error raised during the execution of a
-COMMAND will abort 'frame apply'.  The following flags can be used to
-fine-tune this behavior:
-
-'-c'
-     The flag '-c', which stands for 'continue', causes any errors in
-     COMMAND to be displayed, and the execution of 'frame apply' then
-     continues.
-'-s'
-     The flag '-s', which stands for 'silent', causes any errors or
-     empty output produced by a COMMAND to be silently ignored.  That
-     is, the execution continues, but the frame information and errors
-     are not printed.
-'-q'
-     The flag '-q' ('quiet') disables printing the frame information.
-
-   The following example shows how the flags '-c' and '-s' are working
-when applying the command 'p j' to all frames, where variable 'j' can
-only be successfully printed in the outermost '#1 main' frame.
-
-     (gdb) frame apply all p j
-     #0  some_function (i=5) at fun.c:4
-     No symbol "j" in current context.
-     (gdb) frame apply all -c p j
-     #0  some_function (i=5) at fun.c:4
-     No symbol "j" in current context.
-     #1  0x565555fb in main (argc=1, argv=0xffffd2c4) at fun.c:11
-     $1 = 5
-     (gdb) frame apply all -s p j
-     #1  0x565555fb in main (argc=1, argv=0xffffd2c4) at fun.c:11
-     $2 = 5
-     (gdb)
-
-   By default, 'frame apply', prints the frame location information
-before the command output:
-
-     (gdb) frame apply all p $sp
-     #0  some_function (i=5) at fun.c:4
-     $4 = (void *) 0xffffd1e0
-     #1  0x565555fb in main (argc=1, argv=0xffffd2c4) at fun.c:11
-     $5 = (void *) 0xffffd1f0
-     (gdb)
-
-   If flag '-q' is given, no frame information is printed:
-     (gdb) frame apply all -q p $sp
-     $12 = (void *) 0xffffd1e0
-     $13 = (void *) 0xffffd1f0
-     (gdb)
-
-'faas COMMAND'
-     Shortcut for 'frame apply all -s COMMAND'.  Applies COMMAND on all
-     frames, ignoring errors and empty output.
-
-     It can for example be used to print a local variable or a function
-     argument without knowing the frame where this variable or argument
-     is, using:
-          (gdb) faas p some_local_var_i_do_not_remember_where_it_is
-
-     Note that the command 'tfaas COMMAND' applies COMMAND on all frames
-     of all threads.  See *Note Threads: Threads.
-
-
-File: gdb.info,  Node: Frame Filter Management,  Prev: Frame Apply,  Up: Stack
-
-8.6 Management of Frame Filters.
-================================
-
-Frame filters are Python based utilities to manage and decorate the
-output of frames.  *Note Frame Filter API::, for further information.
-
-   Managing frame filters is performed by several commands available
-within GDB, detailed here.
-
-'info frame-filter'
-     Print a list of installed frame filters from all dictionaries,
-     showing their name, priority and enabled status.
-
-'disable frame-filter FILTER-DICTIONARY FILTER-NAME'
-     Disable a frame filter in the dictionary matching FILTER-DICTIONARY
-     and FILTER-NAME.  The FILTER-DICTIONARY may be 'all', 'global',
-     'progspace', or the name of the object file where the frame filter
-     dictionary resides.  When 'all' is specified, all frame filters
-     across all dictionaries are disabled.  The FILTER-NAME is the name
-     of the frame filter and is used when 'all' is not the option for
-     FILTER-DICTIONARY.  A disabled frame-filter is not deleted, it may
-     be enabled again later.
-
-'enable frame-filter FILTER-DICTIONARY FILTER-NAME'
-     Enable a frame filter in the dictionary matching FILTER-DICTIONARY
-     and FILTER-NAME.  The FILTER-DICTIONARY may be 'all', 'global',
-     'progspace' or the name of the object file where the frame filter
-     dictionary resides.  When 'all' is specified, all frame filters
-     across all dictionaries are enabled.  The FILTER-NAME is the name
-     of the frame filter and is used when 'all' is not the option for
-     FILTER-DICTIONARY.
-
-     Example:
-
-          (gdb) info frame-filter
-
-          global frame-filters:
-            Priority  Enabled  Name
-            1000      No       PrimaryFunctionFilter
-            100       Yes      Reverse
-
-          progspace /build/test frame-filters:
-            Priority  Enabled  Name
-            100       Yes      ProgspaceFilter
-
-          objfile /build/test frame-filters:
-            Priority  Enabled  Name
-            999       Yes      BuildProgra Filter
-
-          (gdb) disable frame-filter /build/test BuildProgramFilter
-          (gdb) info frame-filter
-
-          global frame-filters:
-            Priority  Enabled  Name
-            1000      No       PrimaryFunctionFilter
-            100       Yes      Reverse
-
-          progspace /build/test frame-filters:
-            Priority  Enabled  Name
-            100       Yes      ProgspaceFilter
-
-          objfile /build/test frame-filters:
-            Priority  Enabled  Name
-            999       No       BuildProgramFilter
-
-          (gdb) enable frame-filter global PrimaryFunctionFilter
-          (gdb) info frame-filter
-
-          global frame-filters:
-            Priority  Enabled  Name
-            1000      Yes      PrimaryFunctionFilter
-            100       Yes      Reverse
-
-          progspace /build/test frame-filters:
-            Priority  Enabled  Name
-            100       Yes      ProgspaceFilter
-
-          objfile /build/test frame-filters:
-            Priority  Enabled  Name
-            999       No       BuildProgramFilter
-
-'set frame-filter priority FILTER-DICTIONARY FILTER-NAME PRIORITY'
-     Set the PRIORITY of a frame filter in the dictionary matching
-     FILTER-DICTIONARY, and the frame filter name matching FILTER-NAME.
-     The FILTER-DICTIONARY may be 'global', 'progspace' or the name of
-     the object file where the frame filter dictionary resides.  The
-     PRIORITY is an integer.
-
-'show frame-filter priority FILTER-DICTIONARY FILTER-NAME'
-     Show the PRIORITY of a frame filter in the dictionary matching
-     FILTER-DICTIONARY, and the frame filter name matching FILTER-NAME.
-     The FILTER-DICTIONARY may be 'global', 'progspace' or the name of
-     the object file where the frame filter dictionary resides.
-
-     Example:
-
-          (gdb) info frame-filter
-
-          global frame-filters:
-            Priority  Enabled  Name
-            1000      Yes      PrimaryFunctionFilter
-            100       Yes      Reverse
-
-          progspace /build/test frame-filters:
-            Priority  Enabled  Name
-            100       Yes      ProgspaceFilter
-
-          objfile /build/test frame-filters:
-            Priority  Enabled  Name
-            999       No       BuildProgramFilter
-
-          (gdb) set frame-filter priority global Reverse 50
-          (gdb) info frame-filter
-
-          global frame-filters:
-            Priority  Enabled  Name
-            1000      Yes      PrimaryFunctionFilter
-            50        Yes      Reverse
-
-          progspace /build/test frame-filters:
-            Priority  Enabled  Name
-            100       Yes      ProgspaceFilter
-
-          objfile /build/test frame-filters:
-            Priority  Enabled  Name
-            999       No       BuildProgramFilter
-
-
-File: gdb.info,  Node: Source,  Next: Data,  Prev: Stack,  Up: Top
-
-9 Examining Source Files
-************************
-
-GDB can print parts of your program's source, since the debugging
-information recorded in the program tells GDB what source files were
-used to build it.  When your program stops, GDB spontaneously prints the
-line where it stopped.  Likewise, when you select a stack frame (*note
-Selecting a Frame: Selection.), GDB prints the line where execution in
-that frame has stopped.  You can print other portions of source files by
-explicit command.
-
-   If you use GDB through its GNU Emacs interface, you may prefer to use
-Emacs facilities to view source; see *note Using GDB under GNU Emacs:
-Emacs.
-
-* Menu:
-
-* List::                        Printing source lines
-* Specify Location::            How to specify code locations
-* Edit::                        Editing source files
-* Search::                      Searching source files
-* Source Path::                 Specifying source directories
-* Machine Code::                Source and machine code
-
-
-File: gdb.info,  Node: List,  Next: Specify Location,  Up: Source
-
-9.1 Printing Source Lines
-=========================
-
-To print lines from a source file, use the 'list' command (abbreviated
-'l').  By default, ten lines are printed.  There are several ways to
-specify what part of the file you want to print; see *note Specify
-Location::, for the full list.
-
-   Here are the forms of the 'list' command most commonly used:
-
-'list LINENUM'
-     Print lines centered around line number LINENUM in the current
-     source file.
-
-'list FUNCTION'
-     Print lines centered around the beginning of function FUNCTION.
-
-'list'
-     Print more lines.  If the last lines printed were printed with a
-     'list' command, this prints lines following the last lines printed;
-     however, if the last line printed was a solitary line printed as
-     part of displaying a stack frame (*note Examining the Stack:
-     Stack.), this prints lines centered around that line.
-
-'list -'
-     Print lines just before the lines last printed.
-
-   By default, GDB prints ten source lines with any of these forms of
-the 'list' command.  You can change this using 'set listsize':
-
-'set listsize COUNT'
-'set listsize unlimited'
-     Make the 'list' command display COUNT source lines (unless the
-     'list' argument explicitly specifies some other number).  Setting
-     COUNT to 'unlimited' or 0 means there's no limit.
-
-'show listsize'
-     Display the number of lines that 'list' prints.
-
-   Repeating a 'list' command with <RET> discards the argument, so it is
-equivalent to typing just 'list'.  This is more useful than listing the
-same lines again.  An exception is made for an argument of '-'; that
-argument is preserved in repetition so that each repetition moves up in
-the source file.
-
-   In general, the 'list' command expects you to supply zero, one or two
-"locations".  Locations specify source lines; there are several ways of
-writing them (*note Specify Location::), but the effect is always to
-specify some source line.
-
-   Here is a complete description of the possible arguments for 'list':
-
-'list LOCATION'
-     Print lines centered around the line specified by LOCATION.
-
-'list FIRST,LAST'
-     Print lines from FIRST to LAST.  Both arguments are locations.
-     When a 'list' command has two locations, and the source file of the
-     second location is omitted, this refers to the same source file as
-     the first location.
-
-'list ,LAST'
-     Print lines ending with LAST.
-
-'list FIRST,'
-     Print lines starting with FIRST.
-
-'list +'
-     Print lines just after the lines last printed.
-
-'list -'
-     Print lines just before the lines last printed.
-
-'list'
-     As described in the preceding table.
 
