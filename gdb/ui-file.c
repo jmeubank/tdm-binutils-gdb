@@ -26,6 +26,12 @@
 #include "gdbsupport/filestuff.h"
 #include "cli/cli-style.h"
 
+#if defined(__MINGW32_VERSION) /* MinGW.org */
+#  include <ddk/ntifs.h>
+#elif defined(_WIN32) /* MinGW-w64 */
+#  include <winternl.h>
+#endif
+
 null_file null_stream;
 
 ui_file::ui_file ()
@@ -152,7 +158,8 @@ stdio_file::stdio_file (FILE *file, bool close_p)
 stdio_file::stdio_file ()
   : m_file (NULL),
     m_fd (-1),
-    m_close_p (false)
+    m_close_p (false),
+    m_is_a_tty (-1)
 {}
 
 stdio_file::~stdio_file ()
@@ -253,7 +260,55 @@ stdio_file::puts (const char *linebuffer)
 bool
 stdio_file::isatty ()
 {
-  return ::isatty (m_fd);
+  if (m_is_a_tty != -1)
+      return m_is_a_tty;
+
+  m_is_a_tty = ::isatty (m_fd);
+
+#ifdef _WIN32
+  /* isatty() might be wrong, check GetConsoleMode first */
+  HANDLE h;
+  if ((h = (HANDLE) _get_osfhandle (m_fd)) == INVALID_HANDLE_VALUE)
+      return (m_is_a_tty = 0);
+
+  DWORD ignored;
+  if (GetConsoleMode (h, &ignored) != 0)
+      return (m_is_a_tty = 1);
+  m_is_a_tty = 0;
+
+  /* Also check if we are running in MinTTY */
+  HMODULE ntdll = GetModuleHandle ("ntdll.dll");
+  if (ntdll != INVALID_HANDLE_VALUE)
+    {
+      typedef NTSTATUS NTAPI func_NtQueryObject (HANDLE, OBJECT_INFORMATION_CLASS, PVOID, ULONG, PULONG);
+      func_NtQueryObject *fNtQueryObject =
+          (func_NtQueryObject*) GetProcAddress (ntdll, "NtQueryObject");
+      if (fNtQueryObject)
+        {
+          ULONG s = 0xffff * sizeof (WCHAR);
+          OBJECT_NAME_INFORMATION *oni = (OBJECT_NAME_INFORMATION*) xmalloc (s);
+          ULONG len;
+          /* mintty uses a named pipe like "ptyNNNN-to-master".  */
+          if (!fNtQueryObject (h, ObjectNameInformation, oni, s, &len))
+            {
+              wchar_t namedPipe[] = L"\\Device\\NamedPipe\\";
+              size_t l1 = sizeof (namedPipe) / 2 - 1;
+              wchar_t toMaster[] = L"-to-master";
+              size_t l2 = sizeof (toMaster) / 2 - 1;
+              USHORT name_length = oni->Name.Length / 2;
+              if (name_length > l1 + l2 &&
+                !memcmp (oni->Name.Buffer, namedPipe, l1 * 2) &&
+                !memcmp (oni->Name.Buffer + (name_length - l2), toMaster, l2 * 2))
+                  m_is_a_tty = 1;
+            }
+          free (oni);
+          if (m_is_a_tty == 1)
+              return 1;
+        }
+    }
+#endif
+
+  return m_is_a_tty;
 }
 
 /* See ui-file.h.  */

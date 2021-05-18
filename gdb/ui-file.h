@@ -210,6 +210,9 @@ private:
 
   /* If true, M_FILE is closed on destruction.  */
   bool m_close_p;
+
+  /* Cache the result of isatty */
+  int m_is_a_tty;
 };
 
 typedef std::unique_ptr<stdio_file> stdio_file_up;
