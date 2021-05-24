@@ -1,0 +1,127 @@
+Consider Windows alternate locations for cache dir
+
+From: J.M. Eubank <john@thesnappy.net>
+
+Since `%HOME%` is often not set on Windows
+   command-line, fix location of the cache dir to also consider
+   `%HOMEDRIVE%%HOMEPATH%` and `%USERPROFILE%`
+
+# HG changeset patch
+# Parent  aecb8a0cd430cf05f39752e016bd9cdc4de21ed7
+---
+ gdb/auto-load.c         |   17 +++++++++++++++--
+ gdb/main.c              |    7 +++++++
+ gdb/windows-nat.c       |   11 +++++++++++
+ gdbsupport/pathstuff.cc |   14 ++++++++++++++
+ gnulib/import/glob.c    |    2 ++
+ 5 files changed, 49 insertions(+), 2 deletions(-)
+
+diff --git a/gdb/auto-load.c b/gdb/auto-load.c
+index 1a9cc069..30a0f55a 100644
+--- a/gdb/auto-load.c
++++ b/gdb/auto-load.c
+@@ -498,11 +498,24 @@ file_is_auto_load_safe (const char *filename, const char *debug_fmt, ...)
+ 
+   if (!advice_printed)
+     {
++      std::string homeinit;
+       const char *homedir = getenv ("HOME");
++#ifdef _WIN32
++      if (!homedir || !homedir[0])
++        {
++          const char *hdrive = getenv ("HOMEDRIVE");
++          const char *hpath = getenv ("HOMEPATH");
++          if (hdrive && hpath && hdrive[0] && hpath[0])
++              homeinit = string_printf ("%s%s/%s", hdrive, hpath, GDBINIT);
++          if (homeinit.empty())
++              homedir = getenv ("USERPROFILE");
++        }
++#endif
+ 
+-      if (homedir == NULL)
++      if (!homedir || !homedir[0])
+ 	homedir = "$HOME";
+-      std::string homeinit = string_printf ("%s/%s", homedir, GDBINIT);
++      if (homeinit.empty())
++          homeinit = string_printf ("%s/%s", homedir, GDBINIT);
+ 
+       printf_filtered (_("\
+ To enable execution of this file add\n\
+diff --git a/gdb/main.c b/gdb/main.c
+index 2619b7d3..424db4bd 100644
+--- a/gdb/main.c
++++ b/gdb/main.c
+@@ -302,6 +302,13 @@ get_init_files (std::vector<std::string> *system_gdbinit,
+ 	}
+ 
+       const char *homedir = getenv ("HOME");
++#ifdef _WIN32
++      std::string win_homedir = std::string(getenv ("HOMEDRIVE")) + getenv ("HOMEPATH");
++      if (!homedir || !homedir[0])
++          homedir = win_homedir.c_str();
++      if (!homedir || !homedir[0])
++          homedir = getenv ("USERPROFILE");
++#endif
+ 
+       /* If the .gdbinit file in the current directory is the same as
+ 	 the $HOME/.gdbinit file, it should not be sourced.  homebuf
+diff --git a/gdb/windows-nat.c b/gdb/windows-nat.c
+index 108e1e32..408a85a9 100644
+--- a/gdb/windows-nat.c
++++ b/gdb/windows-nat.c
+@@ -3439,6 +3439,17 @@ _initialize_check_for_gdb_ini ()
+     return;
+ 
+   homedir = getenv ("HOME");
++#ifdef _WIN32
++  if (!homedir || !homedir[0])
++    {
++      const char *hdrive = getenv ("HOMEDRIVE");
++      const char *hpath = getenv ("HOMEPATH");
++      homedir = (char *) alloca (strlen(hdrive + strlen(hpath) + 1));
++      xsnprintf (homedir, strlen(hdrive) + strlen(hpath) + 1, "%s%s", hdrive, hpath);
++    }
++  if (!homedir || !homedir[0])
++      homedir = getenv ("USERPROFILE");
++#endif
+   if (homedir)
+     {
+       char *p;
+diff --git a/gdbsupport/pathstuff.cc b/gdbsupport/pathstuff.cc
+index 48c477fa..b61be259 100644
+--- a/gdbsupport/pathstuff.cc
++++ b/gdbsupport/pathstuff.cc
+@@ -238,6 +238,20 @@ get_standard_cache_dir ()
+       return string_printf ("%s/" HOME_CACHE_DIR "/gdb", abs.get ());
+     }
+ 
++#ifdef _WIN32
++  const char *hdrive = getenv ("HOMEDRIVE");
++  const char *hpath = getenv ("HOMEPATH");
++  if (hdrive && hpath && hdrive[0] && hpath[0])
++    {
++      return string_printf ("%s%s/" HOME_CACHE_DIR "/gdb", hdrive, hpath);
++    }
++  const char *userprofile = getenv ("USERPROFILE");
++  if (userprofile && userprofile[0])
++    {
++      return string_printf ("%s/" HOME_CACHE_DIR "/gdb", userprofile);
++    }
++#endif
++
+   return {};
+ }
+ 
+diff --git a/gnulib/import/glob.c b/gnulib/import/glob.c
+index f1b20d48..ed639514 100644
+--- a/gnulib/import/glob.c
++++ b/gnulib/import/glob.c
+@@ -642,6 +642,8 @@ __glob (const char *pattern, int flags, int (*errfunc) (const char *, int),
+                   home_dir = mem;
+                 }
+               else
++                home_dir = getenv ("USERPROFILE");
++              if (!home_dir || !home_dir[0])
+                 home_dir = "c:/users/default"; /* poor default */
+ #else
+               int err;

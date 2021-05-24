@@ -1,0 +1,8 @@
+# This series applies on GIT commit e03c6ed583ca3dd1be8d6718c33f200e47282c5b
+colorize-mintty.patch
+gdb-performance.patch
+gdb-fix-using-gnu-print.patch
+gdb-7.12-dynamic-libs.patch
+gdb-fix-tui-with-pdcurses.patch
+gdb-8.3-lib-order.patch
+windows-home.patch
