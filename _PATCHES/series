@@ -1,0 +1,8 @@
+# This series applies on GIT commit 42ca66a06de79ec5755ed457f2a9563e5c094d46
+github-readme.patch
+bfd-Increase-_bfd_coff_max_nscns-to-65279.patch
+binutils-mingw-gnu-print.patch
+check-for-unusual-file-harder.patch
+windres-handle-spaces.patch
+fix-weak-undef-symbols-after-image-base-change.patch
+ld-option-to-move-default-bases-under-4GB.patch
